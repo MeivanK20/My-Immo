@@ -1,0 +1,5 @@
+{
+  "name": "My Immo",
+  "description": "A real estate application for finding and listing properties in Cameroon. It allows property owners and agents to post their properties, and users to search for available locations in any region, city, or neighborhood.",
+  "requestFramePermissions": []
+}
