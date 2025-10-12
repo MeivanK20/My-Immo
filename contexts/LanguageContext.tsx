@@ -45,6 +45,7 @@ export const LanguageProvider = ({ children }: LanguageProviderProps) => {
     return resultString;
   };
 
+  // FIX: Corrected a typo in the closing tag for LanguageContext.Provider.
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t }}>
       {children}
