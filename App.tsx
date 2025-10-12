@@ -20,6 +20,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import MessagesPage from './pages/MessagesPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
+import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -65,8 +66,7 @@ const App: React.FC = () => {
           role,
       };
       setAllUsers(prev => [...prev, newUser]);
-      setCurrentUser(newUser);
-      handleNavigate(newUser.role === 'agent' ? 'dashboard' : 'home');
+      handleNavigate('registrationSuccess', { email: newUser.email });
       return newUser;
   };
 
@@ -163,6 +163,8 @@ const App: React.FC = () => {
           return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
        case 'register':
           return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} />;
+       case 'registrationSuccess':
+          return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;
        case 'termsOfUse': return <TermsOfUsePage />;

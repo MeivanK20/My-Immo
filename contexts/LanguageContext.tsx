@@ -16,7 +16,8 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
-export const LanguageProvider = ({ children }: LanguageProviderProps) => {
+// FIX: Changed component definition to use React.FC for consistency with the rest of the codebase. This resolves the TypeScript error in index.tsx.
+export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [locale, setLocale] = useState<Locale>('fr');
 
   const t = (key: string, values?: Record<string, string | number>): string => {
@@ -45,7 +46,6 @@ export const LanguageProvider = ({ children }: LanguageProviderProps) => {
     return resultString;
   };
 
-  // FIX: Corrected a typo in the closing tag for LanguageContext.Provider.
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t }}>
       {children}

@@ -141,7 +141,7 @@ export const en = {
     missionTitle: 'Our Mission',
     missionText: "At My Immo, our mission is to simplify and secure the process of searching, buying, selling, and renting properties throughout Cameroon. We strive to create a transparent and efficient platform that connects owners, agents, and future occupants with confidence, leveraging technology to provide an exceptional user experience.",
     leaderTitle: 'Meet our leader',
-    ceoName: 'Ivan Kevin MBAYE EYOUM',
+    ceoName: 'Ivan MBAYE',
     ceoTitle: 'CEO & Founder',
     ceoQuote: `"Passionate about technology and real estate, I founded My Immo with the vision of revolutionizing the Cameroonian market. My goal is to make real estate accessible, transparent, and simpler for everyone, by building a platform that inspires trust and promotes development."`,
     valuesTitle: 'Our Values',
@@ -212,4 +212,9 @@ export const en = {
     uploadHint: 'Click to change',
   },
   deleteConfirm: 'Are you sure you want to delete this property?',
+  registrationSuccessPage: {
+    title: 'Registration Successful!',
+    message: 'A confirmation email has been sent to {{email}}. Please check your inbox and follow the instructions to activate your account.',
+    loginButton: 'Proceed to Login',
+  },
 };
