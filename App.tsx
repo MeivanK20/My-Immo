@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Page, User, Property, Media, Message } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
@@ -16,8 +15,8 @@ import ContactPage from './pages/ContactPage';
 import AboutPage from './pages/AboutPage';
 import TermsOfUsePage from './pages/TermsOfUsePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import LoginModal from './components/auth/LoginModal';
-import RegisterModal from './components/auth/RegisterModal';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import MessagesPage from './pages/MessagesPage';
 
 const App: React.FC = () => {
@@ -31,10 +30,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchFilters, setSearchFilters] = useState({});
 
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-
-  const handleNavigate: (page: Page, data?: any) => void = (page, data) => {
+  const handleNavigate = (page: Page, data?: any) => {
     setCurrentPage(page);
     setPageData(data);
     window.scrollTo(0, 0);
@@ -44,12 +40,12 @@ const App: React.FC = () => {
     setCurrentUser(null);
     handleNavigate('home');
   };
-  
+
   const handleLogin = (email: string): User | null => {
     const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (user) {
         setCurrentUser(user);
-        setIsLoginModalOpen(false);
+        handleNavigate(user.role === 'agent' ? 'dashboard' : 'home');
         return user;
     }
     return null;
@@ -67,24 +63,12 @@ const App: React.FC = () => {
       };
       setAllUsers(prev => [...prev, newUser]);
       setCurrentUser(newUser);
-      setIsRegisterModalOpen(false);
+      handleNavigate(newUser.role === 'agent' ? 'dashboard' : 'home');
       return newUser;
-  }
-  
-  const switchToRegisterModal = () => {
-      setIsLoginModalOpen(false);
-      setIsRegisterModalOpen(true);
-  }
-  
-  const switchToLoginModal = () => {
-      setIsRegisterModalOpen(false);
-      setIsLoginModalOpen(true);
-  }
+  };
 
   const handleSearch = (filters: any) => setSearchFilters(filters);
   
-  // Simulates media upload by creating object URLs. 
-  // In a real app without a backend, these URLs are temporary.
   const processMediaFiles = (files: File[]): Media[] => {
     return files.map(file => ({
       url: URL.createObjectURL(file),
@@ -119,8 +103,6 @@ const App: React.FC = () => {
     const propertyToDelete = properties.find(p => p.id === id);
     if (!propertyToDelete) return;
     
-    // In a real non-backend app, you might want to revoke Object URLs,
-    // but for this simple case, we'll just remove the property from state.
     setProperties(prev => prev.filter(p => p.id !== id));
   };
 
@@ -158,6 +140,10 @@ const App: React.FC = () => {
           if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
           const myMessages = messages.filter(m => m.agentUid === currentUser.uid);
           return <MessagesPage messages={myMessages} />;
+       case 'login':
+          return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
+       case 'register':
+          return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;
        case 'termsOfUse': return <TermsOfUsePage />;
@@ -173,25 +159,9 @@ const App: React.FC = () => {
           user={currentUser} 
           onNavigate={handleNavigate} 
           onLogout={handleLogout}
-          onLoginClick={() => setIsLoginModalOpen(true)}
-          onRegisterClick={() => setIsRegisterModalOpen(true)}
         />
         <main className="flex-grow">{renderPage()}</main>
         <Footer onNavigate={handleNavigate} />
-        
-        <LoginModal
-          isOpen={isLoginModalOpen}
-          onClose={() => setIsLoginModalOpen(false)}
-          onLogin={handleLogin}
-          onSwitchToRegister={switchToRegisterModal}
-        />
-
-        <RegisterModal
-            isOpen={isRegisterModalOpen}
-            onClose={() => setIsRegisterModalOpen(false)}
-            onRegister={handleRegister}
-            onSwitchToLogin={switchToLoginModal}
-        />
     </div>
   );
 };

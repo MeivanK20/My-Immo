@@ -1,0 +1,102 @@
+import React, { useState } from 'react';
+import Input from '../components/common/Input';
+import Button from '../components/common/Button';
+import Logo from '../components/common/Logo';
+import { User, NavigationFunction } from '../types';
+
+interface RegisterPageProps {
+  onRegister: (name: string, email: string, role: 'visitor' | 'agent') => User | null;
+  onNavigate: NavigationFunction;
+}
+
+const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'visitor' | 'agent'>('visitor');
+  const [error, setError] = useState('');
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!name || !email || !password) {
+      setError("Veuillez remplir tous les champs.");
+      return;
+    }
+    const newUser = onRegister(name, email, role);
+    if (!newUser) {
+      setError('Un compte avec cet email existe déjà.');
+    }
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-280px)] flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="flex justify-center" onClick={() => onNavigate('home')}>
+          <Logo />
+        </div>
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          <h2 className="text-center text-2xl font-bold text-brand-dark mb-6">
+            Créez votre compte
+          </h2>
+          <form onSubmit={handleRegister} className="space-y-6">
+            {error && <p className="bg-red-100 text-red-700 p-3 rounded-md text-sm">{error}</p>}
+            <Input
+              label="Nom complet"
+              id="register-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoComplete="name"
+            />
+            <Input
+              label="Adresse Email"
+              id="register-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+            <Input
+              label="Mot de passe"
+              id="register-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="new-password"
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Je suis un...</label>
+              <div className="flex gap-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input type="radio" name="role" value="visitor" checked={role === 'visitor'} onChange={() => setRole('visitor')} className="focus:ring-brand-red h-4 w-4 text-brand-red border-gray-300" />
+                  <span>Visiteur</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input type="radio" name="role" value="agent" checked={role === 'agent'} onChange={() => setRole('agent')} className="focus:ring-brand-red h-4 w-4 text-brand-red border-gray-300" />
+                  <span>Propriétaire / Agent</span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <Button type="submit" className="w-full">
+                S'inscrire
+              </Button>
+            </div>
+          </form>
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Déjà un compte ?{' '}
+            <button onClick={() => onNavigate('login')} className="font-medium text-brand-red hover:text-brand-red-dark">
+              Connectez-vous
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RegisterPage;
