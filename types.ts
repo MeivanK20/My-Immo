@@ -1,10 +1,11 @@
-export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'profileSettings';
+
+
+export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages';
 
 export interface User {
-  id: string;
+  uid: string;
   name: string;
   email: string;
-  phone?: string;
   role: 'visitor' | 'agent';
 }
 
@@ -27,7 +28,21 @@ export interface Property {
   city: string;
   region: string;
   neighborhood: string;
-  agentId: string;
+  agentUid: string;
+  phone?: string;
 }
 
+// FIX: Changed 'interface' to 'type' for correct function type definition.
 export type NavigationFunction = (page: Page, data?: any) => void;
+
+export interface Message {
+  id: string;
+  propertyId: string;
+  propertyTitle: string;
+  agentUid: string;
+  visitorName: string;
+  visitorEmail: string;
+  visitorPhone: string;
+  message: string;
+  timestamp: Date;
+}

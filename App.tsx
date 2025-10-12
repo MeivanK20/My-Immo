@@ -1,7 +1,9 @@
-// Fix: Implement the main App component. This file was empty, causing it to not be a module.
-import React, { useState } from 'react';
-import { Page, User, Property } from './types';
-import { properties as initialProperties } from './data/properties';
+
+import React, { useState, useEffect } from 'react';
+import { Page, User, Property, Media, Message } from './types';
+import { mockProperties } from './data/properties';
+import { mockUsers } from './data/users';
+
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -14,168 +16,153 @@ import ContactPage from './pages/ContactPage';
 import AboutPage from './pages/AboutPage';
 import TermsOfUsePage from './pages/TermsOfUsePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import ProfileSettingsPage from './pages/ProfileSettingsPage';
-import Modal from './components/common/Modal';
-import Input from './components/common/Input';
-import Button from './components/common/Button';
-
-// Hardcoded users since we can't add a users.ts file
-const users: User[] = [
-    { id: 'agent-1', name: 'Alice Agent', email: 'alice@immo.com', role: 'agent', phone: '611223344' },
-    { id: 'agent-2', name: 'Bob Broker', email: 'bob@immo.com', role: 'agent', phone: '655667788' },
-    { id: 'visitor-1', name: 'Charlie Client', email: 'charlie@mail.com', role: 'visitor', phone: '699887766' },
-];
+import LoginModal from './components/auth/LoginModal';
+import RegisterModal from './components/auth/RegisterModal';
+import MessagesPage from './pages/MessagesPage';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [pageData, setPageData] = useState<any>(null);
 
-  const [properties, setProperties] = useState<Property[]>(initialProperties);
+  const [properties, setProperties] = useState<Property[]>(mockProperties);
+  const [allUsers, setAllUsers] = useState<User[]>(mockUsers);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchFilters, setSearchFilters] = useState({});
 
-  const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-  
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  
-  // Register form state
-  const [registerName, setRegisterName] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [registerRole, setRegisterRole] = useState<'visitor' | 'agent'>('visitor');
-  const [registerError, setRegisterError] = useState('');
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
   const handleNavigate: (page: Page, data?: any) => void = (page, data) => {
     setCurrentPage(page);
     setPageData(data);
     window.scrollTo(0, 0);
   };
-
-  const closeLoginModal = () => {
-    setShowLogin(false);
-    setLoginEmail('');
-    setLoginPassword('');
-    setLoginError('');
-  }
-
-  const closeRegisterModal = () => {
-    setShowRegister(false);
-    setRegisterName('');
-    setRegisterEmail('');
-    setRegisterPassword('');
-    setRegisterRole('visitor');
-    setRegisterError('');
-  }
   
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const user = users.find(u => u.email === loginEmail);
-    if (user) { // In a real app, you'd check the password
-        setCurrentUser(user);
-        closeLoginModal();
-    } else {
-        setLoginError("Aucun utilisateur trouvé avec cet email.");
-    }
-  }
-
   const handleLogout = () => {
     setCurrentUser(null);
     handleNavigate('home');
-  }
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegisterError('');
-
-    if (users.some(u => u.email === registerEmail)) {
-        setRegisterError("Un utilisateur avec cet email existe déjà.");
-        return;
+  };
+  
+  const handleLogin = (email: string): User | null => {
+    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (user) {
+        setCurrentUser(user);
+        setIsLoginModalOpen(false);
+        return user;
     }
+    return null;
+  };
 
-    const newUser: User = {
-        id: `user-${Date.now()}`,
-        name: registerName,
-        email: registerEmail,
-        role: registerRole,
-    };
-    users.push(newUser); 
-    setCurrentUser(newUser);
-    closeRegisterModal();
+  const handleRegister = (name: string, email: string, role: 'visitor' | 'agent'): User | null => {
+      if(allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+          return null; // User already exists
+      }
+      const newUser: User = {
+          uid: `user${Date.now()}`,
+          name,
+          email,
+          role,
+      };
+      setAllUsers(prev => [...prev, newUser]);
+      setCurrentUser(newUser);
+      setIsRegisterModalOpen(false);
+      return newUser;
   }
   
-  const handleSearch = (filters: any) => {
-    setSearchFilters(filters);
+  const switchToRegisterModal = () => {
+      setIsLoginModalOpen(false);
+      setIsRegisterModalOpen(true);
   }
   
-  const handleAddProperty = (propertyData: Omit<Property, 'id'>) => {
+  const switchToLoginModal = () => {
+      setIsRegisterModalOpen(false);
+      setIsLoginModalOpen(true);
+  }
+
+  const handleSearch = (filters: any) => setSearchFilters(filters);
+  
+  // Simulates media upload by creating object URLs. 
+  // In a real app without a backend, these URLs are temporary.
+  const processMediaFiles = (files: File[]): Media[] => {
+    return files.map(file => ({
+      url: URL.createObjectURL(file),
+      type: file.type.startsWith('image/') ? 'image' : 'video'
+    }));
+  };
+
+  const handleAddProperty = (propertyData: Omit<Property, 'id' | 'media'>, mediaFiles: File[]) => {
+    if (!currentUser) return;
+    
+    const newMedia = processMediaFiles(mediaFiles);
     const newProperty: Property = {
-      id: `prop-${Date.now()}`,
-      ...propertyData
+      id: `prop${Date.now()}`,
+      ...propertyData,
+      media: newMedia,
     };
+    
     setProperties(prev => [newProperty, ...prev]);
   };
   
-  const handleEditProperty = (updatedProperty: Property) => {
-      setProperties(prev => prev.map(p => p.id === updatedProperty.id ? updatedProperty : p));
+  const handleEditProperty = (updatedProperty: Property, newMediaFiles: File[]) => {
+      const newMedia = processMediaFiles(newMediaFiles);
+      const finalMedia = [...updatedProperty.media, ...newMedia];
+      
+      const finalProperty = { ...updatedProperty, media: finalMedia };
+      setProperties(prev => prev.map(p => p.id === updatedProperty.id ? finalProperty : p));
   };
   
   const handleDeleteProperty = (id: string) => {
-      setProperties(prev => prev.filter(p => p.id !== id));
+    if(!window.confirm("Êtes-vous sûr de vouloir supprimer cette propriété ?")) return;
+    
+    const propertyToDelete = properties.find(p => p.id === id);
+    if (!propertyToDelete) return;
+    
+    // In a real non-backend app, you might want to revoke Object URLs,
+    // but for this simple case, we'll just remove the property from state.
+    setProperties(prev => prev.filter(p => p.id !== id));
   };
-  
-  const handleUpdateProfile = (updatedUser: User) => {
-    const userIndex = users.findIndex(u => u.id === updatedUser.id);
-    if (userIndex > -1) {
-      users[userIndex] = updatedUser;
-    }
-    setCurrentUser(updatedUser);
+
+  const handleSendMessage = (messageData: Omit<Message, 'id' | 'timestamp'>) => {
+    const newMessage: Message = {
+      id: `msg${Date.now()}`,
+      ...messageData,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [newMessage, ...prev]);
   };
 
   const renderPage = () => {
+    if (loading) {
+      return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
+    }
     switch (currentPage) {
       case 'listings':
         return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} />;
       case 'propertyDetail':
-        const agent = users.find(u => u.id === pageData.agentId);
-        return <PropertyDetailsPage property={pageData} agent={agent} />;
+        const agent = allUsers.find(u => u.uid === pageData.agentUid);
+        return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} />;
       case 'dashboard':
-        if (!currentUser || currentUser.role !== 'agent') {
-            handleNavigate('home');
-            return null;
-        }
-        return <DashboardPage user={currentUser} properties={properties} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} />;
+        if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
+        const agentProperties = properties.filter(p => p.agentUid === currentUser.uid);
+        const agentMessagesCount = messages.filter(m => m.agentUid === currentUser.uid).length;
+        return <DashboardPage user={currentUser} properties={agentProperties} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} messageCount={agentMessagesCount} />;
        case 'addProperty':
-         if (!currentUser || currentUser.role !== 'agent') {
-            handleNavigate('home');
-            return null;
-        }
+         if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
         return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} />;
        case 'editProperty':
-         if (!currentUser || currentUser.role !== 'agent' || currentUser.id !== pageData.agentId) {
-            handleNavigate('home');
-            return null;
-         }
+         if (!currentUser || currentUser.role !== 'agent' || currentUser.uid !== pageData.agentUid) { handleNavigate('home'); return null; }
          return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} />;
-       case 'contact':
-        return <ContactPage />;
-       case 'about':
-        return <AboutPage />;
-       case 'termsOfUse':
-        return <TermsOfUsePage />;
-       case 'privacyPolicy':
-        return <PrivacyPolicyPage />;
-      case 'profileSettings':
-        if (!currentUser) {
-          handleNavigate('home');
-          return null;
-        }
-        return <ProfileSettingsPage user={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
-      case 'home':
-      default:
+       case 'messages':
+          if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
+          const myMessages = messages.filter(m => m.agentUid === currentUser.uid);
+          return <MessagesPage messages={myMessages} />;
+       case 'contact': return <ContactPage />;
+       case 'about': return <AboutPage />;
+       case 'termsOfUse': return <TermsOfUsePage />;
+       case 'privacyPolicy': return <PrivacyPolicyPage />;
+      case 'home': default:
         return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} />;
     }
   };
@@ -183,74 +170,28 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen font-sans bg-gray-50">
         <Header 
-            user={currentUser} 
-            onNavigate={handleNavigate} 
-            onLogout={handleLogout}
-            onShowLogin={() => setShowLogin(true)}
-            onShowRegister={() => setShowRegister(true)}
+          user={currentUser} 
+          onNavigate={handleNavigate} 
+          onLogout={handleLogout}
+          onLoginClick={() => setIsLoginModalOpen(true)}
+          onRegisterClick={() => setIsRegisterModalOpen(true)}
         />
-        <main className="flex-grow">
-            {renderPage()}
-        </main>
+        <main className="flex-grow">{renderPage()}</main>
         <Footer onNavigate={handleNavigate} />
+        
+        <LoginModal
+          isOpen={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+          onLogin={handleLogin}
+          onSwitchToRegister={switchToRegisterModal}
+        />
 
-        <Modal 
-            isOpen={showLogin}
-            onClose={closeLoginModal}
-            title="Connexion"
-        >
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Input label="Email" type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required />
-            <Input label="Mot de passe" type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required />
-            {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
-            <Button type="submit" className="w-full">Se connecter</Button>
-            <p className="text-sm text-center">
-              Pas de compte?{' '}
-              <button type="button" className="font-semibold text-brand-red hover:underline" onClick={() => { closeLoginModal(); setShowRegister(true); }}>
-                Inscrivez-vous
-              </button>
-            </p>
-          </form>
-        </Modal>
-
-        <Modal 
-            isOpen={showRegister}
-            onClose={closeRegisterModal}
-            title="Créer un compte"
-        >
-          <form onSubmit={handleRegister} className="space-y-6">
-            <Input label="Nom complet" type="text" value={registerName} onChange={e => setRegisterName(e.target.value)} required />
-            <Input label="Email" type="email" value={registerEmail} onChange={e => setRegisterEmail(e.target.value)} required />
-            <Input label="Mot de passe" type="password" value={registerPassword} onChange={e => setRegisterPassword(e.target.value)} required />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Je suis un</label>
-              <div className="flex rounded-md shadow-sm">
-                <button 
-                    type="button" 
-                    onClick={() => setRegisterRole('visitor')}
-                    className={`px-4 py-2 text-sm font-medium border-t border-b border-l rounded-l-md w-1/2 focus:outline-none transition-colors duration-200 ${registerRole === 'visitor' ? 'bg-brand-red text-white border-brand-red' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'}`}
-                >
-                    Visiteur
-                </button>
-                <button 
-                    type="button" 
-                    onClick={() => setRegisterRole('agent')}
-                    className={`px-4 py-2 text-sm font-medium border rounded-r-md w-1/2 focus:outline-none transition-colors duration-200 ${registerRole === 'agent' ? 'bg-brand-red text-white border-brand-red' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'}`}
-                >
-                    Agent / Propriétaire
-                </button>
-              </div>
-            </div>
-            {registerError && <p className="text-red-500 text-sm -mt-2">{registerError}</p>}
-            <Button type="submit" className="w-full">S'inscrire</Button>
-            <p className="text-sm text-center">
-              Déjà un compte?{' '}
-              <button type="button" className="font-semibold text-brand-red hover:underline" onClick={() => { closeRegisterModal(); setShowLogin(true); }}>
-                Connectez-vous
-              </button>
-            </p>
-          </form>
-        </Modal>
+        <RegisterModal
+            isOpen={isRegisterModalOpen}
+            onClose={() => setIsRegisterModalOpen(false)}
+            onRegister={handleRegister}
+            onSwitchToLogin={switchToLoginModal}
+        />
     </div>
   );
 };

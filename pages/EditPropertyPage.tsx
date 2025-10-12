@@ -1,4 +1,4 @@
-// Fix: Implement the EditPropertyPage component. This file was empty.
+
 import React, { useState, useEffect } from 'react';
 import { Property, NavigationFunction, Media } from '../types';
 import { regions, locations } from '../data/locations';
@@ -8,15 +8,22 @@ import Button from '../components/common/Button';
 
 interface EditPropertyPageProps {
   propertyToEdit: Property;
-  onEditProperty: (property: Property) => void;
+  onEditProperty: (property: Property, newMediaFiles: File[]) => void;
   onNavigate: NavigationFunction;
 }
 
 const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onEditProperty, onNavigate }) => {
   const [propertyData, setPropertyData] = useState({ ...propertyToEdit });
+  const [newMediaFiles, setNewMediaFiles] = useState<File[]>([]);
+  const [newMediaPreviews, setNewMediaPreviews] = useState<{url: string, type: 'image' | 'video'}[]>([]);
 
   useEffect(() => {
-    setPropertyData({ ...propertyToEdit });
+    // Ensure phone is at least an empty string
+    setPropertyData({ phone: '', ...propertyToEdit });
+    // Clean up previews when component unmounts or property changes
+    return () => {
+        newMediaPreviews.forEach(p => URL.revokeObjectURL(p.url));
+    }
   }, [propertyToEdit]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -24,44 +31,36 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
     setPropertyData(prev => ({ ...prev, [name]: value }));
   };
   
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      filesArray.forEach(file => {
-        // Fix: Add type guard to ensure 'file' is treated as a File object.
-        if (file instanceof File) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (typeof reader.result === 'string') {
-              const newMedia: Media = {
-                type: file.type.startsWith('image/') ? 'image' : 'video',
-                url: reader.result,
-              };
-              setPropertyData(prev => ({...prev, media: [...prev.media, newMedia]}));
-            }
-          };
-          reader.readAsDataURL(file);
-        }
-      });
+      setNewMediaFiles(prev => [...prev, ...filesArray]);
+
+      const newPreviews = filesArray.map(file => ({
+          url: URL.createObjectURL(file),
+          type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'
+      }));
+      setNewMediaPreviews(prev => [...prev, ...newPreviews]);
     }
   };
 
-  const removeMedia = (indexToRemove: number) => {
+  const removeExistingMedia = (indexToRemove: number) => {
     setPropertyData(prev => ({...prev, media: prev.media.filter((_, index) => index !== indexToRemove)}));
   };
-
-  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPropertyData(prev => ({ ...prev, region: e.target.value, city: '', neighborhood: '' }));
+  
+  const removeNewMedia = (indexToRemove: number) => {
+    URL.revokeObjectURL(newMediaPreviews[indexToRemove].url);
+    setNewMediaFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+    setNewMediaPreviews(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
-  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setPropertyData(prev => ({...prev, city: e.target.value, neighborhood: ''}));
-  }
+  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => setPropertyData(prev => ({ ...prev, region: e.target.value, city: '', neighborhood: '' }));
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => setPropertyData(prev => ({...prev, city: e.target.value, neighborhood: ''}));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-     if (propertyData.media.length === 0) {
-      alert("Veuillez téléverser au moins une image ou vidéo.");
+     if (propertyData.media.length === 0 && newMediaFiles.length === 0) {
+      alert("Une propriété doit avoir au moins une image ou vidéo.");
       return;
     }
     const updatedProperty = {
@@ -71,7 +70,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
       bathrooms: parseInt(String(propertyData.bathrooms), 10),
       area: parseInt(String(propertyData.area), 10),
     };
-    onEditProperty(updatedProperty);
+    onEditProperty(updatedProperty, newMediaFiles);
     onNavigate('dashboard');
   };
 
@@ -80,55 +79,34 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
       <h1 className="text-3xl font-bold text-brand-dark mb-6">Modifier la propriété</h1>
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-6">
         <Input label="Titre de l'annonce" name="title" value={propertyData.title} onChange={handleChange} required />
-        
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-          <textarea
-            id="description"
-            name="description"
-            rows={4}
-            value={propertyData.description}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-red focus:border-brand-red sm:text-sm"
-            required
-          />
+          <textarea id="description" name="description" rows={4} value={propertyData.description} onChange={handleChange} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-red focus:border-brand-red sm:text-sm" required />
         </div>
 
-        {/* Media Management */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Images & Vidéos</label>
            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
             <div className="space-y-1 text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
               <div className="flex text-sm text-gray-600">
-                <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-brand-red hover:text-brand-red-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-red">
-                  <span>Ajouter des fichiers</span>
-                  <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*,video/mp4,video/quicktime" onChange={handleFileChange} />
-                </label>
+                <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-brand-red hover:text-brand-red-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-red"><span>Ajouter des fichiers</span><input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*,video/mp4,video/quicktime" onChange={handleFileChange} /></label>
               </div>
-              <p className="text-xs text-gray-500">Ajoutez de nouvelles images ou vidéos à votre annonce.</p>
+              <p className="text-xs text-gray-500">Ajoutez de nouvelles images ou vidéos.</p>
             </div>
           </div>
-           {/* Previews */}
-            {propertyData.media.length > 0 && (
+            {(propertyData.media.length > 0 || newMediaPreviews.length > 0) && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {propertyData.media.map((item, index) => (
-                    <div key={index} className="relative group aspect-w-1 aspect-h-1">
-                    {item.type === 'image' ? (
-                        <img src={item.url} alt={`preview ${index}`} className="w-full h-full object-cover rounded-md" />
-                    ) : (
-                        <video src={item.url} className="w-full h-full object-cover rounded-md" />
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => removeMedia(index)}
-                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="Remove media"
-                    >
-                        X
-                    </button>
+                    <div key={item.url} className="relative group aspect-w-1 aspect-h-1">
+                    {item.type === 'image' ? <img src={item.url} alt={`preview ${index}`} className="w-full h-full object-cover rounded-md" /> : <video src={item.url} className="w-full h-full object-cover rounded-md" />}
+                    <button type="button" onClick={() => removeExistingMedia(index)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Remove media">X</button>
+                    </div>
+                ))}
+                {newMediaPreviews.map((item, index) => (
+                    <div key={item.url} className="relative group aspect-w-1 aspect-h-1">
+                    {item.type === 'image' ? <img src={item.url} alt={`preview ${index}`} className="w-full h-full object-cover rounded-md" /> : <video src={item.url} className="w-full h-full object-cover rounded-md" />}
+                    <button type="button" onClick={() => removeNewMedia(index)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Remove media">X</button>
                     </div>
                 ))}
                 </div>
@@ -137,10 +115,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input label="Prix (XAF)" name="price" type="number" value={propertyData.price} onChange={handleChange} required />
-          <Select label="Type d'annonce" name="type" value={propertyData.type} onChange={handleChange}>
-            <option value="rent">Location</option>
-            <option value="sale">Vente</option>
-          </Select>
+          <Select label="Type d'annonce" name="type" value={propertyData.type} onChange={handleChange}><option value="rent">Location</option><option value="sale">Vente</option></Select>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -150,25 +125,12 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           <Select label="Région" name="region" value={propertyData.region} onChange={handleRegionChange} required>
-            <option value="">Sélectionner une région</option>
-            {regions.map(r => <option key={r} value={r}>{r}</option>)}
-          </Select>
-          
-          <Select label="Ville" name="city" value={propertyData.city} onChange={handleCityChange} disabled={!propertyData.region} required>
-            <option value="">Sélectionner une ville</option>
-            {propertyData.region && locations[propertyData.region as keyof typeof locations] &&
-              Object.keys(locations[propertyData.region as keyof typeof locations]).map(c => <option key={c} value={c}>{c}</option>)
-            }
-          </Select>
-
-          <Select label="Quartier" name="neighborhood" value={propertyData.neighborhood} onChange={handleChange} disabled={!propertyData.city} required>
-            <option value="">Sélectionner un quartier</option>
-            {propertyData.city && locations[propertyData.region as keyof typeof locations]?.[propertyData.city as keyof any] &&
-              (locations[propertyData.region as keyof typeof locations] as any)[propertyData.city].map((n: string) => <option key={n} value={n}>{n}</option>)
-            }
-          </Select>
+           <Select label="Région" name="region" value={propertyData.region} onChange={handleRegionChange} required><option value="">Sélectionner une région</option>{regions.map(r => <option key={r} value={r}>{r}</option>)}</Select>
+           <Select label="Ville" name="city" value={propertyData.city} onChange={handleCityChange} disabled={!propertyData.region} required><option value="">Sélectionner une ville</option>{propertyData.region && locations[propertyData.region as keyof typeof locations] && Object.keys(locations[propertyData.region as keyof typeof locations]).map(c => <option key={c} value={c}>{c}</option>)}</Select>
+           <Select label="Quartier" name="neighborhood" value={propertyData.neighborhood} onChange={handleChange} disabled={!propertyData.city} required><option value="">Sélectionner un quartier</option>{propertyData.city && locations[propertyData.region as keyof typeof locations]?.[propertyData.city as keyof any] && (locations[propertyData.region as keyof typeof locations] as any)[propertyData.city].map((n: string) => <option key={n} value={n}>{n}</option>)}</Select>
         </div>
+
+        <Input label="Numéro de téléphone (Optionnel)" name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" />
 
         <div className="flex justify-end gap-4">
             <Button type="button" variant="secondary" onClick={() => onNavigate('dashboard')}>Annuler</Button>

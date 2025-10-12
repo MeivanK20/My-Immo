@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Property, User, NavigationFunction } from '../types';
 import Button from '../components/common/Button';
@@ -8,20 +9,27 @@ interface DashboardPageProps {
   properties: Property[];
   onNavigate: NavigationFunction;
   onDeleteProperty: (id: string) => void;
+  messageCount: number;
 }
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat('fr-CM', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 }).format(price);
 };
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavigate, onDeleteProperty }) => {
-  const myProperties = properties.filter(p => p.agentId === user.id);
+const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavigate, onDeleteProperty, messageCount }) => {
+  const myProperties = properties; // Properties are pre-filtered in App.tsx
 
   return (
     <div className="container mx-auto px-6 py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-brand-dark">Mon tableau de bord</h1>
-        <Button onClick={() => onNavigate('addProperty')}>Ajouter une propriété</Button>
+        <div className="flex gap-4">
+          <Button onClick={() => onNavigate('messages')} variant="secondary" className="relative">
+            Voir mes messages
+            {messageCount > 0 && <span className="absolute -top-2 -right-2 bg-brand-red text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{messageCount}</span>}
+          </Button>
+          <Button onClick={() => onNavigate('addProperty')}>Ajouter une propriété</Button>
+        </div>
       </div>
       
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
