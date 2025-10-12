@@ -1,17 +1,18 @@
 import React from 'react';
 import { Message } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface MessagesPageProps {
   messages: Message[];
 }
 
 const MessagesPage: React.FC<MessagesPageProps> = ({ messages }) => {
-
+  const { t, locale } = useLanguage();
   const sortedMessages = [...messages].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   return (
     <div className="container mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold text-brand-dark mb-6">Mes Messages</h1>
+      <h1 className="text-3xl font-bold text-brand-dark mb-6">{t('messagesPage.title')}</h1>
       {sortedMessages.length > 0 ? (
         <div className="space-y-6">
           {sortedMessages.map(msg => (
@@ -19,10 +20,12 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ messages }) => {
               <div className="flex flex-wrap justify-between items-start mb-2">
                 <div>
                   <p className="font-semibold text-lg text-brand-dark">
-                    Sujet: <span className="font-normal">{msg.propertyTitle}</span>
+                    {t('messagesPage.subject')}{' '}
+                    <span className="font-normal">{msg.propertyTitle}</span>
                   </p>
                   <p className="text-sm text-gray-500">
-                    Reçu le: {new Date(msg.timestamp).toLocaleString('fr-FR')}
+                    {t('messagesPage.receivedOn')}{' '}
+                    {new Date(msg.timestamp).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')}
                   </p>
                 </div>
                 <div className="text-right mt-2 sm:mt-0">
@@ -39,7 +42,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ messages }) => {
         </div>
       ) : (
         <div className="text-center py-16 bg-white rounded-lg shadow-md">
-            <p className="text-xl text-gray-500">Vous n'avez aucun message pour le moment.</p>
+            <p className="text-xl text-gray-500">{t('messagesPage.noMessages')}</p>
         </div>
       )}
     </div>

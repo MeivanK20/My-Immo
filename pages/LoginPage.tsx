@@ -3,6 +3,7 @@ import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
 import { User, NavigationFunction } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface LoginPageProps {
   onLogin: (email: string) => User | null;
@@ -10,6 +11,7 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,7 +21,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
     setError('');
     const user = onLogin(email);
     if (!user) {
-      setError("Aucun compte trouvé avec cet email. Le mot de passe n'est pas vérifié dans cette démo.");
+      setError(t('loginPage.error'));
     }
   };
 
@@ -31,12 +33,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
         </div>
         <div className="bg-white p-8 rounded-lg shadow-md">
             <h2 className="text-center text-2xl font-bold text-brand-dark mb-6">
-                Connectez-vous à votre compte
+                {t('loginPage.title')}
             </h2>
             <form onSubmit={handleLogin} className="space-y-6">
                 {error && <p className="bg-red-100 text-red-700 p-3 rounded-md text-sm">{error}</p>}
                 <Input
-                label="Adresse Email"
+                label={t('loginPage.email')}
                 id="login-email"
                 type="email"
                 value={email}
@@ -45,7 +47,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
                 autoComplete="email"
                 />
                 <Input
-                label="Mot de passe"
+                label={t('loginPage.password')}
                 id="login-password"
                 type="password"
                 value={password}
@@ -55,14 +57,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
                 />
                 <div>
                     <Button type="submit" className="w-full">
-                        Se connecter
+                        {t('loginPage.login')}
                     </Button>
                 </div>
             </form>
             <p className="mt-6 text-center text-sm text-gray-600">
-                Pas encore de compte ?{' '}
+                {t('loginPage.noAccount')}{' '}
                 <button onClick={() => onNavigate('register')} className="font-medium text-brand-red hover:text-brand-red-dark">
-                Inscrivez-vous
+                {t('loginPage.register')}
                 </button>
             </p>
         </div>

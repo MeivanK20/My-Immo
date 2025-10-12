@@ -3,6 +3,7 @@ import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
 import { User, NavigationFunction } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface RegisterPageProps {
   onRegister: (name: string, email: string, role: 'visitor' | 'agent') => User | null;
@@ -10,6 +11,7 @@ interface RegisterPageProps {
 }
 
 const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) => {
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,12 +22,12 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) =
     e.preventDefault();
     setError('');
     if (!name || !email || !password) {
-      setError("Veuillez remplir tous les champs.");
+      setError(t('registerPage.errorRequired'));
       return;
     }
     const newUser = onRegister(name, email, role);
     if (!newUser) {
-      setError('Un compte avec cet email existe déjà.');
+      setError(t('registerPage.errorExists'));
     }
   };
 
@@ -37,12 +39,12 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) =
         </div>
         <div className="bg-white p-8 rounded-lg shadow-md">
           <h2 className="text-center text-2xl font-bold text-brand-dark mb-6">
-            Créez votre compte
+            {t('registerPage.title')}
           </h2>
           <form onSubmit={handleRegister} className="space-y-6">
             {error && <p className="bg-red-100 text-red-700 p-3 rounded-md text-sm">{error}</p>}
             <Input
-              label="Nom complet"
+              label={t('registerPage.fullName')}
               id="register-name"
               type="text"
               value={name}
@@ -51,7 +53,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) =
               autoComplete="name"
             />
             <Input
-              label="Adresse Email"
+              label={t('registerPage.email')}
               id="register-email"
               type="email"
               value={email}
@@ -60,7 +62,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) =
               autoComplete="email"
             />
             <Input
-              label="Mot de passe"
+              label={t('registerPage.password')}
               id="register-password"
               type="password"
               value={password}
@@ -69,28 +71,28 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) =
               autoComplete="new-password"
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Je suis un...</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('registerPage.iAmA')}</label>
               <div className="flex gap-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input type="radio" name="role" value="visitor" checked={role === 'visitor'} onChange={() => setRole('visitor')} className="focus:ring-brand-red h-4 w-4 text-brand-red border-gray-300" />
-                  <span>Visiteur</span>
+                  <span>{t('registerPage.visitor')}</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input type="radio" name="role" value="agent" checked={role === 'agent'} onChange={() => setRole('agent')} className="focus:ring-brand-red h-4 w-4 text-brand-red border-gray-300" />
-                  <span>Propriétaire / Agent</span>
+                  <span>{t('registerPage.agent')}</span>
                 </label>
               </div>
             </div>
             <div>
               <Button type="submit" className="w-full">
-                S'inscrire
+                {t('registerPage.register')}
               </Button>
             </div>
           </form>
           <p className="mt-6 text-center text-sm text-gray-600">
-            Déjà un compte ?{' '}
+            {t('registerPage.haveAccount')}{' '}
             <button onClick={() => onNavigate('login')} className="font-medium text-brand-red hover:text-brand-red-dark">
-              Connectez-vous
+              {t('registerPage.login')}
             </button>
           </p>
         </div>

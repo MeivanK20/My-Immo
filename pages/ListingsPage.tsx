@@ -1,10 +1,10 @@
-
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction } from '../types';
 import PropertyCard from '../components/PropertyCard';
 import { regions, locations } from '../data/locations';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ListingsPageProps {
   properties: Property[];
@@ -13,14 +13,15 @@ interface ListingsPageProps {
 }
 
 const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters }) => {
-    const [filters, setFilters] = useState({
-        region: initialFilters.region || '',
-        city: initialFilters.city || '',
-        neighborhood: '',
-        type: '',
-        minPrice: '',
-        maxPrice: '',
-    });
+  const { t } = useLanguage();
+  const [filters, setFilters] = useState({
+      region: initialFilters.region || '',
+      city: initialFilters.city || '',
+      neighborhood: '',
+      type: '',
+      minPrice: '',
+      maxPrice: '',
+  });
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -60,48 +61,48 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
         {/* Filters Sidebar */}
         <aside className="w-full lg:w-1/4 mb-8 lg:mb-0">
           <div className="bg-white p-6 rounded-lg shadow-md sticky top-24">
-            <h3 className="text-xl font-bold mb-4 text-brand-dark">Filtres</h3>
+            <h3 className="text-xl font-bold mb-4 text-brand-dark">{t('listingsPage.filters')}</h3>
             <div className="space-y-4">
-              <Select label="Région" name="region" value={filters.region} onChange={handleRegionChange}>
-                <option value="">Toutes les régions</option>
+              <Select label={t('listingsPage.region')} name="region" value={filters.region} onChange={handleRegionChange}>
+                <option value="">{t('listingsPage.allRegions')}</option>
                 {regions.map(r => <option key={r} value={r}>{r}</option>)}
               </Select>
               
-              <Select label="Ville" name="city" value={filters.city} onChange={handleCityChange} disabled={!filters.region}>
-                <option value="">Toutes les villes</option>
+              <Select label={t('listingsPage.city')} name="city" value={filters.city} onChange={handleCityChange} disabled={!filters.region}>
+                <option value="">{t('listingsPage.allCities')}</option>
                 {filters.region && locations[filters.region as keyof typeof locations] &&
                   Object.keys(locations[filters.region as keyof typeof locations]).map(c => <option key={c} value={c}>{c}</option>)
                 }
               </Select>
 
-              <Select label="Quartier" name="neighborhood" value={filters.neighborhood} onChange={handleFilterChange} disabled={!filters.city}>
-                <option value="">Tous les quartiers</option>
+              <Select label={t('listingsPage.neighborhood')} name="neighborhood" value={filters.neighborhood} onChange={handleFilterChange} disabled={!filters.city}>
+                <option value="">{t('listingsPage.allNeighborhoods')}</option>
                 {filters.city && locations[filters.region as keyof typeof locations]?.[filters.city as keyof any] &&
                   (locations[filters.region as keyof typeof locations] as any)[filters.city].map((n: string) => <option key={n} value={n}>{n}</option>)
                 }
               </Select>
 
-              <Select label="Type d'annonce" name="type" value={filters.type} onChange={handleFilterChange}>
-                <option value="">Tous les types</option>
-                <option value="rent">Location</option>
-                <option value="sale">Vente</option>
+              <Select label={t('listingsPage.listingType')} name="type" value={filters.type} onChange={handleFilterChange}>
+                <option value="">{t('listingsPage.allTypes')}</option>
+                <option value="rent">{t('listingsPage.rent')}</option>
+                <option value="sale">{t('listingsPage.sale')}</option>
               </Select>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Prix</label>
+                <label className="block text-sm font-medium text-gray-700">{t('listingsPage.price')}</label>
                 <div className="flex gap-2 mt-1">
-                  <input type="number" name="minPrice" placeholder="Min" value={filters.minPrice} onChange={handleFilterChange} className="w-1/2 p-2 border rounded-md" />
-                  <input type="number" name="maxPrice" placeholder="Max" value={filters.maxPrice} onChange={handleFilterChange} className="w-1/2 p-2 border rounded-md" />
+                  <input type="number" name="minPrice" placeholder={t('listingsPage.min')} value={filters.minPrice} onChange={handleFilterChange} className="w-1/2 p-2 border rounded-md" />
+                  <input type="number" name="maxPrice" placeholder={t('listingsPage.max')} value={filters.maxPrice} onChange={handleFilterChange} className="w-1/2 p-2 border rounded-md" />
                 </div>
               </div>
-              <Button onClick={resetFilters} variant="secondary" className="w-full">Réinitialiser</Button>
+              <Button onClick={resetFilters} variant="secondary" className="w-full">{t('listingsPage.reset')}</Button>
             </div>
           </div>
         </aside>
 
         {/* Listings */}
         <main className="w-full lg:w-3/4">
-          <h2 className="text-2xl font-bold mb-4 text-brand-dark">{filteredProperties.length} Propriétés trouvées</h2>
+          <h2 className="text-2xl font-bold mb-4 text-brand-dark">{t('listingsPage.propertiesFound', { count: filteredProperties.length })}</h2>
           {filteredProperties.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {filteredProperties.map(property => (
@@ -110,7 +111,7 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
             </div>
           ) : (
             <div className="text-center py-16 bg-white rounded-lg shadow-md">
-                <p className="text-xl text-gray-500">Aucune propriété ne correspond à vos critères de recherche.</p>
+                <p className="text-xl text-gray-500">{t('listingsPage.noProperties')}</p>
             </div>
           )}
         </main>

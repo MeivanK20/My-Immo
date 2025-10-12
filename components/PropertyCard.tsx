@@ -1,17 +1,20 @@
 // Fix: Implement the PropertyCard component. This file was empty, causing it to not be recognized as a module.
 import React from 'react';
 import { Property, NavigationFunction } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface PropertyCardProps {
   property: Property;
   onNavigate: NavigationFunction;
 }
 
-const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-CM', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 }).format(price);
-};
-
 const PropertyCard: React.FC<PropertyCardProps> = ({ property, onNavigate }) => {
+  const { t, locale } = useLanguage();
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat(locale === 'fr' ? 'fr-CM' : 'en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 }).format(price);
+  };
+  
   const { title, media, price, type, bedrooms, bathrooms, area, city, neighborhood } = property;
   const firstMedia = media?.[0];
 
@@ -33,20 +36,20 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onNavigate }) => 
            </div>
         ) : (
           <div className="w-full h-56 bg-gray-200 flex items-center justify-center">
-            <span className="text-gray-500">Média non disponible</span>
+            <span className="text-gray-500">{t('propertyDetailsPage.mediaNotAvailable')}</span>
           </div>
         )}
         <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-white text-sm font-semibold ${type === 'rent' ? 'bg-blue-500' : 'bg-green-500'}`}>
-          {type === 'rent' ? 'À Louer' : 'À Vendre'}
+          {type === 'rent' ? t('propertyCard.rent') : t('propertyCard.sale')}
         </div>
       </div>
       <div className="p-4">
         <h3 className="text-lg font-semibold text-brand-dark mb-1 truncate">{title}</h3>
         <p className="text-sm text-gray-500 mb-2">{neighborhood}, {city}</p>
-        <p className="text-xl font-bold text-brand-red mb-3">{formatPrice(price)} {type === 'rent' && '/ mois'}</p>
+        <p className="text-xl font-bold text-brand-red mb-3">{formatPrice(price)} {type === 'rent' && t('propertyCard.perMonth')}</p>
         <div className="flex justify-between items-center text-sm text-gray-600 border-t pt-3">
-          <span>{bedrooms} ch.</span>
-          <span>{bathrooms} sdb.</span>
+          <span>{bedrooms} {t('propertyCard.bedroomsShort')}</span>
+          <span>{bathrooms} {t('propertyCard.bathroomsShort')}</span>
           <span>{area} m²</span>
         </div>
       </div>

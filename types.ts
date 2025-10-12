@@ -1,10 +1,12 @@
-export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register';
+export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings';
 
 export interface User {
   uid: string;
   name: string;
   email: string;
   role: 'visitor' | 'agent';
+  phone?: string;
+  profilePictureUrl?: string;
 }
 
 export interface Media {

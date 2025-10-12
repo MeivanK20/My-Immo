@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Page, User, Property, Media, Message } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
+import { useLanguage } from './contexts/LanguageContext';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -18,6 +19,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import MessagesPage from './pages/MessagesPage';
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -29,6 +31,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchFilters, setSearchFilters] = useState({});
+  const { t } = useLanguage();
 
   const handleNavigate = (page: Page, data?: any) => {
     setCurrentPage(page);
@@ -98,7 +101,7 @@ const App: React.FC = () => {
   };
   
   const handleDeleteProperty = (id: string) => {
-    if(!window.confirm("Êtes-vous sûr de vouloir supprimer cette propriété ?")) return;
+    if(!window.confirm(t('deleteConfirm'))) return;
     
     const propertyToDelete = properties.find(p => p.id === id);
     if (!propertyToDelete) return;
@@ -113,6 +116,19 @@ const App: React.FC = () => {
       timestamp: new Date(),
     };
     setMessages(prev => [newMessage, ...prev]);
+  };
+  
+  const handleUpdateProfile = (updatedUser: User, newProfilePicture: File | null) => {
+      if (!currentUser) return;
+
+      let finalUser = { ...updatedUser };
+
+      if (newProfilePicture) {
+          finalUser.profilePictureUrl = URL.createObjectURL(newProfilePicture);
+      }
+
+      setAllUsers(prevUsers => prevUsers.map(u => u.uid === finalUser.uid ? finalUser : u));
+      setCurrentUser(finalUser);
   };
 
   const renderPage = () => {
@@ -140,6 +156,9 @@ const App: React.FC = () => {
           if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
           const myMessages = messages.filter(m => m.agentUid === currentUser.uid);
           return <MessagesPage messages={myMessages} />;
+       case 'profileSettings':
+          if (!currentUser) { handleNavigate('login'); return null; }
+          return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
        case 'login':
           return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
        case 'register':

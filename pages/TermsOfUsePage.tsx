@@ -1,12 +1,14 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const TermsOfUsePage: React.FC = () => {
+  const { t, locale } = useLanguage();
   return (
     <div className="bg-white">
       <div className="container mx-auto px-6 py-12 max-w-4xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-brand-dark">Conditions Générales d'Utilisation</h1>
-          <p className="text-lg text-gray-600 mt-2">Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}</p>
+          <h1 className="text-4xl font-bold text-brand-dark">{t('termsPage.title')}</h1>
+          <p className="text-lg text-gray-600 mt-2">{t('termsPage.lastUpdated', { date: new Date().toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US') })}</p>
           <div className="w-24 h-1 bg-brand-red mx-auto mt-4"></div>
         </div>
 

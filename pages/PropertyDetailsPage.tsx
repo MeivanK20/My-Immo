@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Property, User, Media, Message } from '../types';
 import ContactAgentModal from '../components/ContactAgentModal';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface PropertyDetailsPageProps {
   property: Property;
@@ -10,11 +10,13 @@ interface PropertyDetailsPageProps {
   currentUser: User | null;
 }
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fr-CM', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 }).format(price);
-};
-
 const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, agent, onSendMessage, currentUser }) => {
+  const { t, locale } = useLanguage();
+  
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat(locale === 'fr' ? 'fr-CM' : 'en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 }).format(price);
+  };
+
   const [selectedMedia, setSelectedMedia] = useState<Media | undefined>(property?.media?.[0]);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
@@ -23,7 +25,7 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
   }, [property]);
 
   if (!property) {
-    return <div className="text-center py-16">Propriété non trouvée.</div>;
+    return <div className="text-center py-16">{t('propertyDetailsPage.propertyNotFound')}</div>;
   }
 
   const { title, description, price, type, bedrooms, bathrooms, area, media, city, neighborhood, region, phone } = property;
@@ -41,7 +43,7 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
                 <video src={selectedMedia.url} controls autoPlay className="w-full max-h-[500px] rounded-lg" />
               ) : (
                 <div className="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500">Média non disponible</p>
+                  <p className="text-gray-500">{t('propertyDetailsPage.mediaNotAvailable')}</p>
                 </div>
               )}
             </div>
@@ -76,45 +78,50 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
               {/* Main details */}
               <div className="w-full md:w-2/3">
                   <span className={`px-3 py-1 rounded-full text-white text-sm font-semibold ${type === 'rent' ? 'bg-blue-500' : 'bg-green-500'}`}>
-                      {type === 'rent' ? 'À Louer' : 'À Vendre'}
+                      {type === 'rent' ? t('propertyDetailsPage.rent') : t('propertyDetailsPage.sale')}
                   </span>
                   <h1 className="text-3xl font-bold text-brand-dark mt-2">{title}</h1>
                   <p className="text-md text-gray-500 mb-4">{neighborhood}, {city}, {region}</p>
-                  <p className="text-3xl font-bold text-brand-red mb-6">{formatPrice(price)} {type === 'rent' && '/ mois'}</p>
+                  <p className="text-3xl font-bold text-brand-red mb-6">{formatPrice(price)} {type === 'rent' && t('propertyDetailsPage.perMonth')}</p>
 
-                  <h2 className="text-xl font-semibold text-brand-dark mb-2">Description</h2>
+                  <h2 className="text-xl font-semibold text-brand-dark mb-2">{t('propertyDetailsPage.description')}</h2>
                   <p className="text-gray-700 mb-6 whitespace-pre-line">{description}</p>
                   
-                  <h2 className="text-xl font-semibold text-brand-dark mb-3">Caractéristiques</h2>
+                  <h2 className="text-xl font-semibold text-brand-dark mb-3">{t('propertyDetailsPage.features')}</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
                       <div className="bg-gray-100 p-4 rounded-lg">
                           <div className="font-bold text-lg">{bedrooms}</div>
-                          <div className="text-sm text-gray-600">Chambres</div>
+                          <div className="text-sm text-gray-600">{t('propertyDetailsPage.bedrooms')}</div>
                       </div>
                       <div className="bg-gray-100 p-4 rounded-lg">
                           <div className="font-bold text-lg">{bathrooms}</div>
-                          <div className="text-sm text-gray-600">Salles de bain</div>
+                          <div className="text-sm text-gray-600">{t('propertyDetailsPage.bathrooms')}</div>
                       </div>
                       <div className="bg-gray-100 p-4 rounded-lg">
                           <div className="font-bold text-lg">{area} m²</div>
-                          <div className="text-sm text-gray-600">Superficie</div>
+                          <div className="text-sm text-gray-600">{t('propertyDetailsPage.area')}</div>
                       </div>
                   </div>
               </div>
 
               {/* Agent Card */}
               <aside className="w-full md:w-1/3 mt-8 md:mt-0">
-                  <div className="bg-white p-6 rounded-lg shadow-md border sticky top-24">
-                      <h3 className="text-xl font-bold mb-4 text-brand-dark">Contacter l'agent</h3>
+                  <div className="bg-white p-6 rounded-lg shadow-md border sticky top-24 text-center">
+                      <h3 className="text-xl font-bold mb-4 text-brand-dark">{t('propertyDetailsPage.contactAgent')}</h3>
                       {agent ? (
                           <div>
+                              <img 
+                                src={agent.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=f87171&color=fff`} 
+                                alt={`Profil de ${agent.name}`}
+                                className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-brand-red"
+                              />
                               <p className="font-semibold text-lg">{agent.name}</p>
-                              <p className="text-gray-600">{agent.email}</p>
-                              {phone && <p className="text-gray-600 mt-1">Tel: <a href={`tel:${phone}`} className="text-blue-600 hover:underline">{phone}</a></p>}
-                              <button onClick={() => setIsContactModalOpen(true)} className="mt-4 w-full bg-brand-red text-white py-2 rounded-md hover:bg-brand-red-dark transition">Envoyer un message</button>
+                              <p className="text-gray-600 text-sm">{agent.email}</p>
+                              {phone && <p className="text-gray-600 text-sm mt-1">Tel: <a href={`tel:${phone}`} className="text-blue-600 hover:underline">{phone}</a></p>}
+                              <button onClick={() => setIsContactModalOpen(true)} className="mt-4 w-full bg-brand-red text-white py-2 rounded-md hover:bg-brand-red-dark transition">{t('propertyDetailsPage.sendMessage')}</button>
                           </div>
                       ) : (
-                          <p>Information de l'agent non disponible.</p>
+                          <p>{t('propertyDetailsPage.agentInfoNotAvailable')}</p>
                       )}
                   </div>
               </aside>

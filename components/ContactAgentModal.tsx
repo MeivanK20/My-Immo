@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import Modal from './common/Modal';
 import Input from './common/Input';
 import Button from './common/Button';
 import { Property, User, Message } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ContactAgentModalProps {
   isOpen: boolean;
@@ -15,19 +15,30 @@ interface ContactAgentModalProps {
 }
 
 const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, property, agent, onSendMessage, currentUser }) => {
+  const { t } = useLanguage();
+  
+  const getDefaultMessage = () => {
+    return t('contactAgentModal.defaultMessage', {
+      propertyTitle: property.title,
+      propertyLocation: `${property.neighborhood}, ${property.city}`
+    });
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    message: `Bonjour, je suis intéressé(e) par la propriété "${property.title}" située à ${property.neighborhood}, ${property.city}. Pourriez-vous me fournir plus d'informations ?`,
+    message: getDefaultMessage(),
   });
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
-      setFormData(prev => ({ ...prev, name: currentUser.name, email: currentUser.email }));
+      setFormData(prev => ({ ...prev, name: currentUser.name, email: currentUser.email, message: getDefaultMessage() }));
+    } else {
+       setFormData(prev => ({...prev, message: getDefaultMessage()}));
     }
-  }, [currentUser, isOpen]);
+  }, [currentUser, isOpen, property, t]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -54,17 +65,17 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Contacter ${agent.name}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('contactAgentModal.title', {agentName: agent.name})}>
       {submitted ? (
          <div className="text-center">
             <svg className="mx-auto h-12 w-12 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Message Envoyé !</h3>
-            <p className="mt-2 text-sm text-gray-600">L'agent a été notifié et vous répondra bientôt.</p>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">{t('contactAgentModal.messageSent')}</h3>
+            <p className="mt-2 text-sm text-gray-600">{t('contactAgentModal.messageSuccess')}</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-                label="Votre Nom"
+                label={t('contactAgentModal.yourName')}
                 name="name"
                 type="text"
                 value={formData.name}
@@ -72,7 +83,7 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
                 required
             />
             <Input
-                label="Votre Email"
+                label={t('contactAgentModal.yourEmail')}
                 name="email"
                 type="email"
                 value={formData.email}
@@ -80,7 +91,7 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
                 required
             />
              <Input
-                label="Votre Téléphone"
+                label={t('contactAgentModal.yourPhone')}
                 name="phone"
                 type="tel"
                 value={formData.phone}
@@ -88,7 +99,7 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
                 required
             />
             <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message</label>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700">{t('contactAgentModal.message')}</label>
                 <textarea
                     id="message"
                     name="message"
@@ -100,7 +111,7 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
                 />
             </div>
             <div className="pt-2">
-                <Button type="submit" className="w-full">Envoyer</Button>
+                <Button type="submit" className="w-full">{t('contactAgentModal.send')}</Button>
             </div>
         </form>
       )}

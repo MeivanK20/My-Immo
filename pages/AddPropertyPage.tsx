@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Property, User, NavigationFunction } from '../types';
 import { regions, locations } from '../data/locations';
 import Input from '../components/common/Input';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface AddPropertyPageProps {
   user: User;
@@ -13,6 +13,7 @@ interface AddPropertyPageProps {
 }
 
 const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, onNavigate }) => {
+  const { t } = useLanguage();
   const [propertyData, setPropertyData] = useState({
     title: '', description: '', price: '', type: 'rent', bedrooms: '',
     bathrooms: '', area: '', location: '', region: '', city: '', neighborhood: '', phone: ''
@@ -30,7 +31,8 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
       const filesArray = Array.from(e.target.files);
       setMediaFiles(prev => [...prev, ...filesArray]);
 
-      const newPreviews = filesArray.map(file => ({
+      // FIX: Explicitly type 'file' as File to resolve type inference issues.
+      const newPreviews = filesArray.map((file: File) => ({
           url: URL.createObjectURL(file),
           type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'
       }));
@@ -51,7 +53,7 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (mediaFiles.length === 0) {
-      alert("Veuillez téléverser au moins une image ou vidéo.");
+      alert(t('addPropertyPage.alertMinOneMedia'));
       return;
     }
     const newProperty = {
@@ -70,27 +72,27 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-3xl">
-      <h1 className="text-3xl font-bold text-brand-dark mb-6">Ajouter une nouvelle propriété</h1>
+      <h1 className="text-3xl font-bold text-brand-dark mb-6">{t('addPropertyPage.title')}</h1>
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-6">
-        <Input label="Titre de l'annonce" name="title" value={propertyData.title} onChange={handleChange} required />
+        <Input label={t('addPropertyPage.listingTitle')} name="title" value={propertyData.title} onChange={handleChange} required />
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+          <label htmlFor="description" className="block text-sm font-medium text-gray-700">{t('addPropertyPage.description')}</label>
           <textarea id="description" name="description" rows={4} value={propertyData.description} onChange={handleChange} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-red focus:border-brand-red sm:text-sm" required />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Images & Vidéos</label>
+          <label className="block text-sm font-medium text-gray-700">{t('addPropertyPage.media')}</label>
            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
             <div className="space-y-1 text-center">
               <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
               <div className="flex text-sm text-gray-600">
                 <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-brand-red hover:text-brand-red-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-red">
-                  <span>Téléverser des fichiers</span>
+                  <span>{t('addPropertyPage.uploadFiles')}</span>
                   <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*,video/mp4,video/quicktime" onChange={handleFileChange} />
                 </label>
-                <p className="pl-1">ou glissez-déposez</p>
+                <p className="pl-1">{t('addPropertyPage.dragAndDrop')}</p>
               </div>
-              <p className="text-xs text-gray-500">Images (PNG, JPG) & Vidéos (MP4, MOV)</p>
+              <p className="text-xs text-gray-500">{t('addPropertyPage.mediaHint')}</p>
             </div>
           </div>
             {mediaPreviews.length > 0 && (
@@ -110,30 +112,30 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input label="Prix (XAF)" name="price" type="number" value={propertyData.price} onChange={handleChange} required />
-          <Select label="Type d'annonce" name="type" value={propertyData.type} onChange={handleChange}>
-            <option value="rent">Location</option>
-            <option value="sale">Vente</option>
+          <Input label={t('addPropertyPage.price')} name="price" type="number" value={propertyData.price} onChange={handleChange} required />
+          <Select label={t('addPropertyPage.listingType')} name="type" value={propertyData.type} onChange={handleChange}>
+            <option value="rent">{t('addPropertyPage.rent')}</option>
+            <option value="sale">{t('addPropertyPage.sale')}</option>
           </Select>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Input label="Chambres" name="bedrooms" type="number" value={propertyData.bedrooms} onChange={handleChange} required />
-            <Input label="Salles de bain" name="bathrooms" type="number" value={propertyData.bathrooms} onChange={handleChange} required />
-            <Input label="Superficie (m²)" name="area" type="number" value={propertyData.area} onChange={handleChange} required />
+            <Input label={t('addPropertyPage.bedrooms')} name="bedrooms" type="number" value={propertyData.bedrooms} onChange={handleChange} required />
+            <Input label={t('addPropertyPage.bathrooms')} name="bathrooms" type="number" value={propertyData.bathrooms} onChange={handleChange} required />
+            <Input label={t('addPropertyPage.area')} name="area" type="number" value={propertyData.area} onChange={handleChange} required />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           <Select label="Région" name="region" value={propertyData.region} onChange={handleRegionChange} required><option value="">Sélectionner une région</option>{regions.map(r => <option key={r} value={r}>{r}</option>)}</Select>
-           <Select label="Ville" name="city" value={propertyData.city} onChange={handleCityChange} disabled={!propertyData.region} required><option value="">Sélectionner une ville</option>{propertyData.region && locations[propertyData.region as keyof typeof locations] && Object.keys(locations[propertyData.region as keyof typeof locations]).map(c => <option key={c} value={c}>{c}</option>)}</Select>
-           <Select label="Quartier" name="neighborhood" value={propertyData.neighborhood} onChange={handleChange} disabled={!propertyData.city} required><option value="">Sélectionner un quartier</option>{propertyData.city && locations[propertyData.region as keyof typeof locations]?.[propertyData.city as keyof any] && (locations[propertyData.region as keyof typeof locations] as any)[propertyData.city].map((n: string) => <option key={n} value={n}>{n}</option>)}</Select>
+           <Select label={t('addPropertyPage.region')} name="region" value={propertyData.region} onChange={handleRegionChange} required><option value="">{t('addPropertyPage.selectRegion')}</option>{regions.map(r => <option key={r} value={r}>{r}</option>)}</Select>
+           <Select label={t('addPropertyPage.city')} name="city" value={propertyData.city} onChange={handleCityChange} disabled={!propertyData.region} required><option value="">{t('addPropertyPage.selectCity')}</option>{propertyData.region && locations[propertyData.region as keyof typeof locations] && Object.keys(locations[propertyData.region as keyof typeof locations]).map(c => <option key={c} value={c}>{c}</option>)}</Select>
+           <Select label={t('addPropertyPage.neighborhood')} name="neighborhood" value={propertyData.neighborhood} onChange={handleChange} disabled={!propertyData.city} required><option value="">{t('addPropertyPage.selectNeighborhood')}</option>{propertyData.city && locations[propertyData.region as keyof typeof locations]?.[propertyData.city as keyof any] && (locations[propertyData.region as keyof typeof locations] as any)[propertyData.city].map((n: string) => <option key={n} value={n}>{n}</option>)}</Select>
         </div>
 
-        <Input label="Numéro de téléphone (Optionnel)" name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" />
+        <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" />
 
         <div className="flex justify-end gap-4 pt-4">
-            <Button type="button" variant="secondary" onClick={() => onNavigate('dashboard')}>Annuler</Button>
-            <Button type="submit">Ajouter la propriété</Button>
+            <Button type="button" variant="secondary" onClick={() => onNavigate('dashboard')}>{t('addPropertyPage.cancel')}</Button>
+            <Button type="submit">{t('addPropertyPage.addProperty')}</Button>
         </div>
       </form>
     </div>
