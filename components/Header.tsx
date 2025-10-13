@@ -39,6 +39,15 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
   const toggleLanguage = () => {
     setLocale(locale === 'fr' ? 'en' : 'fr');
   };
+  
+  const getUserRoleText = (role: User['role']) => {
+      switch(role) {
+          case 'admin': return t('header.userRoleAdmin');
+          case 'agent': return t('header.userRoleAgent');
+          case 'visitor': return t('header.userRoleVisitor');
+          default: return '';
+      }
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -68,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
             <div className="flex items-center space-x-3" ref={menuRef}>
                <div className="text-right">
                 <div className="font-semibold text-sm text-gray-800">{user.name}</div>
-                <div className="text-xs capitalize -mt-0.5 text-gray-500">{user.role === 'agent' ? t('header.userRoleAgent') : t('header.userRoleVisitor')}</div>
+                <div className="text-xs capitalize -mt-0.5 text-gray-500">{getUserRoleText(user.role)}</div>
               </div>
                <div className="relative">
                 <button 
@@ -81,7 +90,10 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
                 </button>
                 {isMenuOpen && (
                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-20 ring-1 ring-black ring-opacity-5">
-                    {user.role === 'agent' && (
+                    {user.role === 'admin' && (
+                      <button onClick={() => { onNavigate('adminDashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.adminDashboard')}</button>
+                    )}
+                    {(user.role === 'agent' || user.role === 'admin') && (
                       <button onClick={() => { onNavigate('dashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.dashboard')}</button>
                     )}
                     <button onClick={() => { onNavigate('profileSettings'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.profileSettings')}</button>

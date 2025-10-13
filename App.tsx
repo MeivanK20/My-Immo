@@ -3,6 +3,7 @@ import { Page, User, Property, Media, Message } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { useLanguage } from './contexts/LanguageContext';
+import { signInWithGoogle } from './services/authService';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -21,6 +22,7 @@ import RegisterPage from './pages/RegisterPage';
 import MessagesPage from './pages/MessagesPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -49,10 +51,52 @@ const App: React.FC = () => {
     const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (user) {
         setCurrentUser(user);
-        handleNavigate(user.role === 'agent' ? 'dashboard' : 'home');
+        if (user.role === 'admin') {
+            handleNavigate('adminDashboard');
+        } else if (user.role === 'agent') {
+            handleNavigate('dashboard');
+        } else {
+            handleNavigate('home');
+        }
         return user;
     }
     return null;
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    const firebaseUser = await signInWithGoogle();
+    setLoading(false);
+
+    if (firebaseUser && firebaseUser.email) {
+      let user = allUsers.find(u => u.email.toLowerCase() === firebaseUser.email!.toLowerCase());
+
+      if (!user) {
+        // User doesn't exist, create a new one (register)
+        const newUser: User = {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Google User',
+          email: firebaseUser.email,
+          role: 'visitor', // Default role for new Google sign-ups
+          profilePictureUrl: firebaseUser.photoURL || undefined,
+        };
+        setAllUsers(prev => [...prev, newUser]);
+        user = newUser;
+      }
+
+      // Log the user in
+      setCurrentUser(user);
+       if (user.role === 'admin') {
+            handleNavigate('adminDashboard');
+        } else if (user.role === 'agent') {
+            handleNavigate('dashboard');
+        } else {
+            handleNavigate('home');
+        }
+    } else {
+      // Handle failed Google login in the UI if needed, e.g., showing a toast message
+      console.log("Google login failed or was cancelled by the user.");
+    }
   };
 
   const handleRegister = (name: string, email: string, role: 'visitor' | 'agent'): User | null => {
@@ -108,6 +152,18 @@ const App: React.FC = () => {
     
     setProperties(prev => prev.filter(p => p.id !== id));
   };
+  
+  const handleDeleteUser = (uid: string) => {
+      if (currentUser?.uid === uid) {
+          alert("Vous ne pouvez pas supprimer votre propre compte admin.");
+          return;
+      }
+      if (!window.confirm(t('adminDashboardPage.deleteUserConfirm'))) return;
+
+      // Remove user and their properties
+      setAllUsers(prev => prev.filter(u => u.uid !== uid));
+      setProperties(prev => prev.filter(p => p.agentUid !== uid));
+  };
 
   const handleSendMessage = (messageData: Omit<Message, 'id' | 'timestamp'>) => {
     const newMessage: Message = {
@@ -142,29 +198,32 @@ const App: React.FC = () => {
         const agent = allUsers.find(u => u.uid === pageData.agentUid);
         return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} />;
       case 'dashboard':
-        if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
+        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
         const agentProperties = properties.filter(p => p.agentUid === currentUser.uid);
         const agentMessagesCount = messages.filter(m => m.agentUid === currentUser.uid).length;
         return <DashboardPage user={currentUser} properties={agentProperties} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} messageCount={agentMessagesCount} />;
        case 'addProperty':
-         if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
+         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
         return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} />;
        case 'editProperty':
-         if (!currentUser || currentUser.role !== 'agent' || currentUser.uid !== pageData.agentUid) { handleNavigate('home'); return null; }
+         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin') || (currentUser.role !== 'admin' && currentUser.uid !== pageData.agentUid)) { handleNavigate('home'); return null; }
          return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} />;
        case 'messages':
-          if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
+          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
           const myMessages = messages.filter(m => m.agentUid === currentUser.uid);
           return <MessagesPage messages={myMessages} />;
        case 'profileSettings':
           if (!currentUser) { handleNavigate('login'); return null; }
           return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
        case 'login':
-          return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
+          return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} onGoogleLogin={handleGoogleLogin} />;
        case 'register':
-          return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} />;
+          return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} onGoogleLogin={handleGoogleLogin} />;
        case 'registrationSuccess':
           return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
+       case 'adminDashboard':
+           if (!currentUser || currentUser.role !== 'admin') { handleNavigate('home'); return null; }
+           return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={handleNavigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;
        case 'termsOfUse': return <TermsOfUsePage />;

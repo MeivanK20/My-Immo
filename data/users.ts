@@ -2,6 +2,13 @@ import { User } from '../types';
 
 export const mockUsers: User[] = [
   {
+    uid: 'admin01',
+    name: 'Admin MyImmo',
+    email: 'admin@immo.cm',
+    role: 'admin',
+    profilePictureUrl: 'https://picsum.photos/seed/admin01/200'
+  },
+  {
     uid: 'agent01',
     name: 'Ivan Mbaye',
     email: 'ivan.mbaye@immo.cm',
