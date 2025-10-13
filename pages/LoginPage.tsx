@@ -61,6 +61,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
                     </Button>
                 </div>
             </form>
+            
             <p className="mt-6 text-center text-sm text-gray-600">
                 {t('loginPage.noAccount')}{' '}
                 <button onClick={() => onNavigate('register')} className="font-medium text-brand-red hover:text-brand-red-dark">

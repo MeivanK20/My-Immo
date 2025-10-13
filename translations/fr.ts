@@ -176,8 +176,6 @@ export const fr = {
     noAccount: 'Pas encore de compte ?',
     register: 'Inscrivez-vous',
     error: "Aucun compte trouvé avec cet email. Le mot de passe n'est pas vérifié dans cette démo.",
-    orContinueWith: 'Ou continuer avec',
-    signInWithGoogle: 'Se connecter avec Google',
   },
   registerPage: {
     title: 'Créez votre compte',
@@ -192,8 +190,6 @@ export const fr = {
     login: 'Connectez-vous',
     errorRequired: "Veuillez remplir tous les champs.",
     errorExists: 'Un compte avec cet email existe déjà.',
-    orContinueWith: 'Ou continuer avec',
-    signInWithGoogle: "S'inscrire avec Google",
   },
   contactAgentModal: {
     title: 'Contacter {{agentName}}',

@@ -3,7 +3,6 @@ import { Page, User, Property, Media, Message } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { useLanguage } from './contexts/LanguageContext';
-import { signInWithGoogle } from './services/authService';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -61,42 +60,6 @@ const App: React.FC = () => {
         return user;
     }
     return null;
-  };
-
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    const firebaseUser = await signInWithGoogle();
-    setLoading(false);
-
-    if (firebaseUser && firebaseUser.email) {
-      let user = allUsers.find(u => u.email.toLowerCase() === firebaseUser.email!.toLowerCase());
-
-      if (!user) {
-        // User doesn't exist, create a new one (register)
-        const newUser: User = {
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || 'Google User',
-          email: firebaseUser.email,
-          role: 'visitor', // Default role for new Google sign-ups
-          profilePictureUrl: firebaseUser.photoURL || undefined,
-        };
-        setAllUsers(prev => [...prev, newUser]);
-        user = newUser;
-      }
-
-      // Log the user in
-      setCurrentUser(user);
-       if (user.role === 'admin') {
-            handleNavigate('adminDashboard');
-        } else if (user.role === 'agent') {
-            handleNavigate('dashboard');
-        } else {
-            handleNavigate('home');
-        }
-    } else {
-      // Handle failed Google login in the UI if needed, e.g., showing a toast message
-      console.log("Google login failed or was cancelled by the user.");
-    }
   };
 
   const handleRegister = (name: string, email: string, role: 'visitor' | 'agent'): User | null => {
@@ -216,9 +179,9 @@ const App: React.FC = () => {
           if (!currentUser) { handleNavigate('login'); return null; }
           return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
        case 'login':
-          return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} onGoogleLogin={handleGoogleLogin} />;
+          return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
        case 'register':
-          return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} onGoogleLogin={handleGoogleLogin} />;
+          return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} />;
        case 'registrationSuccess':
           return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
        case 'adminDashboard':
