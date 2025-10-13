@@ -4,6 +4,27 @@ import { User, NavigationFunction } from '../types';
 import Button from './common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
 
+const FrFlag = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-auto rounded-sm" viewBox="0 0 900 600" aria-hidden="true">
+        <rect width="900" height="600" fill="#fff"/>
+        <rect width="300" height="600" fill="#002654"/>
+        <rect width="300" height="600" x="600" fill="#ed2939"/>
+    </svg>
+);
+
+const GbFlag = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-auto rounded-sm" viewBox="0 0 60 30" aria-hidden="true">
+        <clipPath id="gb-clip">
+            <path d="M0 0v30h60V0z"/>
+        </clipPath>
+        <path d="M0 0v30h60V0z" fill="#012169"/>
+        <path d="M0 0l60 30m0-30L0 30" stroke="#fff" strokeWidth="6"/>
+        <path d="M0 0l60 30m0-30L0 30" clipPath="url(#gb-clip)" stroke="#C8102E" strokeWidth="4"/>
+        <path d="M30 0v30M0 15h60" stroke="#fff" strokeWidth="10"/>
+        <path d="M30 0v30M0 15h60" stroke="#C8102E" strokeWidth="6"/>
+    </svg>
+);
+
 interface HeaderProps {
   user: User | null;
   onNavigate: NavigationFunction;
@@ -43,10 +64,6 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
           <button onClick={() => onNavigate('about')} className="hidden sm:block text-brand-gray hover:text-brand-red-dark transition duration-300">{t('header.about')}</button>
           <button onClick={() => onNavigate('contact')} className="hidden sm:block text-brand-gray hover:text-brand-red-dark transition duration-300">{t('header.contact')}</button>
           
-          <button onClick={toggleLanguage} className="hidden sm:block text-sm text-brand-gray hover:text-brand-red-dark font-semibold transition duration-300">
-            {locale === 'fr' ? 'English' : 'Français'}
-          </button>
-
           {user ? (
             <div className="flex items-center space-x-3" ref={menuRef}>
                <div className="text-right">
@@ -63,14 +80,15 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
                   <img src={user.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=f87171&color=fff`} alt="User avatar" className="h-10 w-10 rounded-full object-cover" />
                 </button>
                 {isMenuOpen && (
-                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 ring-1 ring-black ring-opacity-5">
+                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-20 ring-1 ring-black ring-opacity-5">
                     {user.role === 'agent' && (
                       <button onClick={() => { onNavigate('dashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.dashboard')}</button>
                     )}
                     <button onClick={() => { onNavigate('profileSettings'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.profileSettings')}</button>
                     <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.logout')}</button>
-                     <button onClick={() => { toggleLanguage(); setIsMenuOpen(false); }} className="sm:hidden block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        {locale === 'fr' ? 'Switch to English' : 'Passer au Français'}
+                     <button onClick={() => { toggleLanguage(); setIsMenuOpen(false); }} className="sm:hidden flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        {locale === 'fr' ? <GbFlag /> : <FrFlag />}
+                        <span>{locale === 'fr' ? 'Switch to English' : 'Passer au Français'}</span>
                      </button>
                   </div>
                 )}
@@ -82,6 +100,14 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
                 <Button onClick={() => onNavigate('register')} variant="primary">{t('header.register')}</Button>
             </div>
           )}
+
+          <button 
+            onClick={toggleLanguage} 
+            className="hidden sm:block p-1 rounded-full hover:bg-gray-100 transition duration-300"
+            aria-label={locale === 'fr' ? 'Switch to English' : 'Switch to French'}
+          >
+            {locale === 'fr' ? <GbFlag /> : <FrFlag />}
+          </button>
         </div>
       </nav>
     </header>
