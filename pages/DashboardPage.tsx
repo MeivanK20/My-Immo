@@ -19,9 +19,21 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
   };
 
   const myProperties = properties; // Properties are pre-filtered in App.tsx
+  const isFreePlan = user.role === 'agent' && user.subscriptionPlan === 'free';
+  const canAddProperty = !isFreePlan || myProperties.length < 1;
 
   return (
     <div className="container mx-auto px-6 py-8">
+      {isFreePlan && (
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md mb-6 flex justify-between items-center">
+          <div>
+            <p className="font-bold">{t('dashboardPage.upgradePrompt')}</p>
+            <p>{t('dashboardPage.freePlanLimit')}: 1 / 1</p>
+          </div>
+          <Button onClick={() => onNavigate('pricing')} variant="primary">{t('dashboardPage.upgradeNow')}</Button>
+        </div>
+      )}
+
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-brand-dark">{t('dashboardPage.title')}</h1>
         <div className="flex gap-4">
@@ -29,7 +41,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
             {t('dashboardPage.viewMessages')}
             {messageCount > 0 && <span className="absolute -top-2 -right-2 bg-brand-red text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{messageCount}</span>}
           </Button>
-          <Button onClick={() => onNavigate('addProperty')}>{t('dashboardPage.addProperty')}</Button>
+          <Button 
+            onClick={() => onNavigate(canAddProperty ? 'addProperty' : 'pricing')}
+            title={!canAddProperty ? t('dashboardPage.upgradePrompt') : ''}
+          >
+            {t('dashboardPage.addProperty')}
+          </Button>
         </div>
       </div>
       

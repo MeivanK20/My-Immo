@@ -1,10 +1,11 @@
-export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard';
+export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard' | 'pricing';
 
 export interface User {
   uid: string;
   name: string;
   email: string;
   role: 'visitor' | 'agent' | 'admin';
+  subscriptionPlan?: 'free' | 'premium';
   phone?: string;
   profilePictureUrl?: string;
 }

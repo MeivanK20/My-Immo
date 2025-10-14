@@ -126,6 +126,9 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
                     {(user.role === 'agent' || user.role === 'admin') && (
                       <button onClick={() => { onNavigate('dashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.dashboard')}</button>
                     )}
+                    {user.role === 'agent' && user.subscriptionPlan === 'free' && (
+                        <button onClick={() => { onNavigate('pricing'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm font-bold text-green-600 hover:bg-green-50">{t('header.upgradePlan')}</button>
+                    )}
                     <button onClick={() => { onNavigate('profileSettings'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.profileSettings')}</button>
                     <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('header.logout')}</button>
                      <button onClick={() => { toggleLanguage(); setIsMenuOpen(false); }} className="sm:hidden flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">

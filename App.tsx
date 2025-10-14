@@ -22,6 +22,7 @@ import MessagesPage from './pages/MessagesPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import PricingPage from './pages/PricingPage';
 
 const App: React.FC = () => {
   const [history, setHistory] = useState<{ page: Page; data: any; }[]>([{ page: 'home', data: null }]);
@@ -97,6 +98,9 @@ const App: React.FC = () => {
           email,
           role,
       };
+      if (role === 'agent') {
+        newUser.subscriptionPlan = 'free';
+      }
       setAllUsers(prev => [...prev, newUser]);
       handleNavigate('registrationSuccess', { email: newUser.email });
       return newUser;
@@ -175,6 +179,14 @@ const App: React.FC = () => {
       setCurrentUser(finalUser);
   };
 
+  const handleUpgradePlan = () => {
+    if (!currentUser) return;
+    const updatedUser = { ...currentUser, subscriptionPlan: 'premium' as const };
+    setCurrentUser(updatedUser);
+    setAllUsers(prev => prev.map(u => u.uid === currentUser.uid ? updatedUser : u));
+    handleNavigate('dashboard');
+  };
+
   const renderPage = () => {
     if (loading) {
       return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
@@ -192,6 +204,10 @@ const App: React.FC = () => {
         return <DashboardPage user={currentUser} properties={agentProperties} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} messageCount={agentMessagesCount} />;
        case 'addProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
+         if (currentUser.role === 'agent' && currentUser.subscriptionPlan === 'free' && properties.filter(p => p.agentUid === currentUser.uid).length >= 1) {
+             handleNavigate('pricing');
+             return null;
+         }
         return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} />;
        case 'editProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin') || (currentUser.role !== 'admin' && currentUser.uid !== pageData.agentUid)) { handleNavigate('home'); return null; }
@@ -212,6 +228,9 @@ const App: React.FC = () => {
        case 'adminDashboard':
            if (!currentUser || currentUser.role !== 'admin') { handleNavigate('home'); return null; }
            return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={handleNavigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
+       case 'pricing':
+          if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
+          return <PricingPage currentUser={currentUser} onUpgrade={handleUpgradePlan} />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;
        case 'termsOfUse': return <TermsOfUsePage />;
