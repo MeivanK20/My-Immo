@@ -1,13 +1,19 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Immo - Property Management</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind via CDN (ok pour tests, mais idéalement via npm) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -17,27 +23,24 @@
               sans: ['Montserrat', 'sans-serif'],
             },
             colors: {
-              'brand-red': '#dc2626', // Updated to a more professional red (Tailwind red-600)
-              'brand-red-dark': '#b91c1c', // Updated to a darker shade (Tailwind red-700)
+              'brand-red': '#dc2626',
+              'brand-red-dark': '#b91c1c',
               'brand-gray': '#4b5563',
               'brand-dark': '#1f2937',
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      };
     </script>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
-  }
-}
-</script>
-</head>
-  <body class="bg-gray-50">
+
+    <!-- ✅ Importmap supprimé -->
+    <!-- (Les imports React doivent venir du bundle Vite, pas du CDN) -->
+  </head>
+
+  <body class="bg-gray-50 font-sans text-brand-dark">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <!-- ✅ Le script principal -->
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+>
