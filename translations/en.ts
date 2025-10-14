@@ -13,6 +13,8 @@ export const en = {
     logout: 'Logout',
     login: 'Login',
     register: 'Sign Up',
+    goBack: 'Back',
+    goForward: 'Forward',
   },
   footer: {
     careers: 'Careers',

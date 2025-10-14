@@ -63,6 +63,30 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
+      {user && (
+        <div className="hidden lg:block">
+          <button
+            onClick={() => window.history.back()}
+            aria-label={t('header.goBack')}
+            title={t('header.goBack')}
+            className="fixed top-6 left-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => window.history.forward()}
+            aria-label={t('header.goForward')}
+            title={t('header.goForward')}
+            className="fixed top-6 right-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      )}
       <nav className="container mx-auto px-6 py-3 flex justify-between items-center">
         <div className="cursor-pointer" onClick={() => onNavigate('home')}>
           <Logo />
