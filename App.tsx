@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Page, User, Property, Media, Message } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
@@ -40,6 +40,19 @@ const App: React.FC = () => {
   const [dynamicLocations, setDynamicLocations] = useState(locations);
   const { t } = useLanguage();
 
+  useEffect(() => {
+    const savedUserJson = localStorage.getItem('currentUser');
+    if (savedUserJson) {
+      try {
+        const savedUser = JSON.parse(savedUserJson);
+        setCurrentUser(savedUser);
+      } catch (error) {
+        console.error("Failed to parse user from localStorage:", error);
+        localStorage.removeItem('currentUser');
+      }
+    }
+  }, []);
+
   const handleNavigate = (page: Page, data?: any, options?: { replace?: boolean }) => {
     if (options?.replace) {
       const newHistory = [...history];
@@ -77,6 +90,7 @@ const App: React.FC = () => {
   const canGoForward = historyIndex < history.length - 1;
 
   const handleLogout = () => {
+    localStorage.removeItem('currentUser');
     setCurrentUser(null);
     handleNavigate('home');
   };
@@ -85,12 +99,13 @@ const App: React.FC = () => {
     const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (user) {
         setCurrentUser(user);
+        localStorage.setItem('currentUser', JSON.stringify(user));
         if (user.role === 'admin') {
             handleNavigate('adminDashboard', undefined, { replace: true });
         } else if (user.role === 'agent') {
             handleNavigate('dashboard', undefined, { replace: true });
         } else {
-            handleNavigate('home', undefined, { replace: true });
+            handleNavigate('listings', undefined, { replace: true });
         }
         return user;
     }
