@@ -29,9 +29,13 @@ interface HeaderProps {
   user: User | null;
   onNavigate: NavigationFunction;
   onLogout: () => void;
+  onGoBack: () => void;
+  onGoForward: () => void;
+  canGoBack: boolean;
+  canGoForward: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, onGoForward, canGoBack, canGoForward }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { t, locale, setLocale } = useLanguage();
@@ -66,20 +70,22 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout }) => {
       {user && (
         <div className="hidden lg:block">
           <button
-            onClick={() => window.history.back()}
+            onClick={onGoBack}
+            disabled={!canGoBack}
             aria-label={t('header.goBack')}
             title={t('header.goBack')}
-            className="fixed top-6 left-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-colors"
+            className="fixed top-6 left-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <button
-            onClick={() => window.history.forward()}
+            onClick={onGoForward}
+            disabled={!canGoForward}
             aria-label={t('header.goForward')}
             title={t('header.goForward')}
-            className="fixed top-6 right-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-colors"
+            className="fixed top-6 right-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

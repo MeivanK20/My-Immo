@@ -24,8 +24,10 @@ import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
-  const [pageData, setPageData] = useState<any>(null);
+  const [history, setHistory] = useState<{ page: Page; data: any; }[]>([{ page: 'home', data: null }]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const { page: currentPage, data: pageData } = history[historyIndex];
 
   const [properties, setProperties] = useState<Property[]>(mockProperties);
   const [allUsers, setAllUsers] = useState<User[]>(mockUsers);
@@ -36,11 +38,34 @@ const App: React.FC = () => {
   const { t } = useLanguage();
 
   const handleNavigate = (page: Page, data?: any) => {
-    setCurrentPage(page);
-    setPageData(data);
+    const newHistory = history.slice(0, historyIndex + 1);
+    
+    const lastEntry = newHistory[newHistory.length - 1];
+    if (lastEntry.page === page && JSON.stringify(lastEntry.data) === JSON.stringify(data)) {
+        return;
+    }
+
+    newHistory.push({ page, data });
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
     window.scrollTo(0, 0);
   };
   
+  const handleGoBack = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(prevIndex => prevIndex - 1);
+    }
+  };
+
+  const handleGoForward = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(prevIndex => prevIndex + 1);
+    }
+  };
+
+  const canGoBack = historyIndex > 0;
+  const canGoForward = historyIndex < history.length - 1;
+
   const handleLogout = () => {
     setCurrentUser(null);
     handleNavigate('home');
@@ -202,6 +227,10 @@ const App: React.FC = () => {
           user={currentUser} 
           onNavigate={handleNavigate} 
           onLogout={handleLogout}
+          onGoBack={handleGoBack}
+          onGoForward={handleGoForward}
+          canGoBack={canGoBack}
+          canGoForward={canGoForward}
         />
         <main className="flex-grow">{renderPage()}</main>
         <Footer onNavigate={handleNavigate} />
