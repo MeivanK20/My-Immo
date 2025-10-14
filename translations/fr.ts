@@ -120,6 +120,11 @@ export const fr = {
     cancel: 'Annuler',
     addProperty: 'Ajouter la propriété',
     alertMinOneMedia: "Veuillez téléverser au moins une image ou vidéo.",
+    add: 'Ajouter',
+    addNewCity: 'Ajouter une nouvelle ville',
+    cityName: 'Nom de la ville',
+    addNewNeighborhood: 'Ajouter un nouveau quartier',
+    neighborhoodName: 'Nom du quartier',
   },
   editPropertyPage: {
     title: 'Modifier la propriété',

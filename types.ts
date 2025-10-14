@@ -36,6 +36,9 @@ export interface Property {
 // FIX: Changed 'interface' to 'type' for correct function type definition.
 export type NavigationFunction = (page: Page, data?: any) => void;
 
+export type AddCityFunction = (region: string, cityName: string) => void;
+export type AddNeighborhoodFunction = (region: string, city: string, neighborhoodName: string) => void;
+
 export interface Message {
   id: string;
   propertyId: string;
@@ -46,4 +49,5 @@ export interface Message {
   visitorPhone: string;
   message: string;
   timestamp: Date;
+}  timestamp: Date;
 }

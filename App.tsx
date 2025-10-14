@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Page, User, Property, Media, Message } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
+import { locations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
 
 import Header from './components/Header';
@@ -36,6 +37,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchFilters, setSearchFilters] = useState({});
+  const [dynamicLocations, setDynamicLocations] = useState(locations);
   const { t } = useLanguage();
 
   const handleNavigate = (page: Page, data?: any) => {
@@ -60,7 +62,7 @@ const App: React.FC = () => {
 
   const handleGoForward = () => {
     if (historyIndex < history.length - 1) {
-      setHistoryIndex(prevIndex => prevIndex + 1);
+      setHistoryIndex(prevIndex => prevIndex - 1);
     }
   };
 
@@ -187,6 +189,32 @@ const App: React.FC = () => {
     handleNavigate('dashboard');
   };
 
+  const handleAddCity = (regionName: string, cityName: string) => {
+    if (!regionName || !cityName.trim()) return;
+    const trimmedCityName = cityName.trim();
+    setDynamicLocations(prev => {
+        const newLocations = JSON.parse(JSON.stringify(prev));
+        const region = newLocations[regionName as keyof typeof newLocations];
+        if (region && !region.hasOwnProperty(trimmedCityName)) {
+            region[trimmedCityName] = [];
+        }
+        return newLocations;
+    });
+  };
+
+  const handleAddNeighborhood = (regionName: string, cityName: string, neighborhoodName: string) => {
+    if (!regionName || !cityName || !neighborhoodName.trim()) return;
+    const trimmedNeighborhoodName = neighborhoodName.trim();
+    setDynamicLocations(prev => {
+        const newLocations = JSON.parse(JSON.stringify(prev));
+        const city = newLocations[regionName as keyof typeof newLocations]?.[cityName];
+        if (city && !city.includes(trimmedNeighborhoodName)) {
+            city.push(trimmedNeighborhoodName);
+        }
+        return newLocations;
+    });
+  };
+
   const renderPage = () => {
     if (loading) {
       return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
@@ -208,10 +236,10 @@ const App: React.FC = () => {
              handleNavigate('pricing');
              return null;
          }
-        return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} />;
+        return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={dynamicLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
        case 'editProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin') || (currentUser.role !== 'admin' && currentUser.uid !== pageData.agentUid)) { handleNavigate('home'); return null; }
-         return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} />;
+         return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} locations={dynamicLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
        case 'messages':
           if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
           const myMessages = messages.filter(m => m.agentUid === currentUser.uid);

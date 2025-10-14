@@ -120,6 +120,11 @@ export const en = {
     cancel: 'Cancel',
     addProperty: 'Add Property',
     alertMinOneMedia: "Please upload at least one image or video.",
+    add: 'Add',
+    addNewCity: 'Add a new city',
+    cityName: 'City Name',
+    addNewNeighborhood: 'Add a new neighborhood',
+    neighborhoodName: 'Neighborhood Name',
   },
   editPropertyPage: {
     title: 'Edit Property',
