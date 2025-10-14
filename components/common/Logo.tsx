@@ -11,10 +11,10 @@ const Logo: React.FC = () => {
         {/* Right pillar of the 'M' */}
         <path d="M85 90 V 30 L 65 20 V 90 H 85 Z" fill="#4b5563" />
         {/* Center 'V' shape representing a roof */}
-        <path d="M50 10 L 35 20 L 50 30 L 65 20 L 50 10 Z" fill="#ef4444" />
+        <path d="M50 10 L 35 20 L 50 30 L 65 20 L 50 10 Z" fill="#dc2626" />
       </svg>
       <div className="text-center leading-none">
-        <span className="text-xl font-serif text-brand-dark">My Immo</span>
+        <span className="text-xl font-sans text-brand-dark">My Immo</span>
         <p className="text-xs tracking-widest text-brand-gray">{t('logo.subtext')}</p>
       </div>
     </div>

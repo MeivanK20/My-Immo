@@ -5,14 +5,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Immo - Property Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Montserrat', 'sans-serif'],
+            },
             colors: {
-              'brand-red': '#f87171', // a slightly lighter red for better contrast
-              'brand-red-dark': '#ef4444',
+              'brand-red': '#dc2626', // Updated to a more professional red (Tailwind red-600)
+              'brand-red-dark': '#b91c1c', // Updated to a darker shade (Tailwind red-700)
               'brand-gray': '#4b5563',
               'brand-dark': '#1f2937',
             }
@@ -29,7 +35,6 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body class="bg-gray-50">
     <div id="root"></div>
