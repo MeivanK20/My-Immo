@@ -267,4 +267,17 @@ export const fr = {
     upgradeSuccess: 'Mise à niveau réussie !',
     upgradeSuccessMessage: 'Vous êtes maintenant abonné au plan Premium. Profitez de toutes les fonctionnalités !',
   },
+  paymentPage: {
+    title: 'Finaliser votre Paiement',
+    subtitle: 'Sécurisez votre plan Premium et débloquez toutes les fonctionnalités.',
+    billedMonthly: 'Facturé mensuellement',
+    selectMethod: 'Choisissez un mode de paiement',
+    creditCard: 'Carte Bancaire',
+    orangeMoney: 'Orange Money',
+    mtnMobileMoney: 'MTN Mobile Money',
+    goBack: 'Retour',
+    payNow: 'Payer',
+    processingTitle: 'Traitement de votre paiement...',
+    processingSubtitle: 'Veuillez patienter, nous finalisons votre abonnement.',
+  },
 };

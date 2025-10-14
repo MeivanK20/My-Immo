@@ -24,6 +24,7 @@ import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import PricingPage from './pages/PricingPage';
+import PaymentPage from './pages/PaymentPage';
 
 const App: React.FC = () => {
   const [history, setHistory] = useState<{ page: Page; data: any; }[]>([{ page: 'home', data: null }]);
@@ -280,7 +281,10 @@ const App: React.FC = () => {
            return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={handleNavigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
        case 'pricing':
           if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
-          return <PricingPage currentUser={currentUser} onUpgrade={handleUpgradePlan} />;
+          return <PricingPage currentUser={currentUser} onNavigateToPayment={() => handleNavigate('payment')} />;
+       case 'payment':
+          if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
+          return <PaymentPage onSuccessfulPayment={handleUpgradePlan} onNavigate={handleNavigate} />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;
        case 'termsOfUse': return <TermsOfUsePage />;

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { User } from '../types';
+import React from 'react';
+import { User, NavigationFunction } from '../types';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface PricingPageProps {
   currentUser: User;
-  onUpgrade: () => void;
+  onNavigateToPayment: () => void;
 }
 
 const CheckIcon = () => (
@@ -15,13 +15,11 @@ const CheckIcon = () => (
 );
 
 
-const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onUpgrade }) => {
+const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPayment }) => {
   const { t } = useLanguage();
-  const [upgraded, setUpgraded] = useState(false);
 
   const handleUpgradeClick = () => {
-    onUpgrade();
-    setUpgraded(true);
+    onNavigateToPayment();
   };
 
   const PlanCard: React.FC<{
@@ -54,20 +52,6 @@ const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onUpgrade }) => 
     </div>
   );
 
-  if (upgraded) {
-    return (
-      <div className="container mx-auto px-6 py-12 text-center">
-        <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
-          <svg className="mx-auto h-16 w-16 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h2 className="mt-4 text-2xl font-bold text-brand-dark">{t('pricingPage.upgradeSuccess')}</h2>
-          <p className="mt-2 text-gray-600">{t('pricingPage.upgradeSuccessMessage')}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="text-center mb-12">
@@ -98,4 +82,4 @@ const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onUpgrade }) => 
   );
 };
 
-export default PricingPage
+export default PricingPage;
