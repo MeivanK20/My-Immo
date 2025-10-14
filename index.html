@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Immo - Property Management</title>
 
-    <!-- Google Fonts -->
+    <!-- Police -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -13,34 +13,29 @@
       rel="stylesheet"
     />
 
-    <!-- Tailwind via CDN (ok pour tests, mais idéalement via npm) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Montserrat', 'sans-serif'],
+              sans: ["Montserrat", "sans-serif"],
             },
             colors: {
-              'brand-red': '#dc2626',
-              'brand-red-dark': '#b91c1c',
-              'brand-gray': '#4b5563',
-              'brand-dark': '#1f2937',
+              "brand-red": "#dc2626",
+              "brand-red-dark": "#b91c1c",
+              "brand-gray": "#4b5563",
+              "brand-dark": "#1f2937",
             },
           },
         },
       };
     </script>
-
-    <!-- ✅ Importmap supprimé -->
-    <!-- (Les imports React doivent venir du bundle Vite, pas du CDN) -->
   </head>
 
-  <body class="bg-gray-50 font-sans text-brand-dark">
+  <body class="bg-gray-50">
     <div id="root"></div>
-    <!-- ✅ Le script principal -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
->
