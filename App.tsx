@@ -40,17 +40,24 @@ const App: React.FC = () => {
   const [dynamicLocations, setDynamicLocations] = useState(locations);
   const { t } = useLanguage();
 
-  const handleNavigate = (page: Page, data?: any) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    
-    const lastEntry = newHistory[newHistory.length - 1];
-    if (lastEntry.page === page && JSON.stringify(lastEntry.data) === JSON.stringify(data)) {
-        return;
+  const handleNavigate = (page: Page, data?: any, options?: { replace?: boolean }) => {
+    if (options?.replace) {
+      const newHistory = [...history];
+      newHistory[historyIndex] = { page, data };
+      const finalHistory = newHistory.slice(0, historyIndex + 1);
+      setHistory(finalHistory);
+    } else {
+      const currentHistory = history.slice(0, historyIndex + 1);
+      
+      const lastEntry = currentHistory[currentHistory.length - 1];
+      if (lastEntry.page === page && JSON.stringify(lastEntry.data) === JSON.stringify(data)) {
+          return;
+      }
+  
+      currentHistory.push({ page, data });
+      setHistory(currentHistory);
+      setHistoryIndex(currentHistory.length - 1);
     }
-
-    newHistory.push({ page, data });
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
     window.scrollTo(0, 0);
   };
   
@@ -62,7 +69,7 @@ const App: React.FC = () => {
 
   const handleGoForward = () => {
     if (historyIndex < history.length - 1) {
-      setHistoryIndex(prevIndex => prevIndex - 1);
+      setHistoryIndex(prevIndex => prevIndex + 1);
     }
   };
 
@@ -79,11 +86,11 @@ const App: React.FC = () => {
     if (user) {
         setCurrentUser(user);
         if (user.role === 'admin') {
-            handleNavigate('adminDashboard');
+            handleNavigate('adminDashboard', undefined, { replace: true });
         } else if (user.role === 'agent') {
-            handleNavigate('dashboard');
+            handleNavigate('dashboard', undefined, { replace: true });
         } else {
-            handleNavigate('home');
+            handleNavigate('home', undefined, { replace: true });
         }
         return user;
     }
