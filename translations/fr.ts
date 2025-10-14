@@ -220,6 +220,8 @@ export const fr = {
   },
   adminDashboardPage: {
     title: "Panneau d'Administration",
+    usersTab: 'Gestion des Utilisateurs',
+    propertiesTab: 'Gestion des Annonces',
     userManagement: 'Gestion des Utilisateurs',
     propertyManagement: 'Gestion des Annonces',
     tableName: 'Nom',

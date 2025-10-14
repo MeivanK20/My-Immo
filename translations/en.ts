@@ -221,6 +221,8 @@ export const en = {
   },
   adminDashboardPage: {
     title: 'Administration Panel',
+    usersTab: 'User Management',
+    propertiesTab: 'Property Management',
     userManagement: 'User Management',
     propertyManagement: 'Property Management',
     tableName: 'Name',
