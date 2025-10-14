@@ -21,6 +21,15 @@
               'brand-red-dark': '#b30020', // Darker shade for hover effects
               'brand-gray': '#4b5563',
               'brand-dark': '#1f2937',
+            },
+            keyframes: {
+              'fade-in': {
+                '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            },
+            animation: {
+              'fade-in': 'fade-in 0.3s ease-out forwards',
             }
           }
         }

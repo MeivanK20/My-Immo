@@ -280,5 +280,8 @@ export const en = {
     payNow: 'Pay Now',
     processingTitle: 'Processing your payment...',
     processingSubtitle: 'Please wait while we finalize your subscription.',
+    phoneNumberLabel: 'Phone Number',
+    momoDescription: 'You will receive a payment confirmation request on this number.',
+    phoneRequiredError: 'Please enter a valid phone number for this payment method.',
   },
 };

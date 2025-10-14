@@ -279,5 +279,8 @@ export const fr = {
     payNow: 'Payer',
     processingTitle: 'Traitement de votre paiement...',
     processingSubtitle: 'Veuillez patienter, nous finalisons votre abonnement.',
+    phoneNumberLabel: 'Numéro de téléphone',
+    momoDescription: 'Vous recevrez une demande de confirmation de paiement sur ce numéro.',
+    phoneRequiredError: 'Veuillez entrer un numéro de téléphone valide pour ce mode de paiement.',
   },
 };
