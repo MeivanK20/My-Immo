@@ -12,8 +12,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="bg-brand-dark text-white mt-16">
       <div className="container mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center">
-        <div className="mb-6 md:mb-0 cursor-pointer" onClick={() => onNavigate('home')}>
-          <Logo />
+        <div className="mb-6 md:mb-0 text-center cursor-pointer" onClick={() => onNavigate('home')}>
+          <Logo variant="dark" />
+          <p className="text-gray-400 text-sm mt-2 tracking-widest">MEIK20</p>
         </div>
         <div className="flex flex-col md:flex-row text-center md:text-left">
           <div className="mb-6 md:mb-0 md:mr-12">
