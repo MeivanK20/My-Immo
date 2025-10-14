@@ -55,10 +55,10 @@ const App: React.FC = () => {
 
   const handleNavigate = (page: Page, data?: any, options?: { replace?: boolean }) => {
     if (options?.replace) {
-      const newHistory = [...history];
-      newHistory[historyIndex] = { page, data };
-      const finalHistory = newHistory.slice(0, historyIndex + 1);
-      setHistory(finalHistory);
+      // This resets the history stack, making the new page the "zero" page.
+      const newHistory = [{ page, data }];
+      setHistory(newHistory);
+      setHistoryIndex(0);
     } else {
       const currentHistory = history.slice(0, historyIndex + 1);
       
