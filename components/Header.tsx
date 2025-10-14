@@ -74,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
             disabled={!canGoBack}
             aria-label={t('header.goBack')}
             title={t('header.goBack')}
-            className="fixed top-6 left-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="fixed top-6 left-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -85,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
             disabled={!canGoForward}
             aria-label={t('header.goForward')}
             title={t('header.goForward')}
-            className="fixed top-6 right-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="fixed top-6 right-4 z-[51] bg-white/70 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-red transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -97,11 +97,11 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
         <div className="cursor-pointer" onClick={() => onNavigate('home')}>
           <Logo />
         </div>
-        <div className="flex items-center space-x-4">
-          <button onClick={() => onNavigate('home')} className="hidden sm:block text-brand-gray hover:text-brand-red-dark transition duration-300">{t('header.home')}</button>
-          <button onClick={() => onNavigate('listings')} className="hidden sm:block text-brand-gray hover:text-brand-red-dark transition duration-300">{t('header.listings')}</button>
-          <button onClick={() => onNavigate('about')} className="hidden sm:block text-brand-gray hover:text-brand-red-dark transition duration-300">{t('header.about')}</button>
-          <button onClick={() => onNavigate('contact')} className="hidden sm:block text-brand-gray hover:text-brand-red-dark transition duration-300">{t('header.contact')}</button>
+        <div className="flex items-center space-x-2">
+          <button onClick={() => onNavigate('home')} className="hidden sm:block text-brand-gray hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors duration-300">{t('header.home')}</button>
+          <button onClick={() => onNavigate('listings')} className="hidden sm:block text-brand-gray hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors duration-300">{t('header.listings')}</button>
+          <button onClick={() => onNavigate('about')} className="hidden sm:block text-brand-gray hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors duration-300">{t('header.about')}</button>
+          <button onClick={() => onNavigate('contact')} className="hidden sm:block text-brand-gray hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors duration-300">{t('header.contact')}</button>
           
           {user ? (
             <div className="flex items-center space-x-3" ref={menuRef}>
@@ -141,7 +141,7 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
             </div>
           ) : (
             <div className="space-x-2 flex items-center">
-                <button onClick={() => onNavigate('login')} className="text-brand-gray hover:text-brand-red-dark transition duration-300 px-3 py-2">{t('header.login')}</button>
+                <button onClick={() => onNavigate('login')} className="text-brand-gray hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors duration-300">{t('header.login')}</button>
                 <Button onClick={() => onNavigate('register')} variant="primary">{t('header.register')}</Button>
             </div>
           )}

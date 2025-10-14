@@ -19,16 +19,16 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="mb-6 md:mb-0 md:mr-12">
             <h3 className="font-bold mb-2">My Immo</h3>
             <ul>
-              <li><button onClick={() => onNavigate('about')} className="hover:text-brand-red-dark transition">{t('header.about')}</button></li>
-              <li><button onClick={() => onNavigate('contact')} className="hover:text-brand-red-dark transition">{t('header.contact')}</button></li>
-              <li><a href="#" className="hover:text-brand-red-dark transition">{t('footer.careers')}</a></li>
+              <li><button onClick={() => onNavigate('about')} className="hover:underline transition">{t('header.about')}</button></li>
+              <li><button onClick={() => onNavigate('contact')} className="hover:underline transition">{t('header.contact')}</button></li>
+              <li><a href="#" className="hover:underline transition">{t('footer.careers')}</a></li>
             </ul>
           </div>
           <div>
             <h3 className="font-bold mb-2">{t('footer.legal')}</h3>
             <ul>
-              <li><button onClick={() => onNavigate('termsOfUse')} className="hover:text-brand-red-dark transition">{t('footer.terms')}</button></li>
-              <li><button onClick={() => onNavigate('privacyPolicy')} className="hover:text-brand-red-dark transition">{t('footer.privacy')}</button></li>
+              <li><button onClick={() => onNavigate('termsOfUse')} className="hover:underline transition">{t('footer.terms')}</button></li>
+              <li><button onClick={() => onNavigate('privacyPolicy')} className="hover:underline transition">{t('footer.privacy')}</button></li>
             </ul>
           </div>
         </div>
