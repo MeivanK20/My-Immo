@@ -35,7 +35,7 @@ const AboutPage: React.FC = () => {
              <div className="w-24 h-1 bg-brand-red mx-auto mb-10"></div>
             <div className="max-w-md mx-auto bg-brand-card rounded-lg shadow-lg p-8 transform hover:scale-105 transition-transform duration-300">
                 <img 
-                    src="https://picsum.photos/seed/ceo/400/400" 
+                    src="https://drive.google.com/file/d/1ZpRmTfHnDNEKFrRqZKJWHcaBVitURk1X/view?usp=sharing" 
                     alt="Ivan MBAYE, CEO of My Immo"
                     className="w-40 h-40 rounded-full mx-auto mb-4 border-4 border-brand-red"
                 />
