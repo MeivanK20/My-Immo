@@ -54,19 +54,19 @@ const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, 
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-2xl">
-      <h1 className="text-3xl font-bold text-brand-dark mb-6">{t('profileSettingsPage.title')}</h1>
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-6">
+      <h1 className="text-3xl font-bold text-white mb-6">{t('profileSettingsPage.title')}</h1>
+      <form onSubmit={handleSubmit} className="bg-brand-card p-8 rounded-lg shadow-lg space-y-6">
         {success && (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert">
+          <div className="bg-green-500/20 border-l-4 border-green-400 text-green-200 p-4" role="alert">
             <p>{t('profileSettingsPage.successMessage')}</p>
           </div>
         )}
         <div className="flex flex-col items-center space-y-4">
           <label htmlFor="profile-picture-upload" className="cursor-pointer group relative">
             <img 
-              src={preview || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=f87171&color=fff&size=128`} 
+              src={preview || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=ef4444&color=fff&size=128`} 
               alt="Profile" 
-              className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 group-hover:border-brand-red transition-colors"
+              className="w-32 h-32 rounded-full object-cover border-4 border-brand-dark group-hover:border-brand-red transition-colors"
             />
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center transition-opacity">
               <span className="text-white text-sm opacity-0 group-hover:opacity-100">{t('profileSettingsPage.uploadHint')}</span>
@@ -94,7 +94,6 @@ const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, 
           type="email" 
           value={formData.email} 
           disabled 
-          className="bg-gray-100"
         />
         <Input 
           label={t('profileSettingsPage.phone')} 

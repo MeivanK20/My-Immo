@@ -104,21 +104,21 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
   return (
     <>
       <div className="container mx-auto px-6 py-8 max-w-3xl">
-        <h1 className="text-3xl font-bold text-brand-dark mb-6">{t('editPropertyPage.title')}</h1>
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-6">
+        <h1 className="text-3xl font-bold text-white mb-6">{t('editPropertyPage.title')}</h1>
+        <form onSubmit={handleSubmit} className="bg-brand-card p-8 rounded-lg shadow-lg space-y-6">
           <Input label={t('addPropertyPage.listingTitle')} name="title" value={propertyData.title} onChange={handleChange} required />
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">{t('addPropertyPage.description')}</label>
-            <textarea id="description" name="description" rows={4} value={propertyData.description} onChange={handleChange} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-red focus:border-brand-red sm:text-sm" required />
+            <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">{t('addPropertyPage.description')}</label>
+            <textarea id="description" name="description" rows={4} value={propertyData.description} onChange={handleChange} className="mt-1 block w-full px-4 py-2 bg-brand-dark border border-brand-card rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent sm:text-sm text-white" required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">{t('addPropertyPage.media')}</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+            <label className="block text-sm font-medium text-gray-300 mb-1">{t('addPropertyPage.media')}</label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-brand-dark hover:border-brand-red/50 border-dashed rounded-md transition-colors">
               <div className="space-y-1 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <div className="flex text-sm text-gray-600">
-                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-brand-red hover:text-brand-red-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-red"><span>{t('editPropertyPage.addFiles')}</span><input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*,video/mp4,video/quicktime" onChange={handleFileChange} /></label>
+                <svg className="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <div className="flex text-sm text-gray-400">
+                  <label htmlFor="file-upload" className="relative cursor-pointer bg-brand-card rounded-md font-medium text-brand-red hover:text-brand-red-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-brand-dark focus-within:ring-brand-red"><span>{t('editPropertyPage.addFiles')}</span><input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*,video/mp4,video/quicktime" onChange={handleFileChange} /></label>
                 </div>
                 <p className="text-xs text-gray-500">{t('editPropertyPage.addMediaHint')}</p>
               </div>
@@ -162,7 +162,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
                       {propertyData.region && locations[propertyData.region] && Object.keys(locations[propertyData.region]).map(c => <option key={c} value={c}>{c}</option>)}
                   </Select>
                 </div>
-                <button type="button" onClick={() => setAddCityModalOpen(true)} disabled={!propertyData.region} className="h-10 w-10 flex-shrink-0 bg-gray-200 text-brand-gray hover:bg-gray-300 rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed font-mono text-xl" title={t('addPropertyPage.addNewCity')}>+</button>
+                <button type="button" onClick={() => setAddCityModalOpen(true)} disabled={!propertyData.region} className="h-11 w-10 flex-shrink-0 bg-brand-dark/50 text-brand-gray hover:bg-brand-dark rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed font-mono text-xl" title={t('addPropertyPage.addNewCity')}>+</button>
               </div>
 
               <div className="flex items-end gap-2">
@@ -172,13 +172,13 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
                       {propertyData.city && locations[propertyData.region]?.[propertyData.city] && (locations[propertyData.region])[propertyData.city].map((n: string) => <option key={n} value={n}>{n}</option>)}
                   </Select>
                 </div>
-                <button type="button" onClick={() => setAddNeighborhoodModalOpen(true)} disabled={!propertyData.city} className="h-10 w-10 flex-shrink-0 bg-gray-200 text-brand-gray hover:bg-gray-300 rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed font-mono text-xl" title={t('addPropertyPage.addNewNeighborhood')}>+</button>
+                <button type="button" onClick={() => setAddNeighborhoodModalOpen(true)} disabled={!propertyData.city} className="h-11 w-10 flex-shrink-0 bg-brand-dark/50 text-brand-gray hover:bg-brand-dark rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed font-mono text-xl" title={t('addPropertyPage.addNewNeighborhood')}>+</button>
               </div>
           </div>
 
-          <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" />
+          <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone || ''} onChange={handleChange} placeholder="6XX XXX XXX" />
 
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="secondary" onClick={() => onNavigate('dashboard')}>{t('addPropertyPage.cancel')}</Button>
               <Button type="submit">{t('editPropertyPage.saveChanges')}</Button>
           </div>
@@ -187,7 +187,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
 
       <Modal isOpen={isAddCityModalOpen} onClose={() => setAddCityModalOpen(false)} title={t('addPropertyPage.addNewCity')}>
           <div className="space-y-4">
-              <p>{t('addPropertyPage.region')}: <span className="font-semibold">{propertyData.region}</span></p>
+              <p className="text-gray-300">{t('addPropertyPage.region')}: <span className="font-semibold text-white">{propertyData.region}</span></p>
               <Input label={t('addPropertyPage.cityName')} value={newCityName} onChange={(e) => setNewCityName(e.target.value)} placeholder={t('addPropertyPage.cityName')} />
               <div className="flex justify-end gap-4 pt-2">
                   <Button type="button" variant="secondary" onClick={() => setAddCityModalOpen(false)}>{t('addPropertyPage.cancel')}</Button>
@@ -197,7 +197,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
       </Modal>
       <Modal isOpen={isAddNeighborhoodModalOpen} onClose={() => setAddNeighborhoodModalOpen(false)} title={t('addPropertyPage.addNewNeighborhood')}>
           <div className="space-y-4">
-              <p>{t('addPropertyPage.city')}: <span className="font-semibold">{propertyData.city}</span></p>
+              <p className="text-gray-300">{t('addPropertyPage.city')}: <span className="font-semibold text-white">{propertyData.city}</span></p>
               <Input label={t('addPropertyPage.neighborhoodName')} value={newNeighborhoodName} onChange={(e) => setNewNeighborhoodName(e.target.value)} placeholder={t('addPropertyPage.neighborhoodName')} />
               <div className="flex justify-end gap-4 pt-2">
                   <Button type="button" variant="secondary" onClick={() => setAddNeighborhoodModalOpen(false)}>{t('addPropertyPage.cancel')}</Button>

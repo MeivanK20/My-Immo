@@ -17,19 +17,24 @@
               sans: ['Poppins', 'sans-serif'],
             },
             colors: {
-              'brand-red': '#d40026', // Updated to match residenceetudiante.fr
-              'brand-red-dark': '#b30020', // Darker shade for hover effects
-              'brand-gray': '#4b5563',
-              'brand-dark': '#1f2937',
+              'brand-red': '#ef4444', // Brighter red for dark theme
+              'brand-red-dark': '#dc2626', // Darker shade for hover
+              'brand-gray': '#9ca3af', // gray-400
+              'brand-card': '#1f2937', // gray-800 for card backgrounds
+              'brand-dark': '#111827', // gray-900 for body background
             },
             keyframes: {
-              'fade-in': {
-                '0%': { opacity: '0', transform: 'translateY(-10px)' },
+              'fade-in-up': {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
               }
             },
             animation: {
-              'fade-in': 'fade-in 0.3s ease-out forwards',
+              'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
+            },
+            boxShadow: {
+              'glow-red': '0 0 15px 0 rgba(239, 68, 68, 0.4)',
+              'glow-white': '0 0 15px 0 rgba(255, 255, 255, 0.1)',
             }
           }
         }
@@ -45,7 +50,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-50">
+  <body class="bg-brand-dark text-gray-200">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

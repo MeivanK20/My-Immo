@@ -56,12 +56,12 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
   }, [properties, filters]);
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className="container mx-auto px-6 py-12">
       <div className="lg:flex gap-8">
         {/* Filters Sidebar */}
         <aside className="w-full lg:w-1/4 mb-8 lg:mb-0">
-          <div className="bg-white p-6 rounded-lg shadow-md sticky top-24">
-            <h3 className="text-xl font-bold mb-4 text-brand-dark">{t('listingsPage.filters')}</h3>
+          <div className="bg-brand-card p-6 rounded-lg shadow-lg sticky top-28">
+            <h3 className="text-xl font-bold mb-4 text-white">{t('listingsPage.filters')}</h3>
             <div className="space-y-4">
               <Select label={t('listingsPage.region')} name="region" value={filters.region} onChange={handleRegionChange}>
                 <option value="">{t('listingsPage.allRegions')}</option>
@@ -89,10 +89,10 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
               </Select>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">{t('listingsPage.price')}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('listingsPage.price')}</label>
                 <div className="flex gap-2 mt-1">
-                  <input type="number" name="minPrice" placeholder={t('listingsPage.min')} value={filters.minPrice} onChange={handleFilterChange} className="w-1/2 p-2 border rounded-md" />
-                  <input type="number" name="maxPrice" placeholder={t('listingsPage.max')} value={filters.maxPrice} onChange={handleFilterChange} className="w-1/2 p-2 border rounded-md" />
+                  <input type="number" name="minPrice" placeholder={t('listingsPage.min')} value={filters.minPrice} onChange={handleFilterChange} className="w-1/2 p-2 border-brand-card bg-brand-dark rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-red" />
+                  <input type="number" name="maxPrice" placeholder={t('listingsPage.max')} value={filters.maxPrice} onChange={handleFilterChange} className="w-1/2 p-2 border-brand-card bg-brand-dark rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-red" />
                 </div>
               </div>
               <Button onClick={resetFilters} variant="secondary" className="w-full">{t('listingsPage.reset')}</Button>
@@ -102,16 +102,18 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
 
         {/* Listings */}
         <main className="w-full lg:w-3/4">
-          <h2 className="text-2xl font-bold mb-4 text-brand-dark">{t('listingsPage.propertiesFound', { count: filteredProperties.length })}</h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">{t('listingsPage.propertiesFound', { count: filteredProperties.length })}</h2>
           {filteredProperties.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-              {filteredProperties.map(property => (
-                <PropertyCard key={property.id} property={property} onNavigate={onNavigate} />
+              {filteredProperties.map((property, index) => (
+                <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
+                    <PropertyCard property={property} onNavigate={onNavigate} />
+                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 bg-white rounded-lg shadow-md">
-                <p className="text-xl text-gray-500">{t('listingsPage.noProperties')}</p>
+            <div className="text-center py-24 bg-brand-card rounded-lg shadow-lg">
+                <p className="text-xl text-gray-400">{t('listingsPage.noProperties')}</p>
             </div>
           )}
         </main>

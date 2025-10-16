@@ -9,7 +9,7 @@ interface PricingPageProps {
 }
 
 const CheckIcon = () => (
-  <svg className="w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+  <svg className="w-5 h-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
   </svg>
 );
@@ -29,16 +29,16 @@ const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPaym
     isCurrent: boolean, 
     isPremium?: boolean,
   }> = ({ planName, price, features, isCurrent, isPremium = false }) => (
-    <div className={`border rounded-lg p-8 flex flex-col ${isPremium ? 'border-brand-red transform scale-105 bg-white shadow-2xl' : 'bg-gray-50'}`}>
-      <h3 className="text-2xl font-bold text-brand-dark text-center">{planName}</h3>
-      <p className="text-center text-gray-500 mt-2">
-        <span className="text-4xl font-extrabold text-brand-dark">{price}</span> / {t('pricingPage.monthly')}
+    <div className={`border rounded-lg p-8 flex flex-col transition-all duration-300 ${isPremium ? 'border-brand-red/50 transform scale-105 bg-brand-card shadow-2xl shadow-brand-red/10' : 'bg-brand-card/50 border-brand-card'}`}>
+      <h3 className="text-2xl font-bold text-white text-center">{planName}</h3>
+      <p className="text-center text-gray-400 mt-2">
+        <span className="text-4xl font-extrabold text-white">{price}</span> / {t('pricingPage.monthly')}
       </p>
       <ul className="mt-8 space-y-4 flex-grow">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start">
             <CheckIcon />
-            <span className="ml-3 text-gray-700">{feature}</span>
+            <span className="ml-3 text-gray-300">{feature}</span>
           </li>
         ))}
       </ul>
@@ -55,8 +55,8 @@ const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPaym
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-brand-dark">{t('pricingPage.title')}</h1>
-        <p className="text-lg text-gray-600 mt-2">{t('pricingPage.subtitle')}</p>
+        <h1 className="text-4xl font-bold text-white">{t('pricingPage.title')}</h1>
+        <p className="text-lg text-gray-400 mt-2">{t('pricingPage.subtitle')}</p>
         <div className="w-24 h-1 bg-brand-red mx-auto mt-4"></div>
       </div>
       

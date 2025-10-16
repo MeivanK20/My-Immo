@@ -24,8 +24,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
 
   return (
     <div className="container mx-auto px-6 py-8">
-      {isFreePlan && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md mb-6 flex justify-between items-center">
+      {isFreePlan && myProperties.length >= 1 && (
+        <div className="bg-blue-500/20 border-l-4 border-blue-400 text-blue-200 p-4 rounded-md mb-6 flex justify-between items-center">
           <div>
             <p className="font-bold">{t('dashboardPage.upgradePrompt')}</p>
             <p>{t('dashboardPage.freePlanLimit')}: 1 / 1</p>
@@ -35,7 +35,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
       )}
 
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-brand-dark">{t('dashboardPage.title')}</h1>
+        <h1 className="text-3xl font-bold text-white">{t('dashboardPage.title')}</h1>
         <div className="flex gap-4">
           <Button onClick={() => onNavigate('messages')} variant="secondary" className="relative">
             {t('dashboardPage.viewMessages')}
@@ -50,47 +50,47 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
         </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-brand-card rounded-lg shadow-lg overflow-hidden">
         <div className="p-6">
-          <h2 className="text-xl font-semibold">{t('dashboardPage.myListings', { count: myProperties.length })}</h2>
+          <h2 className="text-xl font-semibold text-white">{t('dashboardPage.myListings', { count: myProperties.length })}</h2>
         </div>
         <div className="overflow-x-auto">
           {myProperties.length > 0 ? (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-brand-dark">
+              <thead className="bg-brand-dark/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dashboardPage.tableTitle')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dashboardPage.tableCity')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dashboardPage.tablePrice')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dashboardPage.tableType')}</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dashboardPage.tableActions')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{t('dashboardPage.tableTitle')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{t('dashboardPage.tableCity')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{t('dashboardPage.tablePrice')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{t('dashboardPage.tableType')}</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">{t('dashboardPage.tableActions')}</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-brand-card divide-y divide-brand-dark">
                 {myProperties.map(property => (
-                  <tr key={property.id}>
+                  <tr key={property.id} className="hover:bg-brand-dark/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 cursor-pointer hover:text-brand-red" onClick={() => onNavigate('propertyDetail', property)}>
+                        <div className="text-sm font-medium text-white cursor-pointer hover:text-brand-red" onClick={() => onNavigate('propertyDetail', property)}>
                             {property.title}
                         </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{property.city}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{formatPrice(property.price)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{property.city}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200 font-semibold">{formatPrice(property.price)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${property.type === 'rent' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${property.type === 'rent' ? 'bg-blue-500/20 text-blue-200' : 'bg-green-500/20 text-green-200'}`}>
                             {property.type === 'rent' ? t('dashboardPage.rent') : t('dashboardPage.sale')}
                         </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button onClick={() => onNavigate('editProperty', property)} className="text-indigo-600 hover:text-indigo-900 mr-4">{t('dashboardPage.edit')}</button>
-                      <button onClick={() => onDeleteProperty(property.id)} className="text-red-600 hover:text-red-900">{t('dashboardPage.delete')}</button>
+                      <button onClick={() => onNavigate('editProperty', property)} className="text-indigo-400 hover:text-indigo-300 mr-4">{t('dashboardPage.edit')}</button>
+                      <button onClick={() => onDeleteProperty(property.id)} className="text-red-500 hover:text-red-400">{t('dashboardPage.delete')}</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <p className="p-6 text-center text-gray-500">{t('dashboardPage.noProperties')}</p>
+            <p className="p-6 text-center text-gray-400">{t('dashboardPage.noProperties')}</p>
           )}
         </div>
       </div>

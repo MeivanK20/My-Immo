@@ -32,11 +32,11 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
 
   return (
     <>
-      <div className="container mx-auto px-4 sm:px-6 py-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6 py-12">
+        <div className="bg-brand-card rounded-lg shadow-xl overflow-hidden">
           {/* Media Gallery */}
-          <div className="p-4">
-            <div className="mb-4 bg-black rounded-lg">
+          <div className="p-4 sm:p-6">
+            <div className="mb-4 bg-brand-dark rounded-lg">
               {selectedMedia?.type === 'image' ? (
                 <img src={selectedMedia.url} alt={title} className="w-full max-h-[500px] object-contain rounded-lg"/>
               ) : selectedMedia?.type === 'video' ? (
@@ -80,48 +80,48 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
                   <span className={`px-3 py-1 rounded-full text-white text-sm font-semibold ${type === 'rent' ? 'bg-blue-500' : 'bg-green-500'}`}>
                       {type === 'rent' ? t('propertyDetailsPage.rent') : t('propertyDetailsPage.sale')}
                   </span>
-                  <h1 className="text-3xl font-bold text-brand-dark mt-2">{title}</h1>
-                  <p className="text-md text-gray-500 mb-4">{neighborhood}, {city}, {region}</p>
-                  <p className="text-3xl font-bold text-brand-red mb-6">{formatPrice(price)} {type === 'rent' && t('propertyDetailsPage.perMonth')}</p>
+                  <h1 className="text-3xl font-bold text-white mt-2">{title}</h1>
+                  <p className="text-md text-gray-400 mb-4">{neighborhood}, {city}, {region}</p>
+                  <p className="text-3xl font-bold text-brand-red mb-6">{formatPrice(price)} {type === 'rent' && <span className="text-lg font-normal text-gray-400">{t('propertyDetailsPage.perMonth')}</span>}</p>
 
-                  <h2 className="text-xl font-semibold text-brand-dark mb-2">{t('propertyDetailsPage.description')}</h2>
-                  <p className="text-gray-700 mb-6 whitespace-pre-line">{description}</p>
+                  <h2 className="text-xl font-semibold text-white mb-2">{t('propertyDetailsPage.description')}</h2>
+                  <p className="text-gray-300 mb-6 whitespace-pre-line">{description}</p>
                   
-                  <h2 className="text-xl font-semibold text-brand-dark mb-3">{t('propertyDetailsPage.features')}</h2>
+                  <h2 className="text-xl font-semibold text-white mb-3">{t('propertyDetailsPage.features')}</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
-                      <div className="bg-gray-100 p-4 rounded-lg">
-                          <div className="font-bold text-lg">{bedrooms}</div>
-                          <div className="text-sm text-gray-600">{t('propertyDetailsPage.bedrooms')}</div>
+                      <div className="bg-brand-dark/50 p-4 rounded-lg">
+                          <div className="font-bold text-lg text-white">{bedrooms}</div>
+                          <div className="text-sm text-gray-400">{t('propertyDetailsPage.bedrooms')}</div>
                       </div>
-                      <div className="bg-gray-100 p-4 rounded-lg">
-                          <div className="font-bold text-lg">{bathrooms}</div>
-                          <div className="text-sm text-gray-600">{t('propertyDetailsPage.bathrooms')}</div>
+                      <div className="bg-brand-dark/50 p-4 rounded-lg">
+                          <div className="font-bold text-lg text-white">{bathrooms}</div>
+                          <div className="text-sm text-gray-400">{t('propertyDetailsPage.bathrooms')}</div>
                       </div>
-                      <div className="bg-gray-100 p-4 rounded-lg">
-                          <div className="font-bold text-lg">{area} m²</div>
-                          <div className="text-sm text-gray-600">{t('propertyDetailsPage.area')}</div>
+                      <div className="bg-brand-dark/50 p-4 rounded-lg">
+                          <div className="font-bold text-lg text-white">{area} m²</div>
+                          <div className="text-sm text-gray-400">{t('propertyDetailsPage.area')}</div>
                       </div>
                   </div>
               </div>
 
               {/* Agent Card */}
               <aside className="w-full md:w-1/3 mt-8 md:mt-0">
-                  <div className="bg-white p-6 rounded-lg shadow-md border sticky top-24 text-center">
-                      <h3 className="text-xl font-bold mb-4 text-brand-dark">{t('propertyDetailsPage.contactAgent')}</h3>
+                  <div className="bg-brand-dark/50 p-6 rounded-lg border border-brand-card sticky top-28 text-center">
+                      <h3 className="text-xl font-bold mb-4 text-white">{t('propertyDetailsPage.contactAgent')}</h3>
                       {agent ? (
                           <div>
                               <img 
-                                src={agent.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=f87171&color=fff`} 
+                                src={agent.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=ef4444&color=fff`} 
                                 alt={`Profil de ${agent.name}`}
                                 className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-brand-red"
                               />
-                              <p className="font-semibold text-lg">{agent.name}</p>
-                              <p className="text-gray-600 text-sm">{agent.email}</p>
-                              {phone && <p className="text-gray-600 text-sm mt-1">Tel: <a href={`tel:${phone}`} className="text-blue-600 hover:underline">{phone}</a></p>}
-                              <button onClick={() => setIsContactModalOpen(true)} className="mt-4 w-full bg-brand-red text-white py-2 rounded-md hover:bg-brand-red-dark transition">{t('propertyDetailsPage.sendMessage')}</button>
+                              <p className="font-semibold text-lg text-white">{agent.name}</p>
+                              <p className="text-gray-400 text-sm">{agent.email}</p>
+                              {phone && <p className="text-gray-400 text-sm mt-1">Tel: <a href={`tel:${phone}`} className="text-blue-400 hover:underline">{phone}</a></p>}
+                              <button onClick={() => setIsContactModalOpen(true)} className="mt-4 w-full bg-brand-red text-white py-2 rounded-md hover:bg-brand-red-dark transition hover:shadow-glow-red">{t('propertyDetailsPage.sendMessage')}</button>
                           </div>
                       ) : (
-                          <p>{t('propertyDetailsPage.agentInfoNotAvailable')}</p>
+                          <p className="text-gray-400">{t('propertyDetailsPage.agentInfoNotAvailable')}</p>
                       )}
                   </div>
               </aside>

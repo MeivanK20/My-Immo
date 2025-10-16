@@ -38,8 +38,23 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchFilters, setSearchFilters] = useState({});
-  const [dynamicLocations, setDynamicLocations] = useState(locations);
   const { t } = useLanguage();
+
+  const initializeLocations = () => {
+    try {
+      const savedLocations = localStorage.getItem('myImmoLocations');
+      if (savedLocations) {
+        return JSON.parse(savedLocations);
+      }
+    } catch (error) {
+      console.error("Could not parse locations from localStorage", error);
+    }
+    // If nothing is saved or parsing fails, use the default and save it.
+    localStorage.setItem('myImmoLocations', JSON.stringify(locations));
+    return locations;
+  };
+
+  const [dynamicLocations, setDynamicLocations] = useState(initializeLocations);
 
   useEffect(() => {
     const savedUserJson = localStorage.getItem('currentUser');
@@ -83,7 +98,7 @@ const App: React.FC = () => {
 
   const handleGoForward = () => {
     if (historyIndex < history.length - 1) {
-      setHistoryIndex(prevIndex => prevIndex + 1);
+      setHistoryIndex(prevIndex => prevIndex - 1);
     }
   };
 
@@ -215,27 +230,29 @@ const App: React.FC = () => {
   const handleAddCity = (regionName: string, cityName: string) => {
     if (!regionName || !cityName.trim()) return;
     const trimmedCityName = cityName.trim();
-    setDynamicLocations(prev => {
-        const newLocations = JSON.parse(JSON.stringify(prev));
-        const region = newLocations[regionName as keyof typeof newLocations];
-        if (region && !region.hasOwnProperty(trimmedCityName)) {
-            region[trimmedCityName] = [];
-        }
-        return newLocations;
-    });
+
+    const newLocations = JSON.parse(JSON.stringify(dynamicLocations));
+    const region = newLocations[regionName as keyof typeof newLocations];
+
+    if (region && !region.hasOwnProperty(trimmedCityName)) {
+        region[trimmedCityName] = [];
+        setDynamicLocations(newLocations);
+        localStorage.setItem('myImmoLocations', JSON.stringify(newLocations));
+    }
   };
 
   const handleAddNeighborhood = (regionName: string, cityName: string, neighborhoodName: string) => {
     if (!regionName || !cityName || !neighborhoodName.trim()) return;
     const trimmedNeighborhoodName = neighborhoodName.trim();
-    setDynamicLocations(prev => {
-        const newLocations = JSON.parse(JSON.stringify(prev));
-        const city = newLocations[regionName as keyof typeof newLocations]?.[cityName];
-        if (city && !city.includes(trimmedNeighborhoodName)) {
-            city.push(trimmedNeighborhoodName);
-        }
-        return newLocations;
-    });
+
+    const newLocations = JSON.parse(JSON.stringify(dynamicLocations));
+    const city = newLocations[regionName as keyof typeof newLocations]?.[cityName];
+
+    if (city && !city.includes(trimmedNeighborhoodName)) {
+        city.push(trimmedNeighborhoodName);
+        setDynamicLocations(newLocations);
+        localStorage.setItem('myImmoLocations', JSON.stringify(newLocations));
+    }
   };
 
   const renderPage = () => {
@@ -295,7 +312,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen font-sans bg-gray-50">
+    <div className="flex flex-col min-h-screen font-sans bg-brand-dark text-gray-200">
         <Header 
           user={currentUser} 
           onNavigate={handleNavigate} 
@@ -305,7 +322,7 @@ const App: React.FC = () => {
           canGoBack={canGoBack}
           canGoForward={canGoForward}
         />
-        <main className="flex-grow">{renderPage()}</main>
+        <main className="flex-grow animate-fade-in-up" key={currentPage + historyIndex}>{renderPage()}</main>
         <Footer onNavigate={handleNavigate} />
     </div>
   );
