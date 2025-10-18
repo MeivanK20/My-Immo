@@ -17,7 +17,7 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
   const [filters, setFilters] = useState({
       region: initialFilters.region || '',
       city: initialFilters.city || '',
-      neighborhood: '',
+      neighborhood: initialFilters.neighborhood || '',
       type: '',
       minPrice: '',
       maxPrice: '',

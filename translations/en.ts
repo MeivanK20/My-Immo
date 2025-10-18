@@ -32,6 +32,7 @@ export const en = {
     heroSubtitle: 'The best platform for property search in Cameroon.',
     allRegions: 'All Regions',
     allCities: 'All Cities',
+    allNeighborhoods: 'All Neighborhoods',
     search: 'Search',
     featuredListings: 'Featured Listings',
   },

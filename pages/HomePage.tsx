@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction } from '../types';
 import PropertyCard from '../components/PropertyCard';
-import { regions, locations } from '../data/locations';
+import { locations } from '../data/locations';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
+import AutocompleteInput from '../components/common/AutocompleteInput';
 
 interface HomePageProps {
   properties: Property[];
@@ -12,16 +13,33 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch }) => {
-  const [selectedRegion, setSelectedRegion] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
+  const [region, setRegion] = useState('');
+  const [city, setCity] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   const { t } = useLanguage();
 
   const handleSearch = () => {
-    onSearch({ region: selectedRegion, city: selectedCity });
+    onSearch({ region, city, neighborhood });
     onNavigate('listings');
   };
 
   const featuredProperties = properties.slice(0, 3);
+  
+  const regions = useMemo(() => Object.keys(locations), []);
+  
+  const cities = useMemo(() => {
+      if (region && locations[region as keyof typeof locations]) {
+          return Object.keys(locations[region as keyof typeof locations]);
+      }
+      return [];
+  }, [region]);
+
+  const neighborhoods = useMemo(() => {
+      if (region && city && locations[region as keyof typeof locations]?.[city as keyof any]) {
+          return (locations[region as keyof typeof locations] as any)[city];
+      }
+      return [];
+  }, [region, city]);
 
   return (
     <div>
@@ -35,27 +53,28 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch })
           <h1 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight">{t('homePage.heroTitle')}</h1>
           <p className="text-lg md:text-xl mb-8 text-gray-300">{t('homePage.heroSubtitle')}</p>
           
-          <div className="bg-white/10 backdrop-blur-md p-4 rounded-lg shadow-2xl md:flex items-center gap-4 max-w-2xl mx-auto border border-white/20">
-            <select 
-              value={selectedRegion} 
-              onChange={(e) => { setSelectedRegion(e.target.value); setSelectedCity(''); }}
-              className="w-full md:w-1/3 p-3 mb-4 md:mb-0 bg-white/10 text-white border-0 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-red placeholder-gray-400"
-            >
-              <option value="" style={{color: 'black'}}>{t('homePage.allRegions')}</option>
-              {regions.map(r => <option key={r} value={r} style={{color: 'black'}}>{r}</option>)}
-            </select>
-            <select 
-              value={selectedCity} 
-              onChange={(e) => setSelectedCity(e.target.value)}
-              disabled={!selectedRegion}
-              className="w-full md:w-1/3 p-3 mb-4 md:mb-0 bg-white/10 text-white border-0 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50"
-            >
-              <option value="" style={{color: 'black'}}>{t('homePage.allCities')}</option>
-              {selectedRegion && locations[selectedRegion as keyof typeof locations] &&
-                Object.keys(locations[selectedRegion as keyof typeof locations]).map(c => <option key={c} value={c} style={{color: 'black'}}>{c}</option>)
-              }
-            </select>
-            <Button onClick={handleSearch} className="w-full md:w-auto">{t('homePage.search')}</Button>
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-lg shadow-2xl md:flex items-center gap-4 max-w-4xl mx-auto border border-white/20">
+            <AutocompleteInput
+              value={region}
+              onChange={(value) => { setRegion(value); setCity(''); setNeighborhood(''); }}
+              suggestions={regions}
+              placeholder={t('homePage.allRegions')}
+            />
+            <AutocompleteInput
+              value={city}
+              onChange={(value) => { setCity(value); setNeighborhood(''); }}
+              suggestions={cities}
+              placeholder={t('homePage.allCities')}
+              disabled={!region || !regions.includes(region)}
+            />
+             <AutocompleteInput
+              value={neighborhood}
+              onChange={setNeighborhood}
+              suggestions={neighborhoods}
+              placeholder={t('homePage.allNeighborhoods')}
+              disabled={!city || !cities.includes(city)}
+            />
+            <Button onClick={handleSearch} className="w-full mt-4 md:mt-0 md:w-auto flex-shrink-0">{t('homePage.search')}</Button>
           </div>
         </div>
       </section>
