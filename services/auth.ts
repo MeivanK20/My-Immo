@@ -1,6 +1,6 @@
 
+
 import { 
-  getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
   User as FirebaseUser,
@@ -10,9 +10,9 @@ import {
   updateProfile,
   signOut,
 } from "firebase/auth";
-import app from "../firebaseConfig";
+// FIX: Import the shared auth instance from firebaseConfig to ensure a single instance is used across the app.
+import { auth } from "../firebaseConfig";
 
-export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 /**

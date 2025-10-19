@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Page, User, Property, Media, Message } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { locations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
+import { onAuthObserver, signOutUser } from './services/auth';
+import { User as FirebaseUser } from 'firebase/auth';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -36,7 +39,7 @@ const App: React.FC = () => {
   const [allUsers, setAllUsers] = useState<User[]>(mockUsers);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
 
@@ -49,7 +52,6 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Could not parse locations from localStorage", error);
     }
-    // If nothing is saved or parsing fails, use the default and save it.
     localStorage.setItem('myImmoLocations', JSON.stringify(locations));
     return locations;
   };
@@ -57,21 +59,41 @@ const App: React.FC = () => {
   const [dynamicLocations, setDynamicLocations] = useState(initializeLocations);
 
   useEffect(() => {
-    const savedUserJson = localStorage.getItem('currentUser');
-    if (savedUserJson) {
-      try {
-        const savedUser = JSON.parse(savedUserJson);
-        setCurrentUser(savedUser);
-      } catch (error) {
-        console.error("Failed to parse user from localStorage:", error);
-        localStorage.removeItem('currentUser');
+    const unsubscribe = onAuthObserver((firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // Find if user already exists in our mock user list
+        let appUser = allUsers.find(u => u.uid === firebaseUser.uid);
+        
+        // If user does not exist (e.g., first time Google sign-in), create them
+        if (!appUser) {
+          appUser = {
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName || 'New User',
+            email: firebaseUser.email || '',
+            role: 'visitor', // Default role for new sign-ups
+            profilePictureUrl: firebaseUser.photoURL || undefined,
+          };
+          setAllUsers(prev => [...prev, appUser!]);
+        }
+        setCurrentUser(appUser);
+      } else {
+        setCurrentUser(null);
       }
+      setIsInitializing(false);
+    });
+
+    return () => unsubscribe();
+  }, [allUsers]);
+
+  // Redirect user after successful login/registration
+  useEffect(() => {
+    if (currentUser && (currentPage === 'login' || currentPage === 'register' || currentPage === 'registrationSuccess')) {
+      handlePostAuth(currentUser);
     }
-  }, []);
+  }, [currentUser, currentPage]);
 
   const handleNavigate = (page: Page, data?: any, options?: { replace?: boolean }) => {
     if (options?.replace) {
-      // This resets the history stack, making the new page the "zero" page.
       const newHistory = [{ page, data }];
       setHistory(newHistory);
       setHistoryIndex(0);
@@ -106,43 +128,34 @@ const App: React.FC = () => {
   const canGoForward = historyIndex < history.length - 1;
 
   const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    setCurrentUser(null);
-    handleNavigate('home');
+    signOutUser().then(() => {
+        handleNavigate('home');
+    });
   };
-
-  const handleLogin = (email: string): User | null => {
-    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (user) {
-        setCurrentUser(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        if (user.role === 'admin') {
-            handleNavigate('adminDashboard', undefined, { replace: true });
-        } else if (user.role === 'agent') {
-            handleNavigate('dashboard', undefined, { replace: true });
-        } else {
-            handleNavigate('listings', undefined, { replace: true });
-        }
-        return user;
+  
+  const handlePostAuth = (user: User) => {
+    if (user.role === 'admin') {
+        handleNavigate('adminDashboard', undefined, { replace: true });
+    } else if (user.role === 'agent') {
+        handleNavigate('dashboard', undefined, { replace: true });
+    } else {
+        handleNavigate('listings', undefined, { replace: true });
     }
-    return null;
   };
 
-  const handleRegister = (name: string, email: string, role: 'visitor' | 'agent'): User | null => {
-      if(allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-          return null; // User already exists
-      }
+  const handleSuccessfulRegistration = (email: string) => {
+      handleNavigate('registrationSuccess', { email });
+  };
+  
+  const handleAddNewRegisteredUser = (firebaseUser: FirebaseUser, role: 'visitor' | 'agent') => {
       const newUser: User = {
-          uid: `user${Date.now()}`,
-          name,
-          email,
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || 'New User',
+          email: firebaseUser.email || '',
           role,
+          subscriptionPlan: role === 'agent' ? 'free' : undefined,
       };
-      if (role === 'agent') {
-        newUser.subscriptionPlan = 'free';
-      }
       setAllUsers(prev => [...prev, newUser]);
-      handleNavigate('registrationSuccess', { email: newUser.email });
       return newUser;
   };
 
@@ -192,7 +205,6 @@ const App: React.FC = () => {
       }
       if (!window.confirm(t('adminDashboardPage.deleteUserConfirm'))) return;
 
-      // Remove user and their properties
       setAllUsers(prev => prev.filter(u => u.uid !== uid));
       setProperties(prev => prev.filter(p => p.agentUid !== uid));
   };
@@ -256,9 +268,6 @@ const App: React.FC = () => {
   };
 
   const renderPage = () => {
-    if (loading) {
-      return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
-    }
     switch (currentPage) {
       case 'listings':
         return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} />;
@@ -288,9 +297,9 @@ const App: React.FC = () => {
           if (!currentUser) { handleNavigate('login'); return null; }
           return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
        case 'login':
-          return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
+          return <LoginPage onPostAuth={handlePostAuth} onNavigate={handleNavigate} />;
        case 'register':
-          return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} />;
+          return <RegisterPage onSuccessfulRegistration={handleSuccessfulRegistration} onNewUser={handleAddNewRegisteredUser} onNavigate={handleNavigate} />;
        case 'registrationSuccess':
           return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
        case 'adminDashboard':
@@ -310,6 +319,14 @@ const App: React.FC = () => {
         return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} />;
     }
   };
+  
+  if (isInitializing) {
+      return (
+        <div className="flex justify-center items-center h-screen bg-brand-dark">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div>
+        </div>
+      );
+  }
 
   return (
     <div className="flex flex-col min-h-screen font-sans bg-brand-dark text-gray-200">

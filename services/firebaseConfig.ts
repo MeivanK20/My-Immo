@@ -26,3 +26,4 @@ const app = initializeApp(firebaseConfig);
 
 // Export the auth instance to be used throughout the application
 export const auth = getAuth(app);
+export default auth;
