@@ -1,11 +1,14 @@
+
 import { 
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
   User as FirebaseUser 
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { auth } from "./firebaseConfig";
+// FIX: Import the default 'app' export from firebaseConfig and initialize auth.
+import app from "../firebaseConfig";
 
+const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 /**
