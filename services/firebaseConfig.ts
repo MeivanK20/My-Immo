@@ -13,12 +13,12 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth
 // They should be stored securely, for example, using environment variables
 // with a build tool like Vite or Create React App.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "YOUR_AUTH_DOMAIN_HERE",
-  projectId: "YOUR_PROJECT_ID_HERE",
-  storageBucket: "YOUR_STORAGE_BUCKET_HERE",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID_HERE",
-  appId: "YOUR_APP_ID_HERE"
+  apiKey: "AIzaSyBwQ0TTT4QGCu5V_vnnExG3jZSdCjldn_4",
+  authDomain: "my-immo-a8674.firebaseapp.com",
+  projectId: "my-immo-a8674",
+  storageBucket: "my-immo-a8674.firebasestorage.app",
+  messagingSenderId: "451589935533",
+  appId: "1:451589935533:web:f9b062a92d84b0997f9124",
 };
 
 // Initialize Firebase
