@@ -6,21 +6,16 @@ interface ZendeskTicketData {
 }
 
 // A real-world app should use a backend proxy for this to avoid exposing API tokens.
-// These environment variables would be set in the deployment environment.
-const myimmo.zendesk.com = process.env.myimmo.zendesk.com; // e.g., 'myimmo'
-const mbaye.ivan@outlook.com = process.env.mbaye.ivan@outlook.com; // e.g., 'api.user@myimmo.com'
-const topccsPA5JEUUhklyaWiP5Jbdsy32dkLiCjd1OHu = process.env.topccsPA5JEUUhklyaWiP5Jbdsy32dkLiCjd1OHu; // Zendesk API token
+// For production, set these as environment variables.
+// For demo purposes, we fall back to the provided credentials if environment variables are not set.
+const ZENDESK_SUBDOMAIN = process.env.ZENDESK_SUBDOMAIN || 'myimmo.zendesk.com';
+const ZENDESK_API_EMAIL = process.env.ZENDESK_API_EMAIL || 'mbaye.ivan@outlook.com';
+const ZENDESK_API_TOKEN = process.env.ZENDESK_API_TOKEN || 'topccsPA5JEUUhklyaWiP5Jbdsy32dkLiCjd1OHu';
 
 export const createZendeskTicket = async (ticketData: ZendeskTicketData): Promise<Response> => {
-    if (!myimmo.zendesk.com || !mbaye.ivan@outlook.com || !topccsPA5JEUUhklyaWiP5Jbdsy32dkLiCjd1OHu) {
-        console.warn("Zendesk environment variables are not set. Simulating success for demo purposes.");
-        // Simulate a successful API call for demo purposes if variables are not set.
-        return new Promise(resolve => setTimeout(() => resolve(new Response(null, { status: 201 })), 1000));
-    }
+    const url = `https://${ZENDESK_SUBDOMAIN}/api/v2/tickets.json`;
 
-    const url = `https://${myimmo.zendesk.com}.zendesk.com/api/v2/tickets.json`;
-
-    const credentials = btoa(`${mbaye.ivan@outlook.com}/token:${topccsPA5JEUUhklyaWiP5Jbdsy32dkLiCjd1OHu}`);
+    const credentials = btoa(`${ZENDESK_API_EMAIL}/token:${ZENDESK_API_TOKEN}`);
 
     const ticketPayload = {
         ticket: {
@@ -50,6 +45,7 @@ export const createZendeskTicket = async (ticketData: ZendeskTicketData): Promis
 
     if (!response.ok) {
         const errorData = await response.json();
+        console.error('Zendesk API Error:', errorData);
         throw new Error(errorData.description || 'Failed to create Zendesk ticket');
     }
 
