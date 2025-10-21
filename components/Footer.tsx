@@ -21,7 +21,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm order-last sm:order-none">
           <button onClick={() => onNavigate('about')} className="hover:text-brand-red transition">{t('header.about')}</button>
           <button onClick={() => onNavigate('contact')} className="hover:text-brand-red transition">{t('header.contact')}</button>
-          <a href="#" className="hover:text-brand-red transition">{t('footer.careers')}</a>
+          <button onClick={() => onNavigate('careers')} className="hover:text-brand-red transition">{t('footer.careers')}</button>
           <button onClick={() => onNavigate('termsOfUse')} className="hover:text-brand-red transition">{t('footer.terms')}</button>
           <button onClick={() => onNavigate('privacyPolicy')} className="hover:text-brand-red transition">{t('footer.privacy')}</button>
         </nav>

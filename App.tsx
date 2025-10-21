@@ -25,6 +25,7 @@ import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import PricingPage from './pages/PricingPage';
 import PaymentPage from './pages/PaymentPage';
+import CareersPage from './pages/CareersPage';
 
 const App: React.FC = () => {
   const [history, setHistory] = useState<{ page: Page; data: any; }[]>([{ page: 'home', data: null }]);
@@ -302,6 +303,7 @@ const App: React.FC = () => {
        case 'payment':
           if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
           return <PaymentPage onSuccessfulPayment={handleUpgradePlan} onNavigate={handleNavigate} />;
+       case 'careers': return <CareersPage />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;
        case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;

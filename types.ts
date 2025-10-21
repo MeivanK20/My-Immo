@@ -1,4 +1,4 @@
-export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard' | 'pricing' | 'payment';
+export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard' | 'pricing' | 'payment' | 'careers';
 
 export interface User {
   uid: string;
@@ -31,6 +31,14 @@ export interface Property {
   neighborhood: string;
   agentUid: string;
   phone?: string;
+}
+
+export interface Job {
+  id: string;
+  titleKey: string;
+  location: string;
+  typeKey: string;
+  descriptionKey: string;
 }
 
 // FIX: Changed 'interface' to 'type' for correct function type definition.
