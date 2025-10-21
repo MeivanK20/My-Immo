@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
+import { createZendeskTicket } from '../services/zendeskService';
 
 const ContactPage: React.FC = () => {
   const { t } = useLanguage();
@@ -12,19 +13,30 @@ const ContactPage: React.FC = () => {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormState(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { name, email, message, subject } = formState;
-    const mailtoLink = `mailto:mbaye.ivan@outlook.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Nom: ${name}\nEmail: ${email}\n\nMessage:\n${message}`)}`;
-    window.location.href = mailtoLink;
-    setSubmitted(true);
-    setFormState({ name: '', email: '', subject: '', message: '' });
+    setIsLoading(true);
+    setError('');
+    setSubmitted(false);
+
+    try {
+      await createZendeskTicket(formState);
+      setSubmitted(true);
+      setFormState({ name: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      setError(t('contactPage.sendError'));
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -70,9 +82,10 @@ const ContactPage: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <Input label={t('contactPage.yourName')} name="name" type="text" value={formState.name} onChange={handleChange} required />
-              <Input label={t('contactPage.yourEmail')} name="email" type="email" value={formState.email} onChange={handleChange} required />
-              <Input label={t('contactPage.subject')} name="subject" type="text" value={formState.subject} onChange={handleChange} required />
+              {error && <div className="bg-red-500/20 text-red-400 p-3 rounded-md text-sm">{error}</div>}
+              <Input label={t('contactPage.yourName')} name="name" type="text" value={formState.name} onChange={handleChange} required disabled={isLoading} />
+              <Input label={t('contactPage.yourEmail')} name="email" type="email" value={formState.email} onChange={handleChange} required disabled={isLoading} />
+              <Input label={t('contactPage.subject')} name="subject" type="text" value={formState.subject} onChange={handleChange} required disabled={isLoading} />
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-1">{t('contactPage.message')}</label>
                 <textarea
@@ -81,11 +94,14 @@ const ContactPage: React.FC = () => {
                   rows={5}
                   value={formState.message}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-4 py-2 bg-brand-dark border border-brand-card rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent sm:text-sm text-white"
+                  className="mt-1 block w-full px-4 py-2 bg-brand-dark border border-brand-card rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent sm:text-sm text-white disabled:bg-brand-card"
                   required
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">{t('contactPage.sendMessage')}</Button>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? t('contactPage.sending') : t('contactPage.sendMessage')}
+              </Button>
             </form>
           )}
         </div>
