@@ -69,8 +69,8 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
       {submitted ? (
          <div className="text-center">
             <svg className="mx-auto h-12 w-12 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">{t('contactAgentModal.messageSent')}</h3>
-            <p className="mt-2 text-sm text-gray-600">{t('contactAgentModal.messageSuccess')}</p>
+            <h3 className="mt-4 text-lg font-medium text-white">{t('contactAgentModal.messageSent')}</h3>
+            <p className="mt-2 text-sm text-gray-300">{t('contactAgentModal.messageSuccess')}</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -99,14 +99,14 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
                 required
             />
             <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700">{t('contactAgentModal.message')}</label>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-1">{t('contactAgentModal.message')}</label>
                 <textarea
                     id="message"
                     name="message"
                     rows={5}
                     value={formData.message}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-red focus:border-brand-red sm:text-sm"
+                    className="mt-1 block w-full px-4 py-2 bg-brand-dark border border-brand-card rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent sm:text-sm text-white"
                     required
                 />
             </div>
