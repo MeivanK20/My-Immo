@@ -33,10 +33,25 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (currentUser) {
-      setFormData(prev => ({ ...prev, name: currentUser.name, email: currentUser.email, message: getDefaultMessage() }));
+    if (isOpen) {
+      if (currentUser) {
+        setFormData({
+          name: currentUser.name,
+          email: currentUser.email,
+          phone: currentUser.phone || '',
+          message: getDefaultMessage()
+        });
+      } else {
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          message: getDefaultMessage()
+        });
+      }
     } else {
-       setFormData(prev => ({...prev, message: getDefaultMessage()}));
+      // Reset submitted state when modal is closed
+      setSubmitted(false);
     }
   }, [currentUser, isOpen, property, t]);
 
@@ -60,7 +75,6 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
     setSubmitted(true);
     setTimeout(() => {
         onClose();
-        setSubmitted(false);
     }, 3000);
   };
 
