@@ -1,15 +1,24 @@
 // Fix: Implement the PropertyCard component. This file was empty, causing it to not be recognized as a module.
 import React from 'react';
-import { Property, NavigationFunction } from '../types';
+import { Property, NavigationFunction, User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface PropertyCardProps {
   property: Property;
   onNavigate: NavigationFunction;
+  user: User | null;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({ property, onNavigate }) => {
+const PropertyCard: React.FC<PropertyCardProps> = ({ property, onNavigate, user }) => {
   const { t, locale } = useLanguage();
+
+  const handleClick = () => {
+    if (user) {
+      onNavigate('propertyDetail', property);
+    } else {
+      onNavigate('register');
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(locale === 'fr' ? 'fr-CM' : 'en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 }).format(price);
@@ -19,7 +28,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onNavigate }) => 
   const firstMedia = media?.[0];
 
   return (
-    <div className="bg-brand-card rounded-lg shadow-lg overflow-hidden transition-all duration-300 cursor-pointer group hover:shadow-glow-red hover:-translate-y-2 border border-transparent hover:border-brand-red/50" onClick={() => onNavigate('propertyDetail', property)}>
+    <div className="bg-brand-card rounded-lg shadow-lg overflow-hidden transition-all duration-300 cursor-pointer group hover:shadow-glow-red hover:-translate-y-2 border border-transparent hover:border-brand-red/50" onClick={handleClick}>
       <div className="relative overflow-hidden">
         {firstMedia?.type === 'image' ? (
           <img className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105" src={firstMedia.url} alt={title} />

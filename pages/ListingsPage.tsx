@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Property, NavigationFunction } from '../types';
+import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
 import { regions, locations } from '../data/locations';
 import Select from '../components/common/Select';
@@ -10,9 +10,10 @@ interface ListingsPageProps {
   properties: Property[];
   onNavigate: NavigationFunction;
   initialFilters: any;
+  user: User | null;
 }
 
-const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters }) => {
+const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters, user }) => {
   const { t } = useLanguage();
   const [filters, setFilters] = useState({
       region: initialFilters.region || '',
@@ -151,7 +152,8 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
               {filteredProperties.map((property, index) => (
                 <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
-                    <PropertyCard property={property} onNavigate={onNavigate} />
+                    {/* FIX: Pass user prop to PropertyCard to satisfy its prop requirements. */}
+                    <PropertyCard property={property} onNavigate={onNavigate} user={user} />
                  </div>
               ))}
             </div>

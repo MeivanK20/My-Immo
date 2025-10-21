@@ -261,7 +261,7 @@ const App: React.FC = () => {
     }
     switch (currentPage) {
       case 'listings':
-        return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} />;
+        return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} />;
       case 'propertyDetail':
         const agent = allUsers.find(u => u.uid === pageData.agentUid);
         return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} />;
@@ -307,7 +307,7 @@ const App: React.FC = () => {
        case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;
        case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={handleNavigate} />;
       case 'home': default:
-        return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} />;
+        return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} />;
     }
   };
 

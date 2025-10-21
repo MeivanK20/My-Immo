@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Property, NavigationFunction } from '../types';
+import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
 import { locations } from '../data/locations';
 import Button from '../components/common/Button';
@@ -10,9 +10,10 @@ interface HomePageProps {
   properties: Property[];
   onNavigate: NavigationFunction;
   onSearch: (filters: any) => void;
+  user: User | null;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch }) => {
+const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, user }) => {
   const [region, setRegion] = useState('');
   const [city, setCity] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
@@ -87,7 +88,7 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch })
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredProperties.map((property, index) => (
               <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-                <PropertyCard property={property} onNavigate={onNavigate} />
+                <PropertyCard property={property} onNavigate={onNavigate} user={user} />
               </div>
             ))}
           </div>
