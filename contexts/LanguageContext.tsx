@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
 import { translations } from '../translations';
 
 export type Locale = 'en' | 'fr';
@@ -20,7 +20,7 @@ interface LanguageProviderProps {
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [locale, setLocale] = useState<Locale>('fr');
 
-  const t = (key: string, values?: Record<string, string | number>): string => {
+  const t = useCallback((key: string, values?: Record<string, string | number>): string => {
     const keys = key.split('.');
     let result: any = translations[locale];
     for (const k of keys) {
@@ -44,7 +44,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     }
 
     return resultString;
-  };
+  }, [locale]);
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t }}>

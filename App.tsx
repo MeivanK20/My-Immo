@@ -99,7 +99,7 @@ const App: React.FC = () => {
 
   const handleGoForward = () => {
     if (historyIndex < history.length - 1) {
-      setHistoryIndex(prevIndex => prevIndex - 1);
+      setHistoryIndex(prevIndex => prevIndex + 1);
     }
   };
 
