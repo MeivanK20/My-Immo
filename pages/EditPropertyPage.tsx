@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Property, NavigationFunction, Media, AddCityFunction, AddNeighborhoodFunction } from '../types';
+import { Property, NavigationFunction, AddCityFunction, AddNeighborhoodFunction } from '../types';
 import Input from '../components/common/Input';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
@@ -17,7 +17,7 @@ interface EditPropertyPageProps {
 
 const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onEditProperty, onNavigate, locations, onAddCity, onAddNeighborhood }) => {
   const { t } = useLanguage();
-  const [propertyData, setPropertyData] = useState({ ...propertyToEdit });
+  const [propertyData, setPropertyData] = useState({ phone: '', ...propertyToEdit });
   const [newMediaFiles, setNewMediaFiles] = useState<File[]>([]);
   const [newMediaPreviews, setNewMediaPreviews] = useState<{url: string, type: 'image' | 'video'}[]>([]);
   const [isAddCityModalOpen, setAddCityModalOpen] = useState(false);
@@ -28,9 +28,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
   const regions = Object.keys(locations);
 
   useEffect(() => {
-    // Ensure phone is at least an empty string
     setPropertyData({ phone: '', ...propertyToEdit });
-    // Clean up previews when component unmounts or property changes
     return () => {
         newMediaPreviews.forEach(p => URL.revokeObjectURL(p.url));
     }
@@ -46,7 +44,6 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
       const filesArray = Array.from(e.target.files);
       setNewMediaFiles(prev => [...prev, ...filesArray]);
 
-      // FIX: Explicitly type 'file' as File to resolve type inference issues.
       const newPreviews = filesArray.map((file: File) => ({
           url: URL.createObjectURL(file),
           type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'

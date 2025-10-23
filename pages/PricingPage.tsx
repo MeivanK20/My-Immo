@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, NavigationFunction } from '../types';
+import { User } from '../types';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
 

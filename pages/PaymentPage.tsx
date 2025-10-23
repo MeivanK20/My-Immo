@@ -31,7 +31,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccessfulPayment, onNaviga
     setIsProcessing(true);
     setTimeout(() => {
       onSuccessfulPayment();
-      // The onSuccessfulPayment function will handle navigation to the dashboard
     }, 2500);
   };
 

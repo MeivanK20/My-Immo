@@ -248,6 +248,9 @@ export const en = {
     noAccount: "Don't have an account?",
     register: 'Sign up',
     error: "No account found with this email. Password is not checked in this demo.",
+    orContinueWith: 'Or continue with',
+    googleSignIn: 'Sign in with Google',
+    googleError: 'Google sign-in failed. Please try again.',
   },
   registerPage: {
     title: 'Create your account',
@@ -262,6 +265,8 @@ export const en = {
     login: 'Sign in',
     errorRequired: "Please fill in all fields.",
     errorExists: 'An account with this email already exists.',
+    orContinueWith: 'Or continue with',
+    googleSignUp: 'Sign up with Google',
   },
   contactAgentModal: {
     title: 'Contact {{agentName}}',

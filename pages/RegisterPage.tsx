@@ -4,13 +4,17 @@ import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
 import { User, NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { signInWithGoogleRedirect } from '../services/authService';
+import GoogleIcon from '../components/icons/GoogleIcon';
+import { User as FirebaseUser } from "firebase/auth";
 
 interface RegisterPageProps {
   onRegister: (name: string, email: string, role: 'visitor' | 'agent') => User | null;
+  onGoogleLogin: (firebaseUser: FirebaseUser) => void;
   onNavigate: NavigationFunction;
 }
 
-const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) => {
+const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, onNavigate }) => {
   const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,6 +33,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) =
     if (!newUser) {
       setError(t('registerPage.errorExists'));
     }
+  };
+
+  const handleGoogleSignUpClick = async () => {
+    setError('');
+    await signInWithGoogleRedirect();
   };
 
   return (
@@ -89,6 +98,29 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onNavigate }) =
               </Button>
             </div>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-brand-dark" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-brand-card text-gray-400">
+                {t('registerPage.orContinueWith')}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full flex items-center justify-center gap-3"
+              onClick={handleGoogleSignUpClick}
+            >
+              <GoogleIcon />
+              {t('registerPage.googleSignUp')}
+            </Button>
+          </div>
           
           <p className="mt-6 text-center text-sm text-gray-400">
             {t('registerPage.haveAccount')}{' '}

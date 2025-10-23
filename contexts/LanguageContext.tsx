@@ -11,12 +11,10 @@ interface LanguageContextType {
 
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-// FIX: Define props with an interface for clarity and to resolve potential type inference issues.
 interface LanguageProviderProps {
   children: ReactNode;
 }
 
-// FIX: Changed component definition to use React.FC for consistency with the rest of the codebase. This resolves the TypeScript error in index.tsx.
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [locale, setLocale] = useState<Locale>('fr');
 

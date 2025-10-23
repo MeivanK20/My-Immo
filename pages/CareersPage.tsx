@@ -5,7 +5,6 @@ import { Job } from '../types';
 import Button from '../components/common/Button';
 
 const BenefitsIcon: React.FC<{ name: string }> = ({ name }) => {
-    // FIX: Replaced JSX.Element with React.ReactNode to resolve the "Cannot find namespace 'JSX'" error.
     const icons: { [key: string]: React.ReactNode } = {
         health: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-brand-red" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>,
         hours: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-brand-red" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
@@ -46,15 +45,15 @@ const CareersPage: React.FC = () => {
                 className="relative bg-cover bg-center h-80 flex items-center justify-center text-white"
                 style={{ backgroundImage: "url('https://picsum.photos/seed/careers-hero/1600/600')" }}
             >
-                <div className="absolute inset-0 bg-brand-dark opacity-70"></div>
-                <div className="relative z-10 text-center px-4 animate-fade-in-up">
+                <div className="absolute inset-0 bg-brand-dark opacity-60"></div>
+                <div className="relative z-10 text-center px-4">
                     <h1 className="text-4xl md:text-5xl font-bold">{t('careersPage.heroTitle')}</h1>
                     <p className="text-lg md:text-xl mt-4 text-gray-300">{t('careersPage.heroSubtitle')}</p>
                 </div>
             </section>
-
+            
             {/* Why Join Us Section */}
-            <section className="py-20 bg-brand-card">
+            <section className="py-16 bg-brand-card">
                 <div className="container mx-auto px-6 max-w-4xl text-center">
                     <h2 className="text-3xl font-bold text-white mb-2">{t('careersPage.whyJoinUs')}</h2>
                     <div className="w-24 h-1 bg-brand-red mx-auto mb-6"></div>
@@ -64,39 +63,55 @@ const CareersPage: React.FC = () => {
                 </div>
             </section>
 
-             {/* Benefits Section */}
-            <section className="py-20">
+            {/* Benefits Section */}
+            <section className="py-16">
                 <div className="container mx-auto px-6">
-                <h2 className="text-3xl font-bold text-center text-white mb-2">{t('careersPage.benefitsTitle')}</h2>
-                <div className="w-24 h-1 bg-brand-red mx-auto mb-12"></div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-                    <div className="bg-brand-dark/50 p-6 rounded-lg"><BenefitsIcon name="health" /><h3 className="text-xl font-semibold text-white mt-4 mb-2">{t('careersPage.benefit1_title')}</h3><p className="text-gray-400">{t('careersPage.benefit1_text')}</p></div>
-                    <div className="bg-brand-dark/50 p-6 rounded-lg"><BenefitsIcon name="hours" /><h3 className="text-xl font-semibold text-white mt-4 mb-2">{t('careersPage.benefit2_title')}</h3><p className="text-gray-400">{t('careersPage.benefit2_text')}</p></div>
-                    <div className="bg-brand-dark/50 p-6 rounded-lg"><BenefitsIcon name="learning" /><h3 className="text-xl font-semibold text-white mt-4 mb-2">{t('careersPage.benefit3_title')}</h3><p className="text-gray-400">{t('careersPage.benefit3_text')}</p></div>
-                    <div className="bg-brand-dark/50 p-6 rounded-lg"><BenefitsIcon name="events" /><h3 className="text-xl font-semibold text-white mt-4 mb-2">{t('careersPage.benefit4_title')}</h3><p className="text-gray-400">{t('careersPage.benefit4_text')}</p></div>
-                </div>
+                    <h2 className="text-3xl font-bold text-center text-white mb-2">{t('careersPage.benefitsTitle')}</h2>
+                    <div className="w-24 h-1 bg-brand-red mx-auto mb-12"></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+                        <div className="bg-brand-card/50 p-6 rounded-lg">
+                            <BenefitsIcon name="health" />
+                            <h3 className="text-xl font-semibold text-white mt-4 mb-2">{t('careersPage.benefit1_title')}</h3>
+                            <p className="text-gray-400">{t('careersPage.benefit1_text')}</p>
+                        </div>
+                        <div className="bg-brand-card/50 p-6 rounded-lg">
+                            <BenefitsIcon name="hours" />
+                            <h3 className="text-xl font-semibold text-white mt-4 mb-2">{t('careersPage.benefit2_title')}</h3>
+                            <p className="text-gray-400">{t('careersPage.benefit2_text')}</p>
+                        </div>
+                        <div className="bg-brand-card/50 p-6 rounded-lg">
+                            <BenefitsIcon name="learning" />
+                            <h3 className="text-xl font-semibold text-white mt-4 mb-2">{t('careersPage.benefit3_title')}</h3>
+                            <p className="text-gray-400">{t('careersPage.benefit3_text')}</p>
+                        </div>
+                        <div className="bg-brand-card/50 p-6 rounded-lg">
+                            <BenefitsIcon name="events" />
+                            <h3 className="text-xl font-semibold text-white mt-4 mb-2">{t('careersPage.benefit4_title')}</h3>
+                            <p className="text-gray-400">{t('careersPage.benefit4_text')}</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            {/* Open Positions Section */}
-            <section className="py-20 bg-brand-dark">
-                <div className="container mx-auto px-6 max-w-4xl">
+            {/* Open Positions */}
+            <section className="py-16 bg-brand-dark">
+                <div className="container mx-auto px-6">
                     <h2 className="text-3xl font-bold text-center text-white mb-2">{t('careersPage.openPositions')}</h2>
                     <div className="w-24 h-1 bg-brand-red mx-auto mb-12"></div>
-
-                    {jobs.length > 0 ? (
-                        <div className="space-y-6">
-                            {jobs.map(job => <JobCard key={job.id} job={job} />)}
-                        </div>
-                    ) : (
-                        <div className="text-center bg-brand-card p-8 rounded-lg">
-                            <p className="text-lg text-gray-400">{t('careersPage.noOpenPositions')}</p>
-                        </div>
-                    )}
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        {jobs.length > 0 ? (
+                            jobs.map(job => <JobCard key={job.id} job={job} />)
+                        ) : (
+                            <div className="text-center py-12 bg-brand-card rounded-lg">
+                                <p className="text-xl text-gray-400">{t('careersPage.noOpenPositions')}</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </section>
         </div>
     );
 };
 
+// FIX: Add default export to resolve import error in App.tsx
 export default CareersPage;

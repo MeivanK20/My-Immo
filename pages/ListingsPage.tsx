@@ -152,7 +152,6 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
               {filteredProperties.map((property, index) => (
                 <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
-                    {/* FIX: Pass user prop to PropertyCard to satisfy its prop requirements. */}
                     <PropertyCard property={property} onNavigate={onNavigate} user={user} />
                  </div>
               ))}

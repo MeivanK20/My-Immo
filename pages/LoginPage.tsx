@@ -4,13 +4,17 @@ import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
 import { User, NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { signInWithGoogleRedirect } from '../services/authService';
+import GoogleIcon from '../components/icons/GoogleIcon';
+import { User as FirebaseUser } from "firebase/auth";
 
 interface LoginPageProps {
   onLogin: (email: string) => User | null;
+  onGoogleLogin: (firebaseUser: FirebaseUser) => void;
   onNavigate: NavigationFunction;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleLogin, onNavigate }) => {
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +27,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
     if (!user) {
       setError(t('loginPage.error'));
     }
+  };
+
+  const handleGoogleSignInClick = async () => {
+    setError('');
+    await signInWithGoogleRedirect();
   };
 
   return (
@@ -61,6 +70,29 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
                     </Button>
                 </div>
             </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-brand-dark" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-brand-card text-gray-400">
+                  {t('loginPage.orContinueWith')}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full flex items-center justify-center gap-3"
+                onClick={handleGoogleSignInClick}
+              >
+                <GoogleIcon />
+                {t('loginPage.googleSignIn')}
+              </Button>
+            </div>
             
             <p className="mt-6 text-center text-sm text-gray-400">
                 {t('loginPage.noAccount')}{' '}

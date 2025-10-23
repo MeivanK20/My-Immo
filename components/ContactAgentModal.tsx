@@ -50,7 +50,6 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
         });
       }
     } else {
-      // Reset submitted state when modal is closed
       setSubmitted(false);
     }
   }, [currentUser, isOpen, property, t]);

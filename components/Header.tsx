@@ -25,6 +25,18 @@ const GbFlag = () => (
     </svg>
 );
 
+const BackArrowIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+);
+
+const ForwardArrowIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+);
+
 interface HeaderProps {
   user: User | null;
   onNavigate: NavigationFunction;
@@ -68,8 +80,28 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
   return (
     <header className="bg-brand-dark/80 backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b border-brand-card/50">
       <nav className="container mx-auto px-6 py-3 flex justify-between items-center">
-        <div className="cursor-pointer" onClick={() => onNavigate('home')}>
-          <Logo variant="dark" />
+        <div className="flex items-center gap-4">
+          <div className="cursor-pointer" onClick={() => onNavigate('home')}>
+            <Logo variant="dark" size="small" />
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <button
+                onClick={onGoBack}
+                disabled={!canGoBack}
+                className="p-2 rounded-full text-brand-gray hover:text-white hover:bg-brand-card/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                aria-label={t('header.goBack')}
+            >
+                <BackArrowIcon />
+            </button>
+            <button
+                onClick={onGoForward}
+                disabled={!canGoForward}
+                className="p-2 rounded-full text-brand-gray hover:text-white hover:bg-brand-card/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                aria-label={t('header.goForward')}
+            >
+                <ForwardArrowIcon />
+            </button>
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           <button onClick={() => onNavigate('home')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.home')}</button>

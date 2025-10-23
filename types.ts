@@ -41,7 +41,6 @@ export interface Job {
   descriptionKey: string;
 }
 
-// FIX: Changed 'interface' to 'type' for correct function type definition.
 export type NavigationFunction = (page: Page, data?: any, options?: { replace?: boolean }) => void;
 
 export type AddCityFunction = (region: string, cityName: string) => void;

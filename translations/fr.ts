@@ -207,7 +207,7 @@ export const fr = {
   privacyPage: {
     title: 'Politique de Confidentialité',
     lastUpdated: 'Dernière mise à jour : {{date}}',
-    p1: "My Immo s'engage à protéger la vie privée de ses utilisateurs. Cette politique de confidentialité explique quelles informations nous collectons, comment nous les utilisons et quels sont vos droits concernant vos données personnelles.",
+    p1: "My Immo s'engage à proteger la vie privée de ses utilisateurs. Cette politique de confidentialité explique quelles informations nous collectons, comment nous les utilisons et quels sont vos droits concernant vos données personnelles.",
     h1: "1. Informations que nous collectons",
     p2: "Nous collectons plusieurs types d'informations pour fournir et améliorer notre service :",
     li1_strong: "Données d'identification personnelle :",
@@ -248,6 +248,9 @@ export const fr = {
     noAccount: "Vous n'avez pas de compte ?",
     register: 'Inscrivez-vous',
     error: "Aucun compte trouvé avec cet e-mail. Le mot de passe n'est pas vérifié dans cette démo.",
+    orContinueWith: 'Ou continuer avec',
+    googleSignIn: 'Se connecter avec Google',
+    googleError: 'La connexion avec Google a échoué. Veuillez réessayer.',
   },
   registerPage: {
     title: 'Créez votre compte',
@@ -262,6 +265,8 @@ export const fr = {
     login: 'Connectez-vous',
     errorRequired: 'Veuillez remplir tous les champs.',
     errorExists: 'Un compte avec cet e-mail existe déjà.',
+    orContinueWith: 'Ou continuer avec',
+    googleSignUp: 'S\'inscrire avec Google',
   },
   contactAgentModal: {
     title: 'Contacter {{agentName}}',

@@ -1,27 +1,31 @@
-
-
 import { 
   GoogleAuthProvider, 
-  signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   User as FirebaseUser 
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-// FIX: Import the shared auth instance from firebaseConfig to ensure a single instance is used across the app.
+} from "firebase/auth";
 import { auth } from "../firebaseConfig";
 
-const provider = new GoogleAuthProvider();
-
-/**
- * Initiates the Google Sign-In process using a popup window.
- * @returns A promise that resolves with the Firebase User object on successful authentication, or null if the process fails or is cancelled.
- */
-export const signInWithGoogle = async (): Promise<FirebaseUser | null> => {
+export const signInWithGoogleRedirect = async (): Promise<void> => {
+  const provider = new GoogleAuthProvider();
+  
   try {
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
+    await signInWithRedirect(auth, provider);
   } catch (error: any) {
-    // Log errors for debugging, but handle them gracefully in the UI.
-    // Common errors include 'auth/popup-closed-by-user'.
-    console.error("Google Sign-In Error:", error.code, error.message);
+    console.error("Google Redirect Sign-In Error:", error.code, error.message);
+  }
+};
+
+export const handleGoogleRedirectResult = async (): Promise<FirebaseUser | null> => {
+  try {
+    const result = await getRedirectResult(auth);
+    return result ? result.user : null;
+  } catch (error: any) {
+    if (error.code === 'auth/network-request-failed') {
+        console.warn('Network error during redirect check. This is often normal on first page load.');
+    } else {
+        console.error("Google Redirect Result Error:", error.code, error.message);
+    }
     return null;
   }
 };

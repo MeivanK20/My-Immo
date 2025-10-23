@@ -40,7 +40,6 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
       const filesArray = Array.from(e.target.files);
       setMediaFiles(prev => [...prev, ...filesArray]);
 
-      // FIX: Explicitly type 'file' as File to resolve type inference issues.
       const newPreviews = filesArray.map((file: File) => ({
           url: URL.createObjectURL(file),
           type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'
@@ -50,7 +49,6 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
   };
 
   const removeMedia = (indexToRemove: number) => {
-    // Revoke the object URL to avoid memory leaks
     URL.revokeObjectURL(mediaPreviews[indexToRemove].url);
     setMediaFiles(prev => prev.filter((_, index) => index !== indexToRemove));
     setMediaPreviews(prev => prev.filter((_, index) => index !== indexToRemove));

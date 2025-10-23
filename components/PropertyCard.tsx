@@ -1,4 +1,3 @@
-// Fix: Implement the PropertyCard component. This file was empty, causing it to not be recognized as a module.
 import React from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';

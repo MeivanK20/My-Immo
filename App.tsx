@@ -4,6 +4,9 @@ import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { locations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
+import { User as FirebaseUser } from "firebase/auth";
+import { handleGoogleRedirectResult } from './services/authService';
+
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -37,7 +40,7 @@ const App: React.FC = () => {
   const [allUsers, setAllUsers] = useState<User[]>(mockUsers);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
 
@@ -50,29 +53,70 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Could not parse locations from localStorage", error);
     }
-    // If nothing is saved or parsing fails, use the default and save it.
     localStorage.setItem('myImmoLocations', JSON.stringify(locations));
     return locations;
   };
 
   const [dynamicLocations, setDynamicLocations] = useState(initializeLocations);
+  
+  const handleGoogleLogin = (firebaseUser: FirebaseUser) => {
+    const email = firebaseUser.email;
+    if (!email) {
+      console.error("Google sign-in did not provide an email.");
+      return;
+    }
+
+    let user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (user) {
+      setCurrentUser(user);
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    } else {
+      const newUser: User = {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || 'New User',
+        email: email,
+        role: 'visitor',
+        profilePictureUrl: firebaseUser.photoURL || undefined,
+      };
+      setAllUsers(prev => [...prev, newUser]);
+      setCurrentUser(newUser);
+      localStorage.setItem('currentUser', JSON.stringify(newUser));
+    }
+    
+    handleNavigate('listings', undefined, { replace: true });
+  };
+
 
   useEffect(() => {
-    const savedUserJson = localStorage.getItem('currentUser');
-    if (savedUserJson) {
-      try {
-        const savedUser = JSON.parse(savedUserJson);
-        setCurrentUser(savedUser);
-      } catch (error) {
-        console.error("Failed to parse user from localStorage:", error);
-        localStorage.removeItem('currentUser');
+    const checkAuth = async () => {
+      const savedUserJson = localStorage.getItem('currentUser');
+      if (savedUserJson) {
+        try {
+          const savedUser = JSON.parse(savedUserJson);
+          setCurrentUser(savedUser);
+        } catch (error) {
+          console.error("Failed to parse user from localStorage:", error);
+          localStorage.removeItem('currentUser');
+        }
       }
-    }
+      
+      try {
+        const userFromRedirect = await handleGoogleRedirectResult();
+        if (userFromRedirect) {
+          handleGoogleLogin(userFromRedirect);
+        }
+      } catch(error) {
+        console.error("Error handling Google redirect:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
   }, []);
 
   const handleNavigate = (page: Page, data?: any, options?: { replace?: boolean }) => {
     if (options?.replace) {
-      // This resets the history stack, making the new page the "zero" page.
       const newHistory = [{ page, data }];
       setHistory(newHistory);
       setHistoryIndex(0);
@@ -131,7 +175,7 @@ const App: React.FC = () => {
 
   const handleRegister = (name: string, email: string, role: 'visitor' | 'agent'): User | null => {
       if(allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-          return null; // User already exists
+          return null;
       }
       const newUser: User = {
           uid: `user${Date.now()}`,
@@ -193,7 +237,6 @@ const App: React.FC = () => {
       }
       if (!window.confirm(t('adminDashboardPage.deleteUserConfirm'))) return;
 
-      // Remove user and their properties
       setAllUsers(prev => prev.filter(u => u.uid !== uid));
       setProperties(prev => prev.filter(p => p.agentUid !== uid));
   };
@@ -224,6 +267,7 @@ const App: React.FC = () => {
     if (!currentUser) return;
     const updatedUser = { ...currentUser, subscriptionPlan: 'premium' as const };
     setCurrentUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
     setAllUsers(prev => prev.map(u => u.uid === currentUser.uid ? updatedUser : u));
     handleNavigate('dashboard');
   };
@@ -289,9 +333,9 @@ const App: React.FC = () => {
           if (!currentUser) { handleNavigate('login'); return null; }
           return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
        case 'login':
-          return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
+          return <LoginPage onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
        case 'register':
-          return <RegisterPage onRegister={handleRegister} onNavigate={handleNavigate} />;
+          return <RegisterPage onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
        case 'registrationSuccess':
           return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
        case 'adminDashboard':
