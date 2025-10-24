@@ -106,8 +106,13 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
         <div className="flex items-center space-x-2">
           <button onClick={() => onNavigate('home')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.home')}</button>
           <button onClick={() => user ? onNavigate('listings') : onNavigate('register')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.listings')}</button>
-          <button onClick={() => onNavigate('about')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.about')}</button>
-          <button onClick={() => onNavigate('contact')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.contact')}</button>
+          
+          {!user && (
+            <>
+              <button onClick={() => onNavigate('about')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.about')}</button>
+              <button onClick={() => onNavigate('contact')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.contact')}</button>
+            </>
+          )}
           
           {user ? (
             <div className="flex items-center space-x-3" ref={menuRef}>
