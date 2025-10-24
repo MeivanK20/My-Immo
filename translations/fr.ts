@@ -1,3 +1,4 @@
+
 export const fr = {
   header: {
     home: 'Accueil',
@@ -35,6 +36,7 @@ export const fr = {
     allNeighborhoods: 'Tous les Quartiers',
     search: 'Rechercher',
     featuredListings: 'Annonces à la une',
+    ourPartners: 'Nos Partenaires',
   },
   listingsPage: {
     filters: 'Filtres',

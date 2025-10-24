@@ -1,3 +1,4 @@
+
 export const en = {
   header: {
     home: 'Home',
@@ -35,6 +36,7 @@ export const en = {
     allNeighborhoods: 'All Neighborhoods',
     search: 'Search',
     featuredListings: 'Featured Listings',
+    ourPartners: 'Our Partners',
   },
   listingsPage: {
     filters: 'Filters',

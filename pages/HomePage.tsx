@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
@@ -41,6 +42,17 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
       }
       return [];
   }, [region, city]);
+
+  const partners = [
+    { name: 'Global Invest', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Global+Invest' },
+    { name: 'Prestige Living', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Prestige+Living' },
+    { name: 'Urban Developers', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Urban+Developers' },
+    { name: 'Cameroon Homes', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Cameroon+Homes' },
+    { name: 'Secure Bank', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Secure+Bank' },
+    { name: 'Elite Properties', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Elite+Properties' },
+    { name: 'City Scape', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=City+Scape' },
+    { name: 'Prime Mortgage', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Prime+Mortgage' },
+  ];
 
   return (
     <div>
@@ -94,6 +106,32 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
           </div>
         </div>
       </section>
+
+      {/* Partners Section */}
+      <section className="py-24 bg-brand-dark/50">
+        <div className="container mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center text-white mb-2">{t('homePage.ourPartners')}</h2>
+          <div className="w-24 h-1 bg-brand-red mx-auto mb-12"></div>
+          <div className="relative w-full overflow-hidden">
+            {/* Gradient Fades */}
+            <div className="absolute top-0 left-0 w-24 h-full bg-gradient-to-r from-brand-dark/50 via-brand-dark/50 to-transparent z-10"></div>
+            <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-brand-dark/50 via-brand-dark/50 to-transparent z-10"></div>
+            
+            <div className="flex animate-marquee whitespace-nowrap">
+              {[...partners, ...partners].map((partner, index) => (
+                <div key={index} className="flex-shrink-0 w-48 mx-10 flex items-center justify-center py-4">
+                  <img 
+                    src={partner.logoUrl} 
+                    alt={partner.name} 
+                    className="max-h-10 w-auto transition-all duration-300 opacity-60 hover:opacity-100" 
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 };
