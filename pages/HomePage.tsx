@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
@@ -44,14 +45,14 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
   }, [region, city]);
 
   const partners = [
-    { name: 'Global Invest', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Global+Invest' },
-    { name: 'Prestige Living', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Prestige+Living' },
-    { name: 'Urban Developers', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Urban+Developers' },
-    { name: 'Cameroon Homes', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Cameroon+Homes' },
-    { name: 'Secure Bank', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Secure+Bank' },
-    { name: 'Elite Properties', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Elite+Properties' },
-    { name: 'City Scape', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=City+Scape' },
-    { name: 'Prime Mortgage', logoUrl: 'https://via.placeholder.com/150x50.png/111827/9ca3af?text=Prime+Mortgage' },
+    { name: 'Afriland First Bank', logoUrl: 'https://lh3.googleusercontent.com/d/1tlgqFYor799Suv6qm3FfEE4G4SvJc2xe' },
+    { name: 'UBA', logoUrl: 'https://lh3.googleusercontent.com/d/1lpLgsckzVbkOdljm4_II1tw8lcRMJGWh' },
+    { name: 'CCA Bank', logoUrl: 'https://lh3.googleusercontent.com/d/1xDviLATS8TU1DnzUB5GmZqqSxKPl5Iia' },
+    { name: 'Société Générale Cameroun', logoUrl: 'https://lh3.googleusercontent.com/d/1oUqSNQ6gUsIMMIxoU5aa4yIwzYUYGU7W' },
+    { name: 'SCB Cameroun', logoUrl: 'https://lh3.googleusercontent.com/d/1mCyiO2497HE4WXBAVnSj9Is_iL9CpQHu' },
+    { name: 'BGFIBank', logoUrl: 'https://lh3.googleusercontent.com/d/1a64atVehTEgf_5XmzGVry9PRq85-ka5i' },
+    { name: 'BICEC', logoUrl: 'https://lh3.googleusercontent.com/d/1ndkXLhivopajdXEBhUxGZTGMGqXsplDx' },
+    { name: 'Ecobank', logoUrl: 'https://lh3.googleusercontent.com/d/1QaGUceZyvQZkSKMmBMyOv1ifHOq2LHQx' },
   ];
 
   return (
@@ -123,7 +124,7 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
                   <img 
                     src={partner.logoUrl} 
                     alt={partner.name} 
-                    className="max-h-10 w-auto transition-all duration-300 opacity-60 hover:opacity-100" 
+                    className="max-h-12 w-auto object-contain transition-all duration-300 filter grayscale hover:grayscale-0"
                   />
                 </div>
               ))}
