@@ -30,9 +30,35 @@ import PricingPage from './pages/PricingPage';
 import PaymentPage from './pages/PaymentPage';
 import CareersPage from './pages/CareersPage';
 
+const getInitialHistoryState = () => {
+  try {
+    const savedHistory = sessionStorage.getItem('navigationHistory');
+    const savedHistoryIndex = sessionStorage.getItem('navigationHistoryIndex');
+    if (savedHistory && savedHistoryIndex !== null) {
+      const parsedHistory = JSON.parse(savedHistory);
+      const parsedIndex = parseInt(savedHistoryIndex, 10);
+      if (Array.isArray(parsedHistory) && !isNaN(parsedIndex) && parsedIndex >= 0 && parsedIndex < parsedHistory.length && parsedHistory.length > 0) {
+        return {
+          history: parsedHistory,
+          historyIndex: parsedIndex,
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Could not parse navigation history from sessionStorage", error);
+    sessionStorage.removeItem('navigationHistory');
+    sessionStorage.removeItem('navigationHistoryIndex');
+  }
+  return {
+    history: [{ page: 'home', data: null }],
+    historyIndex: 0,
+  };
+};
+
 const App: React.FC = () => {
-  const [history, setHistory] = useState<{ page: Page; data: any; }[]>([{ page: 'home', data: null }]);
-  const [historyIndex, setHistoryIndex] = useState(0);
+  const [initialHistoryState] = useState(getInitialHistoryState);
+  const [history, setHistory] = useState<{ page: Page; data: any; }[]>(initialHistoryState.history);
+  const [historyIndex, setHistoryIndex] = useState<number>(initialHistoryState.historyIndex);
 
   const { page: currentPage, data: pageData } = history[historyIndex];
 
@@ -87,6 +113,14 @@ const App: React.FC = () => {
     handleNavigate('listings', undefined, { replace: true });
   };
 
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('navigationHistory', JSON.stringify(history));
+      sessionStorage.setItem('navigationHistoryIndex', historyIndex.toString());
+    } catch (error) {
+      console.error("Could not save navigation history to sessionStorage", error);
+    }
+  }, [history, historyIndex]);
 
   useEffect(() => {
     const checkAuth = async () => {
