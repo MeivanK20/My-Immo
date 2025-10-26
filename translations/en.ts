@@ -28,6 +28,10 @@ export const en = {
   logo: {
     subtext: 'PROPERTY MANAGEMENT',
   },
+  common: {
+    cancel: 'Cancel',
+    delete: 'Delete',
+  },
   homePage: {
     heroTitle: 'Find your dream home',
     heroSubtitle: 'The best platform for property search in Cameroon.',
@@ -102,6 +106,7 @@ export const en = {
     upgradePrompt: 'Upgrade to Premium to add more properties!',
     upgradeNow: 'Upgrade Now',
     freePlanLimit: 'Free plan limit reached',
+    confirmDeleteTitle: 'Confirm Deletion',
   },
   addPropertyPage: {
     title: 'Add a new property',
@@ -315,6 +320,7 @@ export const en = {
     noProperties: 'No properties found.',
     deleteUserConfirm: "Are you sure you want to delete this user? All of their listings will also be deleted.",
     cannotDeleteSelf: "You cannot delete your own admin account.",
+    confirmDeleteTitle: 'Confirm Deletion',
   },
   pricingPage: {
     title: 'Choose Your Plan',

@@ -31,39 +31,8 @@ import PaymentPage from './pages/PaymentPage';
 import CareersPage from './pages/CareersPage';
 
 const App: React.FC = () => {
-  const initializeHistory = () => {
-    try {
-      const savedHistory = sessionStorage.getItem('navigationHistory');
-      const savedIndex = sessionStorage.getItem('navigationHistoryIndex');
-
-      if (savedHistory && savedIndex) {
-        const parsedHistory = JSON.parse(savedHistory);
-        const parsedIndex = parseInt(savedIndex, 10);
-
-        if (Array.isArray(parsedHistory) && !isNaN(parsedIndex) && parsedHistory.length > parsedIndex && parsedIndex >= 0) {
-          const savedUserJson = localStorage.getItem('currentUser');
-          if (!savedUserJson) {
-              const currentPage = parsedHistory[parsedIndex].page;
-              const protectedPages: Page[] = ['dashboard', 'addProperty', 'editProperty', 'messages', 'profileSettings', 'adminDashboard', 'pricing', 'payment'];
-              if (protectedPages.includes(currentPage)) {
-                  // User is logged out but was on a protected page. Reset to home.
-                  return { history: [{ page: 'home' as Page, data: null }], index: 0 };
-              }
-          }
-          return { history: parsedHistory, index: parsedIndex };
-        }
-      }
-    } catch (error) {
-      console.error("Could not restore navigation history from sessionStorage", error);
-      sessionStorage.removeItem('navigationHistory');
-      sessionStorage.removeItem('navigationHistoryIndex');
-    }
-    return { history: [{ page: 'home' as Page, data: null }], index: 0 };
-  };
-
-  const initialHistoryState = initializeHistory();
-  const [history, setHistory] = useState<{ page: Page; data: any; }[]>(initialHistoryState.history);
-  const [historyIndex, setHistoryIndex] = useState<number>(initialHistoryState.index);
+  const [history, setHistory] = useState<{ page: Page; data: any; }[]>([{ page: 'home', data: null }]);
+  const [historyIndex, setHistoryIndex] = useState(0);
 
   const { page: currentPage, data: pageData } = history[historyIndex];
 
@@ -74,15 +43,6 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
-
-  useEffect(() => {
-    try {
-        sessionStorage.setItem('navigationHistory', JSON.stringify(history));
-        sessionStorage.setItem('navigationHistoryIndex', JSON.stringify(historyIndex));
-    } catch (e) {
-        console.error("Could not save navigation history to session storage", e);
-    }
-  }, [history, historyIndex]);
 
   const initializeLocations = () => {
     try {
@@ -193,7 +153,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     setCurrentUser(null);
-    handleNavigate('home', undefined, { replace: true });
+    handleNavigate('home');
   };
 
   const handleLogin = (email: string): User | null => {
@@ -262,8 +222,6 @@ const App: React.FC = () => {
   };
   
   const handleDeleteProperty = (id: string) => {
-    if(!window.confirm(t('deleteConfirm'))) return;
-    
     const propertyToDelete = properties.find(p => p.id === id);
     if (!propertyToDelete) return;
     
@@ -275,8 +233,6 @@ const App: React.FC = () => {
           alert(t('adminDashboardPage.cannotDeleteSelf'));
           return;
       }
-      if (!window.confirm(t('adminDashboardPage.deleteUserConfirm'))) return;
-
       setAllUsers(prev => prev.filter(u => u.uid !== uid));
       setProperties(prev => prev.filter(p => p.agentUid !== uid));
   };

@@ -28,6 +28,10 @@ export const fr = {
   logo: {
     subtext: 'PROPERTY MANAGEMENT',
   },
+  common: {
+    cancel: 'Annuler',
+    delete: 'Supprimer',
+  },
   homePage: {
     heroTitle: 'Trouvez la maison de vos rêves',
     heroSubtitle: 'La meilleure plateforme pour la recherche immobilière au Cameroun.',
@@ -102,6 +106,7 @@ export const fr = {
     upgradePrompt: 'Passez au Premium pour ajouter plus de propriétés !',
     upgradeNow: 'Mettre à niveau',
     freePlanLimit: 'Limite du plan gratuit atteinte',
+    confirmDeleteTitle: 'Confirmer la suppression',
   },
   addPropertyPage: {
     title: 'Ajouter une nouvelle propriété',
@@ -315,6 +320,7 @@ export const fr = {
     noProperties: 'Aucune propriété trouvée.',
     deleteUserConfirm: "Êtes-vous sûr de vouloir supprimer cet utilisateur ? Toutes ses annonces seront également supprimées.",
     cannotDeleteSelf: "Vous ne pouvez pas supprimer votre propre compte admin.",
+    confirmDeleteTitle: 'Confirmer la suppression',
   },
   pricingPage: {
     title: 'Choisissez votre forfait',
