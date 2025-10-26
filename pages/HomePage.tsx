@@ -45,14 +45,13 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
   }, [region, city]);
 
   const partners = [
-    { name: 'Afriland First Bank', logoUrl: 'https://lh3.googleusercontent.com/d/1tlgqFYor799Suv6qm3FfEE4G4SvJc2xe' },
-    { name: 'UBA', logoUrl: 'https://lh3.googleusercontent.com/d/1lpLgsckzVbkOdljm4_II1tw8lcRMJGWh' },
-    { name: 'CCA Bank', logoUrl: 'https://lh3.googleusercontent.com/d/1xDviLATS8TU1DnzUB5GmZqqSxKPl5Iia' },
-    { name: 'Société Générale Cameroun', logoUrl: 'https://lh3.googleusercontent.com/d/1oUqSNQ6gUsIMMIxoU5aa4yIwzYUYGU7W' },
-    { name: 'SCB Cameroun', logoUrl: 'https://lh3.googleusercontent.com/d/1mCyiO2497HE4WXBAVnSj9Is_iL9CpQHu' },
-    { name: 'BGFIBank', logoUrl: 'https://lh3.googleusercontent.com/d/1a64atVehTEgf_5XmzGVry9PRq85-ka5i' },
-    { name: 'BICEC', logoUrl: 'https://lh3.googleusercontent.com/d/1ndkXLhivopajdXEBhUxGZTGMGqXsplDx' },
-    { name: 'Ecobank', logoUrl: 'https://lh3.googleusercontent.com/d/1QaGUceZyvQZkSKMmBMyOv1ifHOq2LHQx' },
+    { name: 'CCA Bank', logoUrl: 'https://drive.google.com/uc?export=download&id=1lpLgsckzVbkOdljm4_II1tw8lcRMJGWh' },
+    { name: 'CFC', logoUrl: 'https://drive.google.com/uc?export=download&id=1xDviLATS8TU1DnzUB5GmZqqSxKPl5Iia' },
+    { name: 'SIC', logoUrl: 'https://drive.google.com/uc?export=download&id=1ndkXLhivopajdXEBhUxGZTGMGqXsplDx' },
+    { name: 'MINDUH', logoUrl: 'https://drive.google.com/uc?export=download&id=1oUqSNQ6gUsIMMIxoU5aa4yIwzYUYGU7W' },
+    { name: 'SAD', logoUrl: 'https://drive.google.com/uc?export=download&id=1mCyiO2497HE4WXBAVnSj9Is_iL9CpQHu' },
+    { name: 'BGFIBank', logoUrl: 'https://drive.google.com/uc?export=download&id=1a64atVehTEgf_5XmzGVry9PRq85-ka5i' },
+    { name: 'BICEC', logoUrl: 'https://drive.google.com/uc?export=download&id=1tlgqFYor799Suv6qm3FfEE4G4SvJc2xe' },
   ];
 
   return (
