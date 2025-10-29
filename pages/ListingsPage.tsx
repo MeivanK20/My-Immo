@@ -11,9 +11,10 @@ interface ListingsPageProps {
   onNavigate: NavigationFunction;
   initialFilters: any;
   user: User | null;
+  allUsers: User[];
 }
 
-const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters, user }) => {
+const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters, user, allUsers }) => {
   const { t } = useLanguage();
   const [filters, setFilters] = useState({
       region: initialFilters.region || '',
@@ -55,6 +56,8 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
       );
     });
   }, [properties, filters]);
+
+  const getAgentForProperty = (property: Property) => allUsers.find(u => u.uid === property.agentUid);
 
   return (
     <div className="container mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
@@ -152,7 +155,7 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
               {filteredProperties.map((property, index) => (
                 <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 50}ms` }}>
-                    <PropertyCard property={property} onNavigate={onNavigate} user={user} />
+                    <PropertyCard property={property} onNavigate={onNavigate} user={user} agent={getAgentForProperty(property)} />
                  </div>
               ))}
             </div>

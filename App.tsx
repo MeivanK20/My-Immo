@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Page, User, Property, Media, Message } from './types';
+import { Page, User, Property, Media, Message, Rating } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { locations } from './data/locations';
@@ -70,20 +70,30 @@ const App: React.FC = () => {
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
 
-  const initializeLocations = () => {
-    try {
-      const savedLocations = localStorage.getItem('myImmoLocations');
-      if (savedLocations) {
-        return JSON.parse(savedLocations);
-      }
-    } catch (error) {
-      console.error("Could not parse locations from localStorage", error);
-    }
-    localStorage.setItem('myImmoLocations', JSON.stringify(locations));
-    return locations;
+  const initializeData = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
+    const [state, setState] = useState<T>(() => {
+        try {
+            const savedItem = localStorage.getItem(key);
+            if (savedItem) return JSON.parse(savedItem);
+        } catch (error) {
+            console.error(`Could not parse ${key} from localStorage`, error);
+        }
+        return defaultValue;
+    });
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(key, JSON.stringify(state));
+        } catch (error) {
+            console.error(`Could not save ${key} to localStorage`, error);
+        }
+    }, [key, state]);
+
+    return [state, setState];
   };
 
-  const [dynamicLocations, setDynamicLocations] = useState(initializeLocations);
+  const [dynamicLocations, setDynamicLocations] = useState(() => initializeData('myImmoLocations', locations)[0]);
+  const [ratings, setRatings] = initializeData<Rating[]>('myImmoRatings', []);
   
   const handleGoogleLogin = (firebaseUser: FirebaseUser) => {
     const email = firebaseUser.email;
@@ -112,6 +122,77 @@ const App: React.FC = () => {
     
     handleNavigate('listings', undefined, { replace: true });
   };
+  
+  // Recalculate scores and badges whenever users, properties, or ratings change
+  useEffect(() => {
+    const calculateScores = () => {
+        const agents = allUsers.filter(u => u.role === 'agent');
+        
+        const updatedAgentsData = new Map<string, { score: number, badge: User['badge'] | undefined }>();
+  
+        agents.forEach(agent => {
+            const agentProperties = properties.filter(p => p.agentUid === agent.uid);
+            const agentRatings = ratings.filter(r => r.agentUid === agent.uid);
+            
+            let score = 0;
+  
+            // 1. Average Rating (up to 5 points)
+            if (agentRatings.length > 0) {
+                const totalRating = agentRatings.reduce((sum, r) => sum + r.rating, 0);
+                score += totalRating / agentRatings.length;
+            }
+  
+            // 2. Property Count Bonus (up to 1 point)
+            score += Math.min(agentProperties.length * 0.1, 1);
+            
+            // 3. Premium Bonus (1 point)
+            if (agent.subscriptionPlan === 'premium') {
+                score += 1;
+            }
+  
+            // 4. Profile Completeness (up to 0.5 points)
+            if (agent.profilePictureUrl && agent.profilePictureUrl.includes('https')) score += 0.25;
+            if (agent.phone) score += 0.25;
+  
+            let badge: User['badge'] | undefined = undefined;
+            if (score >= 5) {
+                badge = 'Gold';
+            } else if (score >= 4) {
+                badge = 'Silver';
+            } else if (score >= 3) {
+                badge = 'Bronze';
+            }
+            
+            updatedAgentsData.set(agent.uid, { score, badge });
+        });
+  
+        let needsUserUpdate = false;
+        const newAllUsers = allUsers.map(user => {
+            if (user.role === 'agent') {
+                const newData = updatedAgentsData.get(user.uid);
+                // Check if score is a number before comparing to avoid NaN issues
+                const existingScore = typeof user.score === 'number' ? user.score : -1;
+                if (newData && (existingScore !== newData.score || user.badge !== newData.badge)) {
+                    needsUserUpdate = true;
+                    return { ...user, score: newData.score, badge: newData.badge };
+                }
+            }
+            return user;
+        });
+  
+        if (needsUserUpdate) {
+            setAllUsers(newAllUsers);
+            if (currentUser && currentUser.role === 'agent') {
+                const updatedCurrentUser = newAllUsers.find(u => u.uid === currentUser.uid);
+                if (updatedCurrentUser && (currentUser.score !== updatedCurrentUser.score || currentUser.badge !== updatedCurrentUser.badge)) {
+                    setCurrentUser(updatedCurrentUser);
+                }
+            }
+        }
+    };
+  
+    calculateScores();
+  }, [properties, ratings, allUsers]);
 
   useEffect(() => {
     try {
@@ -330,21 +411,47 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAddRating = (propertyId: string, agentUid: string, rating: number) => {
+    if (!currentUser) return;
+    
+    setRatings(prev => {
+        const existingRatingIndex = prev.findIndex(r => r.propertyId === propertyId && r.visitorUid === currentUser.uid);
+        if (existingRatingIndex > -1) {
+            // Update existing rating
+            const updatedRatings = [...prev];
+            updatedRatings[existingRatingIndex] = { ...updatedRatings[existingRatingIndex], rating, timestamp: new Date() };
+            return updatedRatings;
+        } else {
+            // Add new rating
+            const newRating: Rating = {
+                id: `rating_${Date.now()}`,
+                propertyId,
+                agentUid,
+                visitorUid: currentUser.uid,
+                rating,
+                timestamp: new Date()
+            };
+            return [...prev, newRating];
+        }
+    });
+  };
+
   const renderPage = () => {
     if (loading) {
       return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
     }
     switch (currentPage) {
       case 'listings':
-        return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} />;
+        return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} />;
       case 'propertyDetail':
         const agent = allUsers.find(u => u.uid === pageData.agentUid);
-        return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} />;
+        return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
       case 'dashboard':
         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
         const agentProperties = properties.filter(p => p.agentUid === currentUser.uid);
         const agentMessagesCount = messages.filter(m => m.agentUid === currentUser.uid).length;
-        return <DashboardPage user={currentUser} properties={agentProperties} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} messageCount={agentMessagesCount} />;
+        const currentAgentData = allUsers.find(u => u.uid === currentUser.uid); // Get user with updated score/badge
+        return <DashboardPage user={currentAgentData || currentUser} properties={agentProperties} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} messageCount={agentMessagesCount} />;
        case 'addProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
          if (currentUser.role === 'agent' && currentUser.subscriptionPlan === 'free' && properties.filter(p => p.agentUid === currentUser.uid).length >= 1) {
@@ -383,7 +490,7 @@ const App: React.FC = () => {
        case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;
        case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={handleNavigate} />;
       case 'home': default:
-        return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} />;
+        return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} allUsers={allUsers} />;
     }
   };
 

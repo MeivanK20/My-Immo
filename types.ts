@@ -8,6 +8,9 @@ export interface User {
   subscriptionPlan?: 'free' | 'premium';
   phone?: string;
   profilePictureUrl?: string;
+  // Rewards system fields
+  score?: number;
+  badge?: 'Bronze' | 'Silver' | 'Gold';
 }
 
 export interface Media {
@@ -31,6 +34,15 @@ export interface Property {
   neighborhood: string;
   agentUid: string;
   phone?: string;
+}
+
+export interface Rating {
+  id: string;
+  propertyId: string;
+  agentUid: string;
+  visitorUid: string;
+  rating: number; // 1 to 5
+  timestamp: Date;
 }
 
 export interface Job {

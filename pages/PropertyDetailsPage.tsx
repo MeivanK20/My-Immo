@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Property, User, Media, Message } from '../types';
+import { Property, User, Media, Message, Rating } from '../types';
 import ContactAgentModal from '../components/ContactAgentModal';
+import StarRating from '../components/common/StarRating';
 import { useLanguage } from '../contexts/LanguageContext';
+
+const GoldBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clipRule="evenodd" /></svg>;
+const SilverBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clipRule="evenodd" /></svg>;
+const BronzeBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clipRule="evenodd" /></svg>;
+
 
 interface PropertyDetailsPageProps {
   property: Property;
   agent: User | undefined;
   onSendMessage: (messageData: Omit<Message, 'id' | 'timestamp'>) => void;
   currentUser: User | null;
+  onAddRating: (propertyId: string, agentUid: string, rating: number) => void;
+  ratings: Rating[];
 }
 
-const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, agent, onSendMessage, currentUser }) => {
+const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, agent, onSendMessage, currentUser, onAddRating, ratings }) => {
   const { t, locale } = useLanguage();
   
   const formatPrice = (price: number) => {
@@ -28,7 +36,31 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
     return <div className="text-center py-16">{t('propertyDetailsPage.propertyNotFound')}</div>;
   }
 
-  const { title, description, price, type, bedrooms, bathrooms, area, media, city, neighborhood, region, phone } = property;
+  const { id, title, description, price, type, bedrooms, bathrooms, area, media, city, neighborhood, region, phone } = property;
+
+  const currentUserRating = ratings.find(r => r.propertyId === id && r.visitorUid === currentUser?.uid)?.rating || 0;
+  const canRate = currentUser && currentUser.role === 'visitor' && currentUser.uid !== property.agentUid;
+
+  const agentRatings = ratings.filter(r => r.agentUid === agent?.uid);
+  const averageAgentRating = agentRatings.length > 0 ? agentRatings.reduce((acc, curr) => acc + curr.rating, 0) / agentRatings.length : 0;
+
+
+  const renderBadge = () => {
+    if (!agent?.badge) return null;
+    let badgeContent;
+    switch(agent.badge) {
+      case 'Gold': badgeContent = <GoldBadge />; break;
+      case 'Silver': badgeContent = <SilverBadge />; break;
+      case 'Bronze': badgeContent = <BronzeBadge />; break;
+      default: return null;
+    }
+    return (
+      <div className="flex items-center gap-2 justify-center" title={`${t('propertyDetailsPage.agentBadge')}: ${agent.badge}`}>
+        {badgeContent}
+        <span className="font-semibold text-white">{agent.badge}</span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -102,14 +134,26 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
                           <div className="text-sm text-gray-400">{t('propertyDetailsPage.area')}</div>
                       </div>
                   </div>
+
+                  {/* Rating Section */}
+                  {canRate && (
+                    <div className="mt-8 pt-6 border-t border-brand-dark">
+                        <h2 className="text-xl font-semibold text-white mb-3">{t('propertyDetailsPage.rateThisProperty')}</h2>
+                        <div className="flex items-center gap-4">
+                            <StarRating rating={currentUserRating} onRatingChange={(r) => onAddRating(id, property.agentUid, r)} />
+                            {currentUserRating > 0 && <span className="text-gray-400">{t('propertyDetailsPage.yourRating')}: {currentUserRating}/5</span>}
+                        </div>
+                    </div>
+                  )}
+
               </div>
 
               {/* Agent Card */}
               <aside className="w-full md:w-1/3 mt-8 md:mt-0">
-                  <div className="bg-brand-dark/50 p-6 rounded-lg border border-brand-card sticky top-28 text-center">
-                      <h3 className="text-xl font-bold mb-4 text-white">{t('propertyDetailsPage.contactAgent')}</h3>
+                  <div className="bg-brand-dark/50 p-6 rounded-lg border border-brand-card sticky top-28">
+                      <h3 className="text-xl font-bold mb-4 text-white text-center">{t('propertyDetailsPage.contactAgent')}</h3>
                       {agent ? (
-                          <div>
+                          <div className="text-center">
                               <img 
                                 src={agent.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=ef4444&color=fff`} 
                                 alt={`Profil de ${agent.name}`}
@@ -118,10 +162,20 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
                               <p className="font-semibold text-lg text-white">{agent.name}</p>
                               <p className="text-gray-400 text-sm">{agent.email}</p>
                               {phone && <p className="text-gray-400 text-sm mt-1">Tel: <a href={`tel:${phone}`} className="text-blue-400 hover:underline">{phone}</a></p>}
-                              <button onClick={() => setIsContactModalOpen(true)} className="mt-4 w-full bg-brand-red text-white py-2 rounded-md hover:bg-brand-red-dark transition hover:shadow-glow-red">{t('propertyDetailsPage.sendMessage')}</button>
+                              
+                              <div className="mt-4 space-y-3 pt-4 border-t border-brand-dark/50">
+                                {renderBadge()}
+                                {averageAgentRating > 0 && (
+                                  <div className="flex items-center gap-2 justify-center" title={t('propertyDetailsPage.averageRating')}>
+                                    <StarRating rating={averageAgentRating} readOnly />
+                                    <span className="text-gray-300 font-semibold">{averageAgentRating.toFixed(1)}/5</span>
+                                  </div>
+                                )}
+                              </div>
+                              <button onClick={() => setIsContactModalOpen(true)} className="mt-6 w-full bg-brand-red text-white py-2 rounded-md hover:bg-brand-red-dark transition hover:shadow-glow-red">{t('propertyDetailsPage.sendMessage')}</button>
                           </div>
                       ) : (
-                          <p className="text-gray-400">{t('propertyDetailsPage.agentInfoNotAvailable')}</p>
+                          <p className="text-gray-400 text-center">{t('propertyDetailsPage.agentInfoNotAvailable')}</p>
                       )}
                   </div>
               </aside>

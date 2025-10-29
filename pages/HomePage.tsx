@@ -13,9 +13,10 @@ interface HomePageProps {
   onNavigate: NavigationFunction;
   onSearch: (filters: any) => void;
   user: User | null;
+  allUsers: User[];
 }
 
-const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, user }) => {
+const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, user, allUsers }) => {
   const [region, setRegion] = useState('');
   const [city, setCity] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
@@ -50,9 +51,11 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
     { name: 'SIC', logoUrl: 'https://drive.google.com/uc?export=download&id=1ndkXLhivopajdXEBhUxGZTGMGqXsplDx' },
     { name: 'MINDUH', logoUrl: 'https://drive.google.com/uc?export=download&id=1oUqSNQ6gUsIMMIxoU5aa4yIwzYUYGU7W' },
     { name: 'SAD', logoUrl: 'https://drive.google.com/uc?export=download&id=1mCyiO2497HE4WXBAVnSj9Is_iL9CpQHu' },
-    { name: 'BGFIBank', logoUrl: 'https://drive.google.com/uc?export=download&id=1a64atVehTEgf_5XmzGVry9PRq85-ka5i' },
+    { name: 'BGFIBank', logoUrl: 'C:\Users\MEIK20\Desktop\Immo\téléchargement (1)' },
     { name: 'BICEC', logoUrl: 'https://drive.google.com/uc?export=download&id=1tlgqFYor799Suv6qm3FfEE4G4SvJc2xe' },
   ];
+  
+  const getAgentForProperty = (property: Property) => allUsers.find(u => u.uid === property.agentUid);
 
   return (
     <div>
@@ -100,7 +103,7 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredProperties.map((property, index) => (
               <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-                <PropertyCard property={property} onNavigate={onNavigate} user={user} />
+                <PropertyCard property={property} onNavigate={onNavigate} user={user} agent={getAgentForProperty(property)} />
               </div>
             ))}
           </div>

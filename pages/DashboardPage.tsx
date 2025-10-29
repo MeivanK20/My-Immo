@@ -4,6 +4,10 @@ import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
 import Modal from '../components/common/Modal';
 
+const GoldBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clipRule="evenodd" /></svg>;
+const SilverBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clipRule="evenodd" /></svg>;
+const BronzeBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clipRule="evenodd" /></svg>;
+
 interface DashboardPageProps {
   user: User;
   properties: Property[];
@@ -40,10 +44,45 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
   const myProperties = properties; // Properties are pre-filtered in App.tsx
   const isFreePlan = user.role === 'agent' && user.subscriptionPlan === 'free';
   const canAddProperty = !isFreePlan || myProperties.length < 1;
+  
+  const getBadgeComponent = () => {
+    switch(user.badge) {
+      case 'Gold': return <GoldBadge />;
+      case 'Silver': return <SilverBadge />;
+      case 'Bronze': return <BronzeBadge />;
+      default: return null;
+    }
+  };
+  
+  const getBadgeText = () => {
+    switch(user.badge) {
+      case 'Gold': return t('dashboardPage.badgeGold');
+      case 'Silver': return t('dashboardPage.badgeSilver');
+      case 'Bronze': return t('dashboardPage.badgeBronze');
+      default: return t('dashboardPage.noBadge');
+    }
+  };
 
   return (
     <>
       <div className="container mx-auto px-6 py-8">
+        <h1 className="text-3xl font-bold text-white mb-6">{t('dashboardPage.title')}</h1>
+
+        {/* Rewards Section */}
+        <div className="bg-brand-card rounded-lg shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold text-white mb-4">{t('dashboardPage.rewardsTitle')}</h2>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <div className="text-center">
+                    {getBadgeComponent()}
+                    <p className="font-semibold mt-1">{getBadgeText()}</p>
+                </div>
+                <div className="flex-1">
+                    <p className="text-gray-400">{t('dashboardPage.rewardsDescription')}</p>
+                    <p className="text-lg text-white font-bold mt-2">{t('dashboardPage.yourScore')}: <span className="text-brand-red">{user.score?.toFixed(2) || '0.00'}</span></p>
+                </div>
+            </div>
+        </div>
+
         {isFreePlan && myProperties.length >= 1 && (
           <div className="bg-blue-500/20 border-l-4 border-blue-400 text-blue-200 p-4 rounded-md mb-6 flex justify-between items-center">
             <div>
@@ -55,7 +94,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
         )}
 
         <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold text-white">{t('dashboardPage.title')}</h1>
+          <div/> {/* Empty div for spacing */}
           <div className="flex gap-4">
             <Button onClick={() => onNavigate('messages')} variant="secondary" className="relative">
               {t('dashboardPage.viewMessages')}

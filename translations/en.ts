@@ -1,4 +1,5 @@
 
+
 export const en = {
   header: {
     home: 'Home',
@@ -87,6 +88,10 @@ export const en = {
     sendMessage: 'Send Message',
     agentInfoNotAvailable: 'Agent information not available.',
     propertyNotFound: 'Property not found.',
+    rateThisProperty: 'Rate this property',
+    yourRating: 'Your Rating',
+    agentBadge: 'Agent Badge',
+    averageRating: 'Average Rating',
   },
   dashboardPage: {
     title: 'My Dashboard',
@@ -107,6 +112,13 @@ export const en = {
     upgradeNow: 'Upgrade Now',
     freePlanLimit: 'Free plan limit reached',
     confirmDeleteTitle: 'Confirm Deletion',
+    rewardsTitle: 'My Reward Status',
+    rewardsDescription: "Your status is based on your property ratings, profile completeness, and subscription. A better status improves your visibility.",
+    yourScore: "Your Score",
+    noBadge: "No Badge Yet",
+    badgeBronze: "Bronze Badge",
+    badgeSilver: "Silver Badge",
+    badgeGold: "Gold Badge",
   },
   addPropertyPage: {
     title: 'Add a new property',
