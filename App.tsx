@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Page, User, Property, Media, Message, Rating } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
-import { locations } from './data/locations';
+import { locations as staticLocations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
 import { User as FirebaseUser } from "firebase/auth";
 import { handleGoogleRedirectResult } from './services/authService';
@@ -92,8 +92,31 @@ const App: React.FC = () => {
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
   
-  const [dynamicLocations, setDynamicLocations] = usePersistentState('myImmoLocations', locations);
+  const [dynamicLocations, setDynamicLocations] = usePersistentState('myImmoLocations', staticLocations);
   const [ratings, setRatings] = usePersistentState<Rating[]>('myImmoRatings', []);
+
+  const mergedLocations = useMemo(() => {
+    // Deep merge static locations with dynamic locations from localStorage
+    const merged = JSON.parse(JSON.stringify(staticLocations));
+
+    for (const region in dynamicLocations) {
+        if (!merged[region]) {
+            merged[region] = {}; // A new region was added by the user
+        }
+        for (const city in dynamicLocations[region]) {
+            if (!merged[region][city]) {
+                merged[region][city] = []; // A new city was added by the user
+            }
+            const existingNeighborhoods = new Set(merged[region][city]);
+            for (const neighborhood of dynamicLocations[region][city]) {
+                if (!existingNeighborhoods.has(neighborhood)) {
+                    merged[region][city].push(neighborhood);
+                }
+            }
+        }
+    }
+    return merged;
+  }, [dynamicLocations]);
   
   const handleGoogleLogin = (firebaseUser: FirebaseUser) => {
     const email = firebaseUser.email;
@@ -440,7 +463,7 @@ const App: React.FC = () => {
     }
     switch (currentPage) {
       case 'listings':
-        return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} />;
+        return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations} />;
       case 'propertyDetail':
         const agent = allUsers.find(u => u.uid === pageData.agentUid);
         return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
@@ -456,10 +479,10 @@ const App: React.FC = () => {
              handleNavigate('pricing');
              return null;
          }
-        return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={dynamicLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
+        return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
        case 'editProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin') || (currentUser.role !== 'admin' && currentUser.uid !== pageData.agentUid)) { handleNavigate('home'); return null; }
-         return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} locations={dynamicLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
+         return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
        case 'messages':
           if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
           const myMessages = messages.filter(m => m.agentUid === currentUser.uid);
@@ -488,7 +511,7 @@ const App: React.FC = () => {
        case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;
        case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={handleNavigate} />;
       case 'home': default:
-        return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} allUsers={allUsers} />;
+        return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} allUsers={allUsers} locations={mergedLocations} />;
     }
   };
 

@@ -1,9 +1,6 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
-import { locations } from '../data/locations';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
 import AutocompleteInput from '../components/common/AutocompleteInput';
@@ -14,9 +11,10 @@ interface HomePageProps {
   onSearch: (filters: any) => void;
   user: User | null;
   allUsers: User[];
+  locations: any;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, user, allUsers }) => {
+const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, user, allUsers, locations }) => {
   const [region, setRegion] = useState('');
   const [city, setCity] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
@@ -29,21 +27,21 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
 
   const featuredProperties = properties.slice(0, 3);
   
-  const regions = useMemo(() => Object.keys(locations), []);
+  const regions = useMemo(() => Object.keys(locations), [locations]);
   
   const cities = useMemo(() => {
       if (region && locations[region as keyof typeof locations]) {
           return Object.keys(locations[region as keyof typeof locations]);
       }
       return [];
-  }, [region]);
+  }, [region, locations]);
 
   const neighborhoods = useMemo(() => {
       if (region && city && locations[region as keyof typeof locations]?.[city as keyof any]) {
           return (locations[region as keyof typeof locations] as any)[city];
       }
       return [];
-  }, [region, city]);
+  }, [region, city, locations]);
 
   const partners = [
     { name: 'Partner 1', logoUrl: 'https://i.imgur.com/zEud8Yz.png' },

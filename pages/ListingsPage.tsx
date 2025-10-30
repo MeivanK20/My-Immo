@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
-import { regions, locations } from '../data/locations';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -12,9 +11,10 @@ interface ListingsPageProps {
   initialFilters: any;
   user: User | null;
   allUsers: User[];
+  locations: any;
 }
 
-const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters, user, allUsers }) => {
+const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters, user, allUsers, locations }) => {
   const { t } = useLanguage();
   const [filters, setFilters] = useState({
       region: initialFilters.region || '',
@@ -24,6 +24,8 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
       minPrice: '',
       maxPrice: '',
   });
+
+  const regions = useMemo(() => Object.keys(locations), [locations]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
