@@ -2,36 +2,40 @@ import React, { useState } from 'react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
-import { User, NavigationFunction } from '../types';
+import { NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { signInWithGoogleRedirect } from '../services/authService';
 import GoogleIcon from '../components/icons/GoogleIcon';
-import { User as FirebaseUser } from "firebase/auth";
 
 interface LoginPageProps {
-  onLogin: (email: string) => User | null;
-  onGoogleLogin: (firebaseUser: FirebaseUser) => void;
+  onLogin: (email: string, password: string) => Promise<void>;
+  onGoogleSignIn: () => void;
   onNavigate: NavigationFunction;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleLogin, onNavigate }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleSignIn, onNavigate }) => {
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const user = onLogin(email);
-    if (!user) {
-      setError(t('loginPage.error'));
+    setIsLoading(true);
+    try {
+      await onLogin(email, password);
+      // Navigation is handled within the onLogin implementation in App.tsx
+    } catch (error: any) {
+      setError(error.message || t('loginPage.error'));
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleSignInClick = async () => {
+  const handleGoogleSignInClick = () => {
     setError('');
-    await signInWithGoogleRedirect();
+    onGoogleSignIn();
   };
 
   return (
@@ -54,6 +58,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleLogin, onNavigat
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                disabled={isLoading}
                 />
                 <Input
                 label={t('loginPage.password')}
@@ -63,10 +68,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleLogin, onNavigat
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                disabled={isLoading}
                 />
                 <div>
-                    <Button type="submit" className="w-full">
-                        {t('loginPage.login')}
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? `${t('loginPage.loggingIn')}...` : t('loginPage.login')}
                     </Button>
                 </div>
             </form>
@@ -88,6 +94,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleLogin, onNavigat
                 variant="secondary"
                 className="w-full flex items-center justify-center gap-3"
                 onClick={handleGoogleSignInClick}
+                disabled={isLoading}
               >
                 <GoogleIcon />
                 {t('loginPage.googleSignIn')}

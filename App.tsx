@@ -4,8 +4,7 @@ import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { locations as staticLocations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
-import { User as FirebaseUser } from "firebase/auth";
-import { handleGoogleRedirectResult } from './services/authService';
+import { appwriteService, AppwriteException } from './services/appwriteService';
 
 
 import Header from './components/Header';
@@ -55,6 +54,22 @@ const getInitialHistoryState = () => {
   };
 };
 
+// This regex helps identify ISO date strings in the JSON data.
+const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
+
+/**
+ * A reviver function for JSON.parse. It automatically converts strings
+ * that match the ISO date format back into Date objects upon parsing.
+ * This is crucial for ensuring timestamps are treated as dates, not strings.
+ */
+const dateReviver = (key: string, value: any) => {
+    if (typeof value === 'string' && isoDateRegex.test(value)) {
+        return new Date(value);
+    }
+    return value;
+};
+
+
 /**
  * Custom hook for persisting state to localStorage.
  * This is the core of the data persistence strategy. Any state managed by this hook
@@ -67,7 +82,8 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch
     const [state, setState] = useState<T>(() => {
         try {
             const savedItem = localStorage.getItem(key);
-            if (savedItem) return JSON.parse(savedItem);
+            // The dateReviver is used here to correctly rehydrate Date objects from strings.
+            if (savedItem) return JSON.parse(savedItem, dateReviver);
         } catch (error) {
             console.error(`Could not parse ${key} from localStorage`, error);
         }
@@ -84,6 +100,8 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch
 
     return [state, setState];
 }
+
+const DATA_VERSION = 1;
 
 const App: React.FC = () => {
   const [initialHistoryState] = useState(getInitialHistoryState);
@@ -122,48 +140,54 @@ const App: React.FC = () => {
     return merged;
   }, [dynamicLocations]);
   
-  // --- ONE-TIME DATA INITIALIZATION ---
-  // This effect runs only once when the application is first launched by a user.
-  // It populates the persistent state with mock data. On all subsequent runs, this block is skipped,
-  // ensuring that any user-generated data (new properties, new users, etc.) is preserved and not
-  // overwritten by application updates that might change the mock data.
+  // --- DATA PERSISTENCE & MIGRATION ---
+  // This effect runs once on startup to ensure user data is persistent across updates.
+  // It replaces a simple "isInitialized" flag with a robust versioning system.
   useEffect(() => {
-    const isInitialized = localStorage.getItem('myImmoDataInitialized');
-    if (!isInitialized) {
-        console.log("First run: Initializing data from mocks.");
-        setProperties(mockProperties);
-        setAllUsers(mockUsers);
-        setDynamicLocations(staticLocations);
-        setMessages([]);
-        setRatings([]);
-        localStorage.setItem('myImmoDataInitialized', 'true');
+    const storedVersionStr = localStorage.getItem('myImmoDataVersion');
+    const storedVersion = storedVersionStr ? parseInt(storedVersionStr, 10) : 0;
+
+    if (storedVersion < DATA_VERSION) {
+      console.log(`Data migration needed. From v${storedVersion} to v${DATA_VERSION}`);
+      
+      // --- Migration Logic ---
+      // This structure allows for sequential migrations. If a user on v1 updates to v3,
+      // the migrations for v2 and v3 will run in order.
+      if (storedVersion < 1) {
+        // This block handles a fresh install or an upgrade from the unversioned system.
+        const isOldInstall = localStorage.getItem('myImmoDataInitialized');
+        if (!isOldInstall) {
+          // A true fresh install. Populate with mock data.
+          console.log("First run detected. Initializing data from mocks.");
+          setProperties(mockProperties);
+          setAllUsers(mockUsers);
+          setDynamicLocations(staticLocations);
+          setMessages([]);
+          setRatings([]);
+        } else {
+          // An old install is being updated. Their data is already in localStorage.
+          // We just need to stamp the version number without overwriting their valuable data.
+          console.log("Existing unversioned installation found. Stamping data version.");
+        }
+      }
+      
+      // Example of a future migration from v1 to v2:
+      /*
+      if (storedVersion < 2) {
+        console.log("Migrating data from v1 to v2...");
+        // runMigrationToV2();
+      }
+      */
+
+      // After migration (or initialization), set the new version and clean up old flags.
+      localStorage.setItem('myImmoDataVersion', DATA_VERSION.toString());
+      localStorage.removeItem('myImmoDataInitialized');
+      console.log(`Data migration complete. Now at version ${DATA_VERSION}.`);
+    } else {
+      console.log(`Data is up to date at version ${storedVersion}.`);
     }
   }, []); // The empty dependency array ensures this runs only once.
 
-  const handleGoogleLogin = (firebaseUser: FirebaseUser) => {
-    const email = firebaseUser.email;
-    if (!email) return;
-
-    let user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (user) {
-      setCurrentUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-    } else {
-      const newUser: User = {
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || 'New User',
-        email: email,
-        role: 'visitor',
-        profilePictureUrl: firebaseUser.photoURL || undefined,
-      };
-      setAllUsers(prev => [...prev, newUser]);
-      setCurrentUser(newUser);
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
-    }
-    handleNavigate('listings', undefined, { replace: true });
-  };
-  
   // Refactored score calculation to prevent infinite loops.
   // This effect calculates agent scores and updates the main user list.
   useEffect(() => {
@@ -233,32 +257,40 @@ const App: React.FC = () => {
   }, [history, historyIndex]);
 
   // --- SESSION PERSISTENCE ---
-  // This effect runs on application startup to check if a user was previously logged in.
-  // By storing the `currentUser` object in localStorage on login and removing it on logout,
-  // the user's session is maintained across browser restarts.
+  // This effect runs on application startup to check if a user is logged into Appwrite.
   useEffect(() => {
     const checkAuth = async () => {
-      const savedUserJson = localStorage.getItem('currentUser');
-      if (savedUserJson) {
-        try {
-          const savedUser = JSON.parse(savedUserJson);
-          setCurrentUser(savedUser);
-        } catch (error) {
-          console.error("Failed to parse user from localStorage:", error);
-          localStorage.removeItem('currentUser');
-        }
-      }
+      // Clean up old session persistence method from Firebase implementation
+      localStorage.removeItem('currentUser');
       try {
-        const userFromRedirect = await handleGoogleRedirectResult();
-        if (userFromRedirect) handleGoogleLogin(userFromRedirect);
-      } catch(error) {
-        console.error("Error handling Google redirect:", error);
+        const appwriteUser = await appwriteService.getCurrentAccount();
+        if (appwriteUser) {
+          // If a user is logged into Appwrite, find their corresponding data in our local state.
+          let localUser = allUsers.find(u => u.uid === appwriteUser.$id);
+
+          if (!localUser) {
+            // This can happen if the user signed up (e.g., via OAuth) but their local data was cleared.
+            // We create a local representation to ensure the app functions correctly.
+            console.log(`Found Appwrite user ${appwriteUser.email} without local data. Creating record.`);
+            localUser = {
+              uid: appwriteUser.$id,
+              name: appwriteUser.name,
+              email: appwriteUser.email,
+              role: 'visitor', // Default to 'visitor' for safety
+            };
+            setAllUsers(prev => [...prev, localUser!]);
+          }
+          setCurrentUser(localUser);
+        }
+      } catch (error) {
+        console.error("Failed to check Appwrite session:", error);
       } finally {
         setLoading(false);
       }
     };
     checkAuth();
-  }, []);
+  }, []); // The empty dependency array ensures this runs only once on app startup.
+
 
   const handleNavigate = (page: Page, data?: any, options?: { replace?: boolean }) => {
     if (options?.replace) {
@@ -281,36 +313,58 @@ const App: React.FC = () => {
   const canGoBack = historyIndex > 0;
   const canGoForward = historyIndex < history.length - 1;
 
-  const handleLogout = () => {
-    // Removing the user from localStorage effectively ends their session.
-    localStorage.removeItem('currentUser');
-    setCurrentUser(null);
-    handleNavigate('home');
-  };
-
-  const handleLogin = (email: string): User | null => {
-    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (user) {
-        setCurrentUser(user);
-        // Storing the logged-in user in localStorage maintains the session.
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        if (user.role === 'admin') handleNavigate('adminDashboard', undefined, { replace: true });
-        else if (user.role === 'agent') handleNavigate('dashboard', undefined, { replace: true });
-        else handleNavigate('listings', undefined, { replace: true });
-        return user;
+  const handleLogout = async () => {
+    try {
+        await appwriteService.deleteCurrentSession();
+        setCurrentUser(null);
+        handleNavigate('home');
+    } catch (error) {
+        console.error("Failed to logout with Appwrite:", error);
+        alert('Logout failed. Please try again.');
     }
-    return null;
   };
 
-  const handleRegister = (name: string, email: string, role: 'visitor' | 'agent'): User | null => {
-      if(allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) return null;
-      const newUser: User = { uid: `user${Date.now()}`, name, email, role };
+  const handleLogin = async (email: string, password: string): Promise<void> => {
+    const appwriteUser = await appwriteService.createEmailSession(email, password);
+    let localUser = allUsers.find(u => u.uid === appwriteUser.$id);
+    
+    if (!localUser) {
+        // This case can happen if a user was created via OAuth
+        // but is now logging in with email/password (if they set one).
+        localUser = {
+            uid: appwriteUser.$id,
+            name: appwriteUser.name,
+            email: appwriteUser.email,
+            role: 'visitor', // Default role for safety
+        };
+        setAllUsers(prev => [...prev, localUser!]);
+    }
+    
+    setCurrentUser(localUser);
+
+    if (localUser.role === 'admin') handleNavigate('adminDashboard', undefined, { replace: true });
+    else if (localUser.role === 'agent') handleNavigate('dashboard', undefined, { replace: true });
+    else handleNavigate('listings', undefined, { replace: true });
+  };
+  
+  const handleRegister = async (name: string, email: string, password: string, role: 'visitor' | 'agent'): Promise<void> => {
+      if(allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+          throw new AppwriteException(t('registerPage.errorExists'));
+      }
+      
+      const appwriteUser = await appwriteService.createAccount(email, password, name);
+      
+      const newUser: User = { uid: appwriteUser.$id, name, email, role };
       if (role === 'agent') newUser.subscriptionPlan = 'free';
-      // New user registration is automatically saved to localStorage via the usePersistentState hook.
+      
       setAllUsers(prev => [...prev, newUser]);
       handleNavigate('registrationSuccess', { email: newUser.email });
-      return newUser;
   };
+
+  const handleGoogleSignIn = () => {
+    appwriteService.createGoogleOAuth2Session();
+  };
+
 
   const handleSearch = (filters: any) => setSearchFilters(filters);
   
@@ -425,8 +479,8 @@ const App: React.FC = () => {
        case 'profileSettings':
           if (!currentUser) { handleNavigate('login'); return null; }
           return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
-       case 'login': return <LoginPage onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
-       case 'register': return <RegisterPage onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
+       case 'login': return <LoginPage onLogin={handleLogin} onGoogleSignIn={handleGoogleSignIn} onNavigate={handleNavigate} />;
+       case 'register': return <RegisterPage onRegister={handleRegister} onGoogleSignIn={handleGoogleSignIn} onNavigate={handleNavigate} />;
        case 'registrationSuccess': return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
        case 'adminDashboard':
            if (!currentUser || currentUser.role !== 'admin') { handleNavigate('home'); return null; }

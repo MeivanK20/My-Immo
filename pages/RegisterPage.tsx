@@ -4,40 +4,44 @@ import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
 import { User, NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { signInWithGoogleRedirect } from '../services/authService';
 import GoogleIcon from '../components/icons/GoogleIcon';
-import { User as FirebaseUser } from "firebase/auth";
 
 interface RegisterPageProps {
-  onRegister: (name: string, email: string, role: 'visitor' | 'agent') => User | null;
-  onGoogleLogin: (firebaseUser: FirebaseUser) => void;
+  onRegister: (name: string, email: string, password: string, role: 'visitor' | 'agent') => Promise<void>;
+  onGoogleSignIn: () => void;
   onNavigate: NavigationFunction;
 }
 
-const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, onNavigate }) => {
+const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleSignIn, onNavigate }) => {
   const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'visitor' | 'agent'>('visitor');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!name || !email || !password) {
       setError(t('registerPage.errorRequired'));
       return;
     }
-    const newUser = onRegister(name, email, role);
-    if (!newUser) {
-      setError(t('registerPage.errorExists'));
+    setIsLoading(true);
+    try {
+      await onRegister(name, email, password, role);
+      // Navigation is handled inside the onRegister implementation in App.tsx
+    } catch (error: any) {
+      setError(error.message || t('registerPage.errorExists'));
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleSignUpClick = async () => {
+  const handleGoogleSignUpClick = () => {
     setError('');
-    await signInWithGoogleRedirect();
+    onGoogleSignIn();
   };
 
   return (
@@ -60,6 +64,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, 
               onChange={(e) => setName(e.target.value)}
               required
               autoComplete="name"
+              disabled={isLoading}
             />
             <Input
               label={t('registerPage.email')}
@@ -69,6 +74,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, 
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              disabled={isLoading}
             />
             <Input
               label={t('registerPage.password')}
@@ -78,23 +84,24 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, 
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="new-password"
+              disabled={isLoading}
             />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">{t('registerPage.iAmA')}</label>
               <div className="flex gap-4">
                 <label className="flex items-center space-x-2 cursor-pointer text-gray-300">
-                  <input type="radio" name="role" value="visitor" checked={role === 'visitor'} onChange={() => setRole('visitor')} className="focus:ring-brand-red h-4 w-4 text-brand-red border-gray-500 bg-brand-dark" />
+                  <input type="radio" name="role" value="visitor" checked={role === 'visitor'} onChange={() => setRole('visitor')} className="focus:ring-brand-red h-4 w-4 text-brand-red border-gray-500 bg-brand-dark" disabled={isLoading} />
                   <span>{t('registerPage.visitor')}</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer text-gray-300">
-                  <input type="radio" name="role" value="agent" checked={role === 'agent'} onChange={() => setRole('agent')} className="focus:ring-brand-red h-4 w-4 text-brand-red border-gray-500 bg-brand-dark" />
+                  <input type="radio" name="role" value="agent" checked={role === 'agent'} onChange={() => setRole('agent')} className="focus:ring-brand-red h-4 w-4 text-brand-red border-gray-500 bg-brand-dark" disabled={isLoading}/>
                   <span>{t('registerPage.agent')}</span>
                 </label>
               </div>
             </div>
             <div>
-              <Button type="submit" className="w-full">
-                {t('registerPage.register')}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? `${t('registerPage.registering')}...` : t('registerPage.register')}
               </Button>
             </div>
           </form>
@@ -116,6 +123,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, 
               variant="secondary"
               className="w-full flex items-center justify-center gap-3"
               onClick={handleGoogleSignUpClick}
+              disabled={isLoading}
             >
               <GoogleIcon />
               {t('registerPage.googleSignUp')}

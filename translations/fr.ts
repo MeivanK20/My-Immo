@@ -269,10 +269,11 @@ export const fr = {
     login: 'Se connecter',
     noAccount: "Vous n'avez pas de compte ?",
     register: 'Inscrivez-vous',
-    error: "Aucun compte trouvé avec cet e-mail. Le mot de passe n'est pas vérifié dans cette démo.",
+    error: "Les identifiants sont incorrects. Veuillez réessayer.",
     orContinueWith: 'Ou continuer avec',
     googleSignIn: 'Se connecter avec Google',
     googleError: 'La connexion avec Google a échoué. Veuillez réessayer.',
+    loggingIn: 'Connexion en cours',
   },
   registerPage: {
     title: 'Créez votre compte',
@@ -289,6 +290,7 @@ export const fr = {
     errorExists: 'Un compte avec cet e-mail existe déjà.',
     orContinueWith: 'Ou continuer avec',
     googleSignUp: 'S\'inscrire avec Google',
+    registering: 'Inscription en cours',
   },
   contactAgentModal: {
     title: 'Contacter {{agentName}}',
@@ -314,7 +316,7 @@ export const fr = {
   deleteConfirm: 'Êtes-vous sûr de vouloir supprimer cette propriété ?',
   registrationSuccessPage: {
     title: 'Inscription réussie !',
-    message: 'Un e-mail de confirmation a été envoyé à {{email}}. Veuillez consulter votre boîte de réception et suivre les instructions pour activer votre compte.',
+    message: 'Votre compte a été créé. Vous pouvez maintenant vous connecter.',
     loginButton: 'Se connecter',
   },
   adminDashboardPage: {

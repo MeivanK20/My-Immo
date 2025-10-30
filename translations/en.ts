@@ -270,10 +270,11 @@ export const en = {
     login: 'Sign in',
     noAccount: "Don't have an account?",
     register: 'Sign up',
-    error: "No account found with this email. Password is not checked in this demo.",
+    error: "Invalid credentials. Please try again.",
     orContinueWith: 'Or continue with',
     googleSignIn: 'Sign in with Google',
     googleError: 'Google sign-in failed. Please try again.',
+    loggingIn: 'Signing in',
   },
   registerPage: {
     title: 'Create your account',
@@ -290,6 +291,7 @@ export const en = {
     errorExists: 'An account with this email already exists.',
     orContinueWith: 'Or continue with',
     googleSignUp: 'Sign up with Google',
+    registering: 'Signing up',
   },
   contactAgentModal: {
     title: 'Contact {{agentName}}',
@@ -315,7 +317,7 @@ export const en = {
   deleteConfirm: 'Are you sure you want to delete this property?',
   registrationSuccessPage: {
     title: 'Registration Successful!',
-    message: 'A confirmation email has been sent to {{email}}. Please check your inbox and follow the instructions to activate your account.',
+    message: 'Your account has been created. You can now log in.',
     loginButton: 'Proceed to Login',
   },
   adminDashboardPage: {

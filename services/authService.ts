@@ -1,31 +1,39 @@
-import { 
-  GoogleAuthProvider, 
-  signInWithRedirect,
-  getRedirectResult,
-  User as FirebaseUser 
-} from "firebase/auth";
-import { auth } from "../firebaseConfig";
+import { account } from "../appwriteConfig";
 
-export const signInWithGoogleRedirect = async (): Promise<void> => {
-  const provider = new GoogleAuthProvider();
-  
+// Inscription utilisateur
+export const registerUser = async (email: string, password: string, name: string) => {
   try {
-    await signInWithRedirect(auth, provider);
-  } catch (error: any) {
-    console.error("Google Redirect Sign-In Error:", error.code, error.message);
+    return await account.create('unique()', email, password, name);
+  } catch (error) {
+    console.error("Erreur inscription :", error);
+    throw error;
   }
 };
 
-export const handleGoogleRedirectResult = async (): Promise<FirebaseUser | null> => {
+// Connexion utilisateur
+export const loginUser = async (email: string, password: string) => {
   try {
-    const result = await getRedirectResult(auth);
-    return result ? result.user : null;
-  } catch (error: any) {
-    if (error.code === 'auth/network-request-failed') {
-        console.warn('Network error during redirect check. This is often normal on first page load.');
-    } else {
-        console.error("Google Redirect Result Error:", error.code, error.message);
-    }
+    return await account.createEmailPasswordSession(email, password);
+  } catch (error) {
+    console.error("Erreur connexion :", error);
+    throw error;
+  }
+};
+
+// Déconnexion
+export const logoutUser = async () => {
+  try {
+    await account.deleteSessions();
+  } catch (error) {
+    console.error("Erreur déconnexion :", error);
+  }
+};
+
+// Récupérer le profil utilisateur connecté
+export const getCurrentUser = async () => {
+  try {
+    return await account.get();
+  } catch {
     return null;
   }
 };
