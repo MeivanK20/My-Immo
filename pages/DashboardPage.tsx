@@ -43,7 +43,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
 
   const myProperties = properties; // Properties are pre-filtered in App.tsx
   const isFreePlan = user.role === 'agent' && user.subscriptionPlan === 'free';
-  const canAddProperty = !isFreePlan || myProperties.length < 1;
+  const FREE_PLAN_LIMIT = 5;
+  const canAddProperty = !isFreePlan || myProperties.length < FREE_PLAN_LIMIT;
+  const limitReached = isFreePlan && myProperties.length >= FREE_PLAN_LIMIT;
   
   const getBadgeComponent = () => {
     switch(user.badge) {
@@ -83,13 +85,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, properties, onNavig
             </div>
         </div>
 
-        {isFreePlan && myProperties.length >= 1 && (
-          <div className="bg-blue-500/20 border-l-4 border-blue-400 text-blue-200 p-4 rounded-md mb-6 flex justify-between items-center">
+        {isFreePlan && (
+          <div className={`p-4 rounded-md mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 ${limitReached ? 'bg-red-500/20 border-l-4 border-red-400 text-red-200' : 'bg-blue-500/20 border-l-4 border-blue-400 text-blue-200'}`}>
             <div>
-              <p className="font-bold">{t('dashboardPage.upgradePrompt')}</p>
-              <p>{t('dashboardPage.freePlanLimit')}: 1 / 1</p>
+              <p className="font-bold">{limitReached ? t('dashboardPage.upgradePromptTitle') : t('dashboardPage.freePlanInfoTitle')}</p>
+              <p>{t('dashboardPage.freePlanLimit', { count: myProperties.length, limit: FREE_PLAN_LIMIT })}</p>
             </div>
-            <Button onClick={() => onNavigate('pricing')} variant="primary">{t('dashboardPage.upgradeNow')}</Button>
+            <Button onClick={() => onNavigate('pricing')} variant="primary" className="flex-shrink-0">{t('dashboardPage.upgradeNow')}</Button>
           </div>
         )}
 

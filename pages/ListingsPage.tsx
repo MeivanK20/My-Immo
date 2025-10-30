@@ -47,7 +47,7 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
   }
 
   const filteredProperties = useMemo(() => {
-    return properties.filter(p => {
+    const filtered = properties.filter(p => {
       return (
         (filters.region ? p.region === filters.region : true) &&
         (filters.city ? p.city === filters.city : true) &&
@@ -57,7 +57,23 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
         (filters.maxPrice ? p.price <= parseInt(filters.maxPrice) : true)
       );
     });
-  }, [properties, filters]);
+
+    // Sort to bring premium listings to the top
+    filtered.sort((a, b) => {
+        const agentA = allUsers.find(u => u.uid === a.agentUid);
+        const agentB = allUsers.find(u => u.uid === b.agentUid);
+
+        const isPremiumA = agentA?.subscriptionPlan === 'premium';
+        const isPremiumB = agentB?.subscriptionPlan === 'premium';
+
+        if (isPremiumA && !isPremiumB) return -1;
+        if (!isPremiumA && isPremiumB) return 1;
+        return 0;
+    });
+    
+    return filtered;
+
+  }, [properties, filters, allUsers]);
 
   const getAgentForProperty = (property: Property) => allUsers.find(u => u.uid === property.agentUid);
 

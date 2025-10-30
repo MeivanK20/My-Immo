@@ -32,6 +32,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onNavigate, user,
   const { title, media, price, type, bedrooms, bathrooms, area, city, neighborhood } = property;
   const firstMedia = media?.[0];
 
+  const isPremium = agent?.subscriptionPlan === 'premium';
+
   const renderBadge = () => {
     if (!agent?.badge) return null;
     let badgeContent;
@@ -51,6 +53,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onNavigate, user,
   return (
     <div className="bg-brand-card rounded-lg shadow-lg overflow-hidden transition-all duration-300 cursor-pointer group hover:shadow-glow-red hover:-translate-y-2 border border-transparent hover:border-brand-red/50" onClick={handleClick}>
       <div className="relative overflow-hidden">
+        {isPremium && (
+          <div className="absolute top-4 -right-10 z-10">
+              <div className="bg-yellow-400 text-brand-dark text-xs font-bold px-10 py-1 transform rotate-45 shadow-lg">
+                  {t('propertyCard.featured')}
+              </div>
+          </div>
+        )}
         {renderBadge()}
         {firstMedia?.type === 'image' ? (
           <img className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105" src={firstMedia.url} alt={title} />
