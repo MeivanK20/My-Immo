@@ -121,11 +121,11 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
             
             <div className="flex animate-marquee whitespace-nowrap">
               {[...partners, ...partners].map((partner, index) => (
-                <div key={index} className="flex-shrink-0 w-64 mx-12 flex items-center justify-center py-4">
+                <div key={index} className="group flex-shrink-0 w-64 mx-8 flex items-center justify-center h-40 p-6 bg-brand-card/20 rounded-2xl transition-all duration-300 hover:bg-brand-card/50 hover:shadow-glow-white hover:-translate-y-1">
                   <img 
                     src={partner.logoUrl} 
                     alt={partner.name} 
-                    className="max-h-20 w-auto object-contain transition-all duration-300 filter grayscale hover:grayscale-0"
+                    className="max-h-full max-w-full object-contain transition-all duration-300 filter grayscale group-hover:grayscale-0"
                   />
                 </div>
               ))}
