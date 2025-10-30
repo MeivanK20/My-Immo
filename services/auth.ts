@@ -11,7 +11,7 @@ import {
   signOut,
 } from "firebase/auth";
 // FIX: Import the shared auth instance from firebaseConfig to ensure a single instance is used across the app.
-import { auth } from "../firebaseConfig";
+import { auth } from "../appwriteConfig";
 
 const googleProvider = new GoogleAuthProvider();
 
