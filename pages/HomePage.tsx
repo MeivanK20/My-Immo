@@ -50,6 +50,8 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
     { name: 'Partner 4', logoUrl: 'https://i.imgur.com/Eikn0h3.png' },
     { name: 'Partner 5', logoUrl: 'https://i.imgur.com/63vAuam.png' },
     { name: 'Partner 6', logoUrl: 'https://i.imgur.com/s2qFPpI.png' },
+    { name: 'Partner 7', logoUrl: 'https://i.imgur.com/ycO4g2b.png' },
+    { name: 'Partner 8', logoUrl: 'https://i.imgur.com/oiogd0B.png' },
   ];
   
   const getAgentForProperty = (property: Property) => allUsers.find(u => u.uid === property.agentUid);
