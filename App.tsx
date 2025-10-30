@@ -55,22 +55,7 @@ const getInitialHistoryState = () => {
   };
 };
 
-const App: React.FC = () => {
-  const [initialHistoryState] = useState(getInitialHistoryState);
-  const [history, setHistory] = useState<{ page: Page; data: any; }[]>(initialHistoryState.history);
-  const [historyIndex, setHistoryIndex] = useState<number>(initialHistoryState.historyIndex);
-
-  const { page: currentPage, data: pageData } = history[historyIndex];
-
-  const [properties, setProperties] = useState<Property[]>(mockProperties);
-  const [allUsers, setAllUsers] = useState<User[]>(mockUsers);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchFilters, setSearchFilters] = useState({});
-  const { t } = useLanguage();
-
-  const initializeData = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
+function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
     const [state, setState] = useState<T>(() => {
         try {
             const savedItem = localStorage.getItem(key);
@@ -90,10 +75,25 @@ const App: React.FC = () => {
     }, [key, state]);
 
     return [state, setState];
-  };
+}
 
-  const [dynamicLocations, setDynamicLocations] = useState(() => initializeData('myImmoLocations', locations)[0]);
-  const [ratings, setRatings] = initializeData<Rating[]>('myImmoRatings', []);
+const App: React.FC = () => {
+  const [initialHistoryState] = useState(getInitialHistoryState);
+  const [history, setHistory] = useState<{ page: Page; data: any; }[]>(initialHistoryState.history);
+  const [historyIndex, setHistoryIndex] = useState<number>(initialHistoryState.historyIndex);
+
+  const { page: currentPage, data: pageData } = history[historyIndex];
+
+  const [properties, setProperties] = useState<Property[]>(mockProperties);
+  const [allUsers, setAllUsers] = useState<User[]>(mockUsers);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchFilters, setSearchFilters] = useState({});
+  const { t } = useLanguage();
+  
+  const [dynamicLocations, setDynamicLocations] = usePersistentState('myImmoLocations', locations);
+  const [ratings, setRatings] = usePersistentState<Rating[]>('myImmoRatings', []);
   
   const handleGoogleLogin = (firebaseUser: FirebaseUser) => {
     const email = firebaseUser.email;
@@ -393,7 +393,6 @@ const App: React.FC = () => {
     if (region && !region.hasOwnProperty(trimmedCityName)) {
         region[trimmedCityName] = [];
         setDynamicLocations(newLocations);
-        localStorage.setItem('myImmoLocations', JSON.stringify(newLocations));
     }
   };
 
@@ -407,7 +406,6 @@ const App: React.FC = () => {
     if (city && !city.includes(trimmedNeighborhoodName)) {
         city.push(trimmedNeighborhoodName);
         setDynamicLocations(newLocations);
-        localStorage.setItem('myImmoLocations', JSON.stringify(newLocations));
     }
   };
 

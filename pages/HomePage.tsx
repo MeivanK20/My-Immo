@@ -51,7 +51,7 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
     { name: 'SIC', logoUrl: 'https://drive.google.com/uc?export=download&id=1ndkXLhivopajdXEBhUxGZTGMGqXsplDx' },
     { name: 'MINDUH', logoUrl: 'https://drive.google.com/uc?export=download&id=1oUqSNQ6gUsIMMIxoU5aa4yIwzYUYGU7W' },
     { name: 'SAD', logoUrl: 'https://drive.google.com/uc?export=download&id=1mCyiO2497HE4WXBAVnSj9Is_iL9CpQHu' },
-    { name: 'BGFIBank', logoUrl: 'C:\Users\MEIK20\Desktop\Immo\téléchargement (1)' },
+    { name: 'BGFIBank', logoUrl: 'https://logo.clearbit.com/bgfi.com' },
     { name: 'BICEC', logoUrl: 'https://drive.google.com/uc?export=download&id=1tlgqFYor799Suv6qm3FfEE4G4SvJc2xe' },
   ];
   
