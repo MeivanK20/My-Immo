@@ -46,13 +46,12 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
   }, [region, city]);
 
   const partners = [
-    { name: 'CCA Bank', logoUrl: 'https://drive.google.com/uc?export=download&id=1lpLgsckzVbkOdljm4_II1tw8lcRMJGWh' },
-    { name: 'CFC', logoUrl: 'https://drive.google.com/uc?export=download&id=1xDviLATS8TU1DnzUB5GmZqqSxKPl5Iia' },
-    { name: 'SIC', logoUrl: 'https://drive.google.com/uc?export=download&id=1ndkXLhivopajdXEBhUxGZTGMGqXsplDx' },
-    { name: 'MINDUH', logoUrl: 'https://drive.google.com/uc?export=download&id=1oUqSNQ6gUsIMMIxoU5aa4yIwzYUYGU7W' },
-    { name: 'SAD', logoUrl: 'https://drive.google.com/uc?export=download&id=1mCyiO2497HE4WXBAVnSj9Is_iL9CpQHu' },
-    { name: 'BGFIBank', logoUrl: 'https://logo.clearbit.com/bgfi.com' },
-    { name: 'BICEC', logoUrl: 'https://drive.google.com/uc?export=download&id=1tlgqFYor799Suv6qm3FfEE4G4SvJc2xe' },
+    { name: 'Partner 1', logoUrl: 'https://i.imgur.com/zEud8Yz.png' },
+    { name: 'Partner 2', logoUrl: 'https://i.imgur.com/KvZTbFi.png' },
+    { name: 'Partner 3', logoUrl: 'https://i.imgur.com/pUqybpc.png' },
+    { name: 'Partner 4', logoUrl: 'https://i.imgur.com/Eikn0h3.png' },
+    { name: 'Partner 5', logoUrl: 'https://i.imgur.com/63vAuam.png' },
+    { name: 'Partner 6', logoUrl: 'https://i.imgur.com/s2qFPpI.png' },
   ];
   
   const getAgentForProperty = (property: Property) => allUsers.find(u => u.uid === property.agentUid);
@@ -122,11 +121,11 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
             
             <div className="flex animate-marquee whitespace-nowrap">
               {[...partners, ...partners].map((partner, index) => (
-                <div key={index} className="flex-shrink-0 w-48 mx-10 flex items-center justify-center py-4">
+                <div key={index} className="flex-shrink-0 w-64 mx-12 flex items-center justify-center py-4">
                   <img 
                     src={partner.logoUrl} 
                     alt={partner.name} 
-                    className="max-h-12 w-auto object-contain transition-all duration-300 filter grayscale hover:grayscale-0"
+                    className="max-h-20 w-auto object-contain transition-all duration-300 filter grayscale hover:grayscale-0"
                   />
                 </div>
               ))}
