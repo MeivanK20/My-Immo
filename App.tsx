@@ -55,6 +55,14 @@ const getInitialHistoryState = () => {
   };
 };
 
+/**
+ * Custom hook for persisting state to localStorage.
+ * This is the core of the data persistence strategy. Any state managed by this hook
+ * will be automatically saved to the browser's local storage and reloaded on subsequent visits.
+ * @param key The key to use in localStorage.
+ * @param defaultValue The default value if nothing is found in localStorage.
+ * @returns A state and a setter function, similar to useState.
+ */
 function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
     const [state, setState] = useState<T>(() => {
         try {
@@ -84,41 +92,41 @@ const App: React.FC = () => {
 
   const { page: currentPage, data: pageData } = history[historyIndex];
 
+  // --- DATA PERSISTENCE ---
+  // The usePersistentState hook ensures that properties, users, messages, locations, and ratings
+  // are saved in the browser's localStorage. This means the data survives page reloads,
+  // browser closures, and even application updates, as long as the localStorage is not cleared.
   const [properties, setProperties] = usePersistentState<Property[]>('myImmoProperties', []);
   const [allUsers, setAllUsers] = usePersistentState<User[]>('myImmoUsers', []);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [messages, setMessages] = usePersistentState<Message[]>('myImmoMessages', []);
+  const [dynamicLocations, setDynamicLocations] = usePersistentState('myImmoLocations', staticLocations);
+  const [ratings, setRatings] = usePersistentState<Rating[]>('myImmoRatings', []);
+  
   const [loading, setLoading] = useState(true);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
-  
-  const [dynamicLocations, setDynamicLocations] = usePersistentState('myImmoLocations', staticLocations);
-  const [ratings, setRatings] = usePersistentState<Rating[]>('myImmoRatings', []);
 
   const mergedLocations = useMemo(() => {
-    // Deep merge static locations with dynamic locations from localStorage
     const merged = JSON.parse(JSON.stringify(staticLocations));
-
     for (const region in dynamicLocations) {
-        if (!merged[region]) {
-            merged[region] = {}; // A new region was added by the user
-        }
+        if (!merged[region]) merged[region] = {};
         for (const city in dynamicLocations[region]) {
-            if (!merged[region][city]) {
-                merged[region][city] = []; // A new city was added by the user
-            }
+            if (!merged[region][city]) merged[region][city] = [];
             const existingNeighborhoods = new Set(merged[region][city]);
             for (const neighborhood of dynamicLocations[region][city]) {
-                if (!existingNeighborhoods.has(neighborhood)) {
-                    merged[region][city].push(neighborhood);
-                }
+                if (!existingNeighborhoods.has(neighborhood)) merged[region][city].push(neighborhood);
             }
         }
     }
     return merged;
   }, [dynamicLocations]);
   
-   // One-time data initialization
+  // --- ONE-TIME DATA INITIALIZATION ---
+  // This effect runs only once when the application is first launched by a user.
+  // It populates the persistent state with mock data. On all subsequent runs, this block is skipped,
+  // ensuring that any user-generated data (new properties, new users, etc.) is preserved and not
+  // overwritten by application updates that might change the mock data.
   useEffect(() => {
     const isInitialized = localStorage.getItem('myImmoDataInitialized');
     if (!isInitialized) {
@@ -130,14 +138,11 @@ const App: React.FC = () => {
         setRatings([]);
         localStorage.setItem('myImmoDataInitialized', 'true');
     }
-  }, []);
+  }, []); // The empty dependency array ensures this runs only once.
 
   const handleGoogleLogin = (firebaseUser: FirebaseUser) => {
     const email = firebaseUser.email;
-    if (!email) {
-      console.error("Google sign-in did not provide an email.");
-      return;
-    }
+    if (!email) return;
 
     let user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
 
@@ -156,78 +161,67 @@ const App: React.FC = () => {
       setCurrentUser(newUser);
       localStorage.setItem('currentUser', JSON.stringify(newUser));
     }
-    
     handleNavigate('listings', undefined, { replace: true });
   };
   
-  // Recalculate scores and badges whenever users, properties, or ratings change
+  // Refactored score calculation to prevent infinite loops.
+  // This effect calculates agent scores and updates the main user list.
   useEffect(() => {
-    const calculateScores = () => {
-        if (allUsers.length === 0) return;
-
+    setAllUsers(currentAllUsers => {
+        if (currentAllUsers.length === 0) return currentAllUsers;
+        
         let hasChanges = false;
-        const updatedUsers = allUsers.map(user => {
-            if (user.role !== 'agent') {
-                return user; // Return original object if not an agent
-            }
+        const updatedUsers = currentAllUsers.map(user => {
+            if (user.role !== 'agent') return user;
 
             const agentProperties = properties.filter(p => p.agentUid === user.uid);
             const agentRatings = ratings.filter(r => r.agentUid === user.uid);
             
             let score = 0;
-  
-            // 1. Average Rating (up to 5 points)
             if (agentRatings.length > 0) {
-                const totalRating = agentRatings.reduce((sum, r) => sum + r.rating, 0);
-                score += totalRating / agentRatings.length;
+                score += agentRatings.reduce((sum, r) => sum + r.rating, 0) / agentRatings.length;
             }
-  
-            // 2. Property Count Bonus (up to 1 point)
             score += Math.min(agentProperties.length * 0.1, 1);
-            
-            // 3. Premium Bonus (1 point)
-            if (user.subscriptionPlan === 'premium') {
-                score += 1;
-            }
-  
-            // 4. Profile Completeness (up to 0.5 points)
+            if (user.subscriptionPlan === 'premium') score += 1;
             if (user.profilePictureUrl && user.profilePictureUrl.includes('https')) score += 0.25;
             if (user.phone) score += 0.25;
 
             const finalScore = Math.round(score * 100) / 100;
-  
-            let badge: User['badge'] | undefined = undefined;
-            if (finalScore >= 5) {
-                badge = 'Gold';
-            } else if (finalScore >= 4) {
-                badge = 'Silver';
-            } else if (finalScore >= 3) {
-                badge = 'Bronze';
-            }
 
-            // Check if there are any actual changes
+            let badge: User['badge'] | undefined = undefined;
+            if (finalScore >= 5) badge = 'Gold';
+            else if (finalScore >= 4) badge = 'Silver';
+            else if (finalScore >= 3) badge = 'Bronze';
+
             const existingScoreRounded = user.score ? Math.round(user.score * 100) / 100 : 0;
             if (existingScoreRounded !== finalScore || user.badge !== badge) {
                 hasChanges = true;
                 return { ...user, score: finalScore, badge };
             }
 
-            return user; // Return original object reference if no changes
+            return user;
         });
 
+        // Only update the state if there are actual changes to prevent a loop.
         if (hasChanges) {
-            setAllUsers(updatedUsers);
-            if (currentUser?.role === 'agent') {
-                const updatedCurrentUser = updatedUsers.find(u => u.uid === currentUser.uid);
-                if (updatedCurrentUser) {
-                     setCurrentUser(updatedCurrentUser);
-                }
-            }
+            return updatedUsers;
         }
-    };
-  
-    calculateScores();
-  }, [allUsers, properties, ratings]);
+
+        return currentAllUsers; // Return the original state if no changes occurred.
+    });
+  }, [properties, ratings, setAllUsers]);
+
+  // This effect syncs the `currentUser` state with the master `allUsers` list.
+  // This is separated to avoid dependency cycles.
+  useEffect(() => {
+    if (currentUser) {
+        const updatedCurrentUserInList = allUsers.find(u => u.uid === currentUser.uid);
+        // Compare stringified objects to prevent loops from object reference changes.
+        if (updatedCurrentUserInList && JSON.stringify(updatedCurrentUserInList) !== JSON.stringify(currentUser)) {
+            setCurrentUser(updatedCurrentUserInList);
+        }
+    }
+  }, [allUsers, currentUser]);
 
   useEffect(() => {
     try {
@@ -238,6 +232,10 @@ const App: React.FC = () => {
     }
   }, [history, historyIndex]);
 
+  // --- SESSION PERSISTENCE ---
+  // This effect runs on application startup to check if a user was previously logged in.
+  // By storing the `currentUser` object in localStorage on login and removing it on logout,
+  // the user's session is maintained across browser restarts.
   useEffect(() => {
     const checkAuth = async () => {
       const savedUserJson = localStorage.getItem('currentUser');
@@ -250,12 +248,9 @@ const App: React.FC = () => {
           localStorage.removeItem('currentUser');
         }
       }
-      
       try {
         const userFromRedirect = await handleGoogleRedirectResult();
-        if (userFromRedirect) {
-          handleGoogleLogin(userFromRedirect);
-        }
+        if (userFromRedirect) handleGoogleLogin(userFromRedirect);
       } catch(error) {
         console.error("Error handling Google redirect:", error);
       } finally {
@@ -272,12 +267,8 @@ const App: React.FC = () => {
       setHistoryIndex(0);
     } else {
       const currentHistory = history.slice(0, historyIndex + 1);
-      
       const lastEntry = currentHistory[currentHistory.length - 1];
-      if (lastEntry.page === page && JSON.stringify(lastEntry.data) === JSON.stringify(data)) {
-          return;
-      }
-  
+      if (lastEntry.page === page && JSON.stringify(lastEntry.data) === JSON.stringify(data)) return;
       currentHistory.push({ page, data });
       setHistory(currentHistory);
       setHistoryIndex(currentHistory.length - 1);
@@ -285,22 +276,13 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
   };
   
-  const handleGoBack = () => {
-    if (historyIndex > 0) {
-      setHistoryIndex(prevIndex => prevIndex - 1);
-    }
-  };
-
-  const handleGoForward = () => {
-    if (historyIndex < history.length - 1) {
-      setHistoryIndex(prevIndex => prevIndex + 1);
-    }
-  };
-
+  const handleGoBack = () => { if (historyIndex > 0) setHistoryIndex(prevIndex => prevIndex - 1); };
+  const handleGoForward = () => { if (historyIndex < history.length - 1) setHistoryIndex(prevIndex => prevIndex + 1); };
   const canGoBack = historyIndex > 0;
   const canGoForward = historyIndex < history.length - 1;
 
   const handleLogout = () => {
+    // Removing the user from localStorage effectively ends their session.
     localStorage.removeItem('currentUser');
     setCurrentUser(null);
     handleNavigate('home');
@@ -310,32 +292,21 @@ const App: React.FC = () => {
     const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (user) {
         setCurrentUser(user);
+        // Storing the logged-in user in localStorage maintains the session.
         localStorage.setItem('currentUser', JSON.stringify(user));
-        if (user.role === 'admin') {
-            handleNavigate('adminDashboard', undefined, { replace: true });
-        } else if (user.role === 'agent') {
-            handleNavigate('dashboard', undefined, { replace: true });
-        } else {
-            handleNavigate('listings', undefined, { replace: true });
-        }
+        if (user.role === 'admin') handleNavigate('adminDashboard', undefined, { replace: true });
+        else if (user.role === 'agent') handleNavigate('dashboard', undefined, { replace: true });
+        else handleNavigate('listings', undefined, { replace: true });
         return user;
     }
     return null;
   };
 
   const handleRegister = (name: string, email: string, role: 'visitor' | 'agent'): User | null => {
-      if(allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-          return null;
-      }
-      const newUser: User = {
-          uid: `user${Date.now()}`,
-          name,
-          email,
-          role,
-      };
-      if (role === 'agent') {
-        newUser.subscriptionPlan = 'free';
-      }
+      if(allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) return null;
+      const newUser: User = { uid: `user${Date.now()}`, name, email, role };
+      if (role === 'agent') newUser.subscriptionPlan = 'free';
+      // New user registration is automatically saved to localStorage via the usePersistentState hook.
       setAllUsers(prev => [...prev, newUser]);
       handleNavigate('registrationSuccess', { email: newUser.email });
       return newUser;
@@ -343,40 +314,23 @@ const App: React.FC = () => {
 
   const handleSearch = (filters: any) => setSearchFilters(filters);
   
-  const processMediaFiles = (files: File[]): Media[] => {
-    return files.map(file => ({
-      url: URL.createObjectURL(file),
-      type: file.type.startsWith('image/') ? 'image' : 'video'
-    }));
-  };
+  const processMediaFiles = (files: File[]): Media[] => files.map(file => ({ url: URL.createObjectURL(file), type: file.type.startsWith('image/') ? 'image' : 'video' }));
 
   const handleAddProperty = (propertyData: Omit<Property, 'id' | 'media'>, mediaFiles: File[]) => {
     if (!currentUser) return;
-    
     const newMedia = processMediaFiles(mediaFiles);
-    const newProperty: Property = {
-      id: `prop${Date.now()}`,
-      ...propertyData,
-      media: newMedia,
-    };
-    
+    const newProperty: Property = { id: `prop${Date.now()}`, ...propertyData, media: newMedia };
     setProperties(prev => [newProperty, ...prev]);
   };
   
   const handleEditProperty = (updatedProperty: Property, newMediaFiles: File[]) => {
       const newMedia = processMediaFiles(newMediaFiles);
       const finalMedia = [...updatedProperty.media, ...newMedia];
-      
       const finalProperty = { ...updatedProperty, media: finalMedia };
       setProperties(prev => prev.map(p => p.id === updatedProperty.id ? finalProperty : p));
   };
   
-  const handleDeleteProperty = (id: string) => {
-    const propertyToDelete = properties.find(p => p.id === id);
-    if (!propertyToDelete) return;
-    
-    setProperties(prev => prev.filter(p => p.id !== id));
-  };
+  const handleDeleteProperty = (id: string) => setProperties(prev => prev.filter(p => p.id !== id));
   
   const handleDeleteUser = (uid: string) => {
       if (currentUser?.uid === uid) {
@@ -388,23 +342,14 @@ const App: React.FC = () => {
   };
 
   const handleSendMessage = (messageData: Omit<Message, 'id' | 'timestamp'>) => {
-    const newMessage: Message = {
-      id: `msg${Date.now()}`,
-      ...messageData,
-      timestamp: new Date(),
-    };
+    const newMessage: Message = { id: `msg${Date.now()}`, ...messageData, timestamp: new Date() };
     setMessages(prev => [newMessage, ...prev]);
   };
   
   const handleUpdateProfile = (updatedUser: User, newProfilePicture: File | null) => {
       if (!currentUser) return;
-
       let finalUser = { ...updatedUser };
-
-      if (newProfilePicture) {
-          finalUser.profilePictureUrl = URL.createObjectURL(newProfilePicture);
-      }
-
+      if (newProfilePicture) finalUser.profilePictureUrl = URL.createObjectURL(newProfilePicture);
       setAllUsers(prevUsers => prevUsers.map(u => u.uid === finalUser.uid ? finalUser : u));
       setCurrentUser(finalUser);
   };
@@ -421,10 +366,8 @@ const App: React.FC = () => {
   const handleAddCity = (regionName: string, cityName: string) => {
     if (!regionName || !cityName.trim()) return;
     const trimmedCityName = cityName.trim();
-
     const newLocations = JSON.parse(JSON.stringify(dynamicLocations));
     const region = newLocations[regionName as keyof typeof newLocations];
-
     if (region && !region.hasOwnProperty(trimmedCityName)) {
         region[trimmedCityName] = [];
         setDynamicLocations(newLocations);
@@ -434,10 +377,8 @@ const App: React.FC = () => {
   const handleAddNeighborhood = (regionName: string, cityName: string, neighborhoodName: string) => {
     if (!regionName || !cityName || !neighborhoodName.trim()) return;
     const trimmedNeighborhoodName = neighborhoodName.trim();
-
     const newLocations = JSON.parse(JSON.stringify(dynamicLocations));
     const city = newLocations[regionName as keyof typeof newLocations]?.[cityName];
-
     if (city && !city.includes(trimmedNeighborhoodName)) {
         city.push(trimmedNeighborhoodName);
         setDynamicLocations(newLocations);
@@ -446,51 +387,33 @@ const App: React.FC = () => {
 
   const handleAddRating = (propertyId: string, agentUid: string, rating: number) => {
     if (!currentUser) return;
-    
     setRatings(prev => {
         const existingRatingIndex = prev.findIndex(r => r.propertyId === propertyId && r.visitorUid === currentUser.uid);
         if (existingRatingIndex > -1) {
-            // Update existing rating
             const updatedRatings = [...prev];
             updatedRatings[existingRatingIndex] = { ...updatedRatings[existingRatingIndex], rating, timestamp: new Date() };
             return updatedRatings;
         } else {
-            // Add new rating
-            const newRating: Rating = {
-                id: `rating_${Date.now()}`,
-                propertyId,
-                agentUid,
-                visitorUid: currentUser.uid,
-                rating,
-                timestamp: new Date()
-            };
+            const newRating: Rating = { id: `rating_${Date.now()}`, propertyId, agentUid, visitorUid: currentUser.uid, rating, timestamp: new Date() };
             return [...prev, newRating];
         }
     });
   };
 
   const renderPage = () => {
-    if (loading) {
-      return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
-    }
+    if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
     switch (currentPage) {
-      case 'listings':
-        return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations} />;
-      case 'propertyDetail':
-        const agent = allUsers.find(u => u.uid === pageData.agentUid);
-        return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
+      case 'listings': return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations} />;
+      case 'propertyDetail': const agent = allUsers.find(u => u.uid === pageData.agentUid); return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
       case 'dashboard':
         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
         const agentProperties = properties.filter(p => p.agentUid === currentUser.uid);
         const agentMessagesCount = messages.filter(m => m.agentUid === currentUser.uid).length;
-        const currentAgentData = allUsers.find(u => u.uid === currentUser.uid); // Get user with updated score/badge
+        const currentAgentData = allUsers.find(u => u.uid === currentUser.uid);
         return <DashboardPage user={currentAgentData || currentUser} properties={agentProperties} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} messageCount={agentMessagesCount} />;
        case 'addProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
-         if (currentUser.role === 'agent' && currentUser.subscriptionPlan === 'free' && properties.filter(p => p.agentUid === currentUser.uid).length >= 5) {
-             handleNavigate('pricing');
-             return null;
-         }
+         if (currentUser.role === 'agent' && currentUser.subscriptionPlan === 'free' && properties.filter(p => p.agentUid === currentUser.uid).length >= 5) { handleNavigate('pricing'); return null; }
         return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
        case 'editProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin') || (currentUser.role !== 'admin' && currentUser.uid !== pageData.agentUid)) { handleNavigate('home'); return null; }
@@ -502,12 +425,9 @@ const App: React.FC = () => {
        case 'profileSettings':
           if (!currentUser) { handleNavigate('login'); return null; }
           return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
-       case 'login':
-          return <LoginPage onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
-       case 'register':
-          return <RegisterPage onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
-       case 'registrationSuccess':
-          return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
+       case 'login': return <LoginPage onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
+       case 'register': return <RegisterPage onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
+       case 'registrationSuccess': return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
        case 'adminDashboard':
            if (!currentUser || currentUser.role !== 'admin') { handleNavigate('home'); return null; }
            return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={handleNavigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
