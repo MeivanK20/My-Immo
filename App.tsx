@@ -84,10 +84,10 @@ const App: React.FC = () => {
 
   const { page: currentPage, data: pageData } = history[historyIndex];
 
-  const [properties, setProperties] = useState<Property[]>(mockProperties);
-  const [allUsers, setAllUsers] = useState<User[]>(mockUsers);
+  const [properties, setProperties] = usePersistentState<Property[]>('myImmoProperties', []);
+  const [allUsers, setAllUsers] = usePersistentState<User[]>('myImmoUsers', []);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = usePersistentState<Message[]>('myImmoMessages', []);
   const [loading, setLoading] = useState(true);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
@@ -118,6 +118,20 @@ const App: React.FC = () => {
     return merged;
   }, [dynamicLocations]);
   
+   // One-time data initialization
+  useEffect(() => {
+    const isInitialized = localStorage.getItem('myImmoDataInitialized');
+    if (!isInitialized) {
+        console.log("First run: Initializing data from mocks.");
+        setProperties(mockProperties);
+        setAllUsers(mockUsers);
+        setDynamicLocations(staticLocations);
+        setMessages([]);
+        setRatings([]);
+        localStorage.setItem('myImmoDataInitialized', 'true');
+    }
+  }, []);
+
   const handleGoogleLogin = (firebaseUser: FirebaseUser) => {
     const email = firebaseUser.email;
     if (!email) {
@@ -149,13 +163,16 @@ const App: React.FC = () => {
   // Recalculate scores and badges whenever users, properties, or ratings change
   useEffect(() => {
     const calculateScores = () => {
-        const agents = allUsers.filter(u => u.role === 'agent');
-        
-        const updatedAgentsData = new Map<string, { score: number, badge: User['badge'] | undefined }>();
-  
-        agents.forEach(agent => {
-            const agentProperties = properties.filter(p => p.agentUid === agent.uid);
-            const agentRatings = ratings.filter(r => r.agentUid === agent.uid);
+        if (allUsers.length === 0) return;
+
+        let hasChanges = false;
+        const updatedUsers = allUsers.map(user => {
+            if (user.role !== 'agent') {
+                return user; // Return original object if not an agent
+            }
+
+            const agentProperties = properties.filter(p => p.agentUid === user.uid);
+            const agentRatings = ratings.filter(r => r.agentUid === user.uid);
             
             let score = 0;
   
@@ -169,53 +186,48 @@ const App: React.FC = () => {
             score += Math.min(agentProperties.length * 0.1, 1);
             
             // 3. Premium Bonus (1 point)
-            if (agent.subscriptionPlan === 'premium') {
+            if (user.subscriptionPlan === 'premium') {
                 score += 1;
             }
   
             // 4. Profile Completeness (up to 0.5 points)
-            if (agent.profilePictureUrl && agent.profilePictureUrl.includes('https')) score += 0.25;
-            if (agent.phone) score += 0.25;
+            if (user.profilePictureUrl && user.profilePictureUrl.includes('https')) score += 0.25;
+            if (user.phone) score += 0.25;
+
+            const finalScore = Math.round(score * 100) / 100;
   
             let badge: User['badge'] | undefined = undefined;
-            if (score >= 5) {
+            if (finalScore >= 5) {
                 badge = 'Gold';
-            } else if (score >= 4) {
+            } else if (finalScore >= 4) {
                 badge = 'Silver';
-            } else if (score >= 3) {
+            } else if (finalScore >= 3) {
                 badge = 'Bronze';
             }
-            
-            updatedAgentsData.set(agent.uid, { score, badge });
-        });
-  
-        let needsUserUpdate = false;
-        const newAllUsers = allUsers.map(user => {
-            if (user.role === 'agent') {
-                const newData = updatedAgentsData.get(user.uid);
-                // Check if score is a number before comparing to avoid NaN issues
-                const existingScore = typeof user.score === 'number' ? user.score : -1;
-                if (newData && (existingScore !== newData.score || user.badge !== newData.badge)) {
-                    needsUserUpdate = true;
-                    return { ...user, score: newData.score, badge: newData.badge };
-                }
+
+            // Check if there are any actual changes
+            const existingScoreRounded = user.score ? Math.round(user.score * 100) / 100 : 0;
+            if (existingScoreRounded !== finalScore || user.badge !== badge) {
+                hasChanges = true;
+                return { ...user, score: finalScore, badge };
             }
-            return user;
+
+            return user; // Return original object reference if no changes
         });
-  
-        if (needsUserUpdate) {
-            setAllUsers(newAllUsers);
-            if (currentUser && currentUser.role === 'agent') {
-                const updatedCurrentUser = newAllUsers.find(u => u.uid === currentUser.uid);
-                if (updatedCurrentUser && (currentUser.score !== updatedCurrentUser.score || currentUser.badge !== updatedCurrentUser.badge)) {
-                    setCurrentUser(updatedCurrentUser);
+
+        if (hasChanges) {
+            setAllUsers(updatedUsers);
+            if (currentUser?.role === 'agent') {
+                const updatedCurrentUser = updatedUsers.find(u => u.uid === currentUser.uid);
+                if (updatedCurrentUser) {
+                     setCurrentUser(updatedCurrentUser);
                 }
             }
         }
     };
   
     calculateScores();
-  }, [properties, ratings, allUsers]);
+  }, [allUsers, properties, ratings]);
 
   useEffect(() => {
     try {
@@ -504,7 +516,7 @@ const App: React.FC = () => {
           return <PricingPage currentUser={currentUser} onNavigateToPayment={() => handleNavigate('payment')} />;
        case 'payment':
           if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
-          return <PaymentPage onSuccessfulPayment={handleUpgradePlan} onNavigate={handleNavigate} />;
+          return <PaymentPage currentUser={currentUser} onSuccessfulPayment={handleUpgradePlan} onNavigate={handleNavigate} />;
        case 'careers': return <CareersPage />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;

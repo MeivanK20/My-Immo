@@ -1,46 +1,70 @@
 import React, { useState } from 'react';
-import { NavigationFunction } from '../types';
+import { NavigationFunction, User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import CardIcon from '../components/icons/CardIcon';
-import OrangeMoneyIcon from '../components/icons/OrangeMoneyIcon';
-import MtnMoneyIcon from '../components/icons/MtnMoneyIcon';
+
+declare global {
+  interface Window {
+    Monetbil: any;
+  }
+}
 
 interface PaymentPageProps {
+  currentUser: User | null;
   onSuccessfulPayment: () => void;
   onNavigate: NavigationFunction;
 }
 
-const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccessfulPayment, onNavigate }) => {
+const PaymentPage: React.FC<PaymentPageProps> = ({ currentUser, onSuccessfulPayment, onNavigate }) => {
   const { t } = useLanguage();
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePayment = () => {
+    if (!currentUser) {
+      setError('User not found.');
+      return;
+    }
     setError('');
-    if (!selectedMethod) return;
-
-    if ((selectedMethod === 'orange' || selectedMethod === 'mtn') && !phoneNumber.trim()) {
-      setError(t('paymentPage.phoneRequiredError'));
+    
+    if (typeof window.Monetbil === 'undefined') {
+      setError('Monetbil payment service is not available. Please check your connection and try again.');
       return;
     }
 
-    setIsProcessing(true);
-    setTimeout(() => {
-      onSuccessfulPayment();
-    }, 2500);
+    setIsLoading(true);
+
+    const paymentData = {
+      amount: '10000',
+      phone: currentUser.phone || '',
+      country: 'CM',
+      currency: 'XAF',
+      email: currentUser.email,
+      first_name: currentUser.name.split(' ')[0],
+      last_name: currentUser.name.split(' ').slice(1).join(' '),
+      // This is a public test key. Replace with your own live key.
+      service_key: 'L573B75E569844B', 
+      item_ref: `PREMIUM-${currentUser.uid}-${Date.now()}`,
+      title: t('pricingPage.premiumPlan'),
+      description: t('pricingPage.subtitle'),
+      onComplete: (payment: any) => {
+        setIsLoading(false);
+        onSuccessfulPayment();
+      },
+      onClose: () => {
+        setIsLoading(false);
+      },
+      onError: (err: any) => {
+        console.error('Payment error:', err);
+        setError(err.message || t('contactPage.sendError'));
+        setIsLoading(false);
+      }
+    };
+
+    window.Monetbil.pay(paymentData);
   };
-
-  const paymentMethods = [
-    { id: 'card', name: t('paymentPage.creditCard'), icon: <CardIcon /> },
-    { id: 'orange', name: t('paymentPage.orangeMoney'), icon: <OrangeMoneyIcon /> },
-    { id: 'mtn', name: t('paymentPage.mtnMobileMoney'), icon: <MtnMoneyIcon /> },
-  ];
-
-  if (isProcessing) {
+  
+  if (isLoading) {
     return (
       <div className="container mx-auto px-6 py-12 flex flex-col items-center justify-center text-center min-h-[calc(100vh-280px)]">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red mb-4"></div>
@@ -49,14 +73,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccessfulPayment, onNaviga
       </div>
     );
   }
-  
-  const handleMethodSelect = (methodId: string) => {
-    setSelectedMethod(methodId);
-    setError('');
-    if (methodId !== 'orange' && methodId !== 'mtn') {
-      setPhoneNumber('');
-    }
-  };
 
   return (
     <div className="container mx-auto px-6 py-12 max-w-2xl">
@@ -75,49 +91,16 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ onSuccessfulPayment, onNaviga
           <p className="text-2xl font-bold text-white">{t('pricingPage.premiumPrice')}</p>
         </div>
 
-        <h2 className="text-xl font-semibold text-white mb-4">{t('paymentPage.selectMethod')}</h2>
-
-        <div className="space-y-4 mb-6">
-          {paymentMethods.map(method => (
-            <div key={method.id}>
-              <button
-                onClick={() => handleMethodSelect(method.id)}
-                className={`w-full flex items-center p-4 border rounded-lg text-left transition-all duration-200 ${selectedMethod === method.id ? 'border-brand-red ring-2 ring-brand-red bg-brand-dark' : 'border-brand-dark hover:border-brand-red/50'}`}
-              >
-                <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-4">
-                  {method.icon}
-                </div>
-                <span className="font-medium text-white">{method.name}</span>
-                <div className="ml-auto">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedMethod === method.id ? 'border-brand-red' : 'border-gray-500'}`}>
-                    {selectedMethod === method.id && <div className="w-3 h-3 rounded-full bg-brand-red"></div>}
-                  </div>
-                </div>
-              </button>
-              {selectedMethod === method.id && (method.id === 'orange' || method.id === 'mtn') && (
-                  <div className="p-4 bg-brand-dark/50 rounded-b-lg -mt-2 border border-t-0 border-brand-dark animate-fade-in-up">
-                    <Input
-                      label={t('paymentPage.phoneNumberLabel')}
-                      id="phone-number"
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="6XX XXX XXX"
-                      required
-                      autoFocus
-                    />
-                    <p className="text-xs text-gray-500 mt-2">{t('paymentPage.momoDescription')}</p>
-                  </div>
-                )}
-            </div>
-          ))}
+        <h2 className="text-xl font-semibold text-white mb-4">{t('paymentPage.paymentMethod')}</h2>
+        <div className="p-4 bg-brand-dark/50 rounded-lg text-center">
+            <p className="text-gray-300">{t('paymentPage.monetbilInfo')}</p>
         </div>
         
-        {error && <p className="text-red-400 text-sm text-center mb-4">{error}</p>}
+        {error && <p className="bg-red-500/20 text-red-400 p-3 rounded-md text-sm text-center my-4">{error}</p>}
 
-        <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4">
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 mt-8">
             <Button variant="secondary" onClick={() => onNavigate('pricing')} className="w-full sm:w-auto">{t('paymentPage.goBack')}</Button>
-            <Button onClick={handlePayment} disabled={!selectedMethod} className="w-full sm:w-2/3">
+            <Button onClick={handlePayment} className="w-full sm:w-2/3">
               {t('paymentPage.payNow')} {t('pricingPage.premiumPrice')}
             </Button>
         </div>
