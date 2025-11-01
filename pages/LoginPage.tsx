@@ -4,7 +4,7 @@ import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
 import { NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import GoogleIcon from '../components/icons/GoogleIcon';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 interface LoginPageProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -89,16 +89,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleSignIn, onNaviga
             </div>
 
             <div>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full flex items-center justify-center gap-3"
+              <GoogleLoginButton
                 onClick={handleGoogleSignInClick}
                 disabled={isLoading}
-              >
-                <GoogleIcon />
-                {t('loginPage.googleSignIn')}
-              </Button>
+              />
             </div>
             
             <p className="mt-6 text-center text-sm text-gray-400">

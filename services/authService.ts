@@ -1,64 +1,73 @@
-// services/authService.ts
-import { account, ID } from "../lib/appwriteConfig";
-import { AppwriteException, OAuthProvider } from "appwrite";
+import { Client, Account, ID, AppwriteException } from "appwrite";
 
-// Création d’un compte utilisateur
-export const registerUser = async (email: string, password: string, name?: string) => {
+// ✅ Initialisation du client Appwrite
+const client = new Client();
+
+client
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID);
+
+// ✅ Export des services Appwrite
+export const account = new Account(client);
+export { ID };
+
+/**
+ * Enregistre un nouvel utilisateur
+ * @param email - Email de l'utilisateur
+ * @param password - Mot de passe
+ * @param name - Nom de l'utilisateur
+ */
+export const registerUser = async (email: string, password: string, name: string) => {
   try {
-    return await account.create(
-      ID.unique(), // FIX: Use ID.unique() for a unique user ID
-      email,
-      password,
-      name
-    );
+    const user = await account.create(ID.unique(), email, password, name);
+    return user;
   } catch (error) {
-    console.error("Erreur registration:", error);
+    if (error instanceof AppwriteException) {
+      throw new Error(error.message);
+    }
     throw error;
   }
 };
 
-// Connexion utilisateur
+/**
+ * Connecte un utilisateur existant
+ * @param email - Email
+ * @param password - Mot de passe
+ */
 export const loginUser = async (email: string, password: string) => {
   try {
-    // FIX: createEmailPasswordSession takes two string arguments, not an object.
-    await account.createEmailPasswordSession(
-      email,
-      password
-    );
-    // Return the user account object on successful session creation
-    return await account.get();
+    const session = await account.createEmailSession(email, password);
+    return session;
   } catch (error) {
-    console.error("Erreur login:", error);
+    if (error instanceof AppwriteException) {
+      throw new Error(error.message);
+    }
     throw error;
   }
 };
 
-// Connexion avec Google
-export const googleSignIn = () => {
-    const successUrl = window.location.origin;
-    const failureUrl = window.location.origin;
-    account.createOAuth2Session(OAuthProvider.Google, successUrl, failureUrl);
-};
-
-// Déconnexion utilisateur
+/**
+ * Déconnecte l'utilisateur actuel
+ */
 export const logoutUser = async () => {
   try {
-    return await account.deleteSession("current");
+    await account.deleteSession("current");
   } catch (error) {
-    console.error("Erreur logout:", error);
+    if (error instanceof AppwriteException) {
+      throw new Error(error.message);
+    }
     throw error;
   }
 };
 
-// Récupérer les informations de l’utilisateur connecté
+/**
+ * Récupère l'utilisateur actuellement connecté
+ */
 export const getCurrentUser = async () => {
   try {
-    return await account.get();
+    const user = await account.get();
+    return user;
   } catch (error) {
-    if (error instanceof AppwriteException && error.code === 401) {
-      return null; // Not logged in, this is expected.
-    }
-    console.error("Erreur getCurrentUser:", error);
-    return null;
+    return null; // Pas de session active
   }
 };
