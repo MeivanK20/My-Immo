@@ -4,7 +4,8 @@ import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { locations as staticLocations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
-import { appwriteService, AppwriteException } from './services/appwriteService';
+import * as authService from './services/authService';
+import { AppwriteException } from 'appwrite';
 
 
 import Header from './components/Header';
@@ -139,7 +140,7 @@ const App: React.FC = () => {
     }
     return merged;
   }, [dynamicLocations]);
-  
+
   // --- DATA PERSISTENCE & MIGRATION ---
   // This effect runs once on startup to ensure user data is persistent across updates.
   // It replaces a simple "isInitialized" flag with a robust versioning system.
@@ -239,281 +240,331 @@ const App: React.FC = () => {
   // This is separated to avoid dependency cycles.
   useEffect(() => {
     if (currentUser) {
-        const updatedCurrentUserInList = allUsers.find(u => u.uid === currentUser.uid);
-        // Compare stringified objects to prevent loops from object reference changes.
-        if (updatedCurrentUserInList && JSON.stringify(updatedCurrentUserInList) !== JSON.stringify(currentUser)) {
-            setCurrentUser(updatedCurrentUserInList);
-        }
+      const userInList = allUsers.find(u => u.uid === currentUser.uid);
+      if (userInList && JSON.stringify(userInList) !== JSON.stringify(currentUser)) {
+        setCurrentUser(userInList);
+      }
     }
   }, [allUsers, currentUser]);
 
+  // Session Management
   useEffect(() => {
-    try {
-      sessionStorage.setItem('navigationHistory', JSON.stringify(history));
-      sessionStorage.setItem('navigationHistoryIndex', historyIndex.toString());
-    } catch (error) {
-      console.error("Could not save navigation history to sessionStorage", error);
-    }
-  }, [history, historyIndex]);
-
-  // --- SESSION PERSISTENCE ---
-  // This effect runs on application startup to check if a user is logged into Appwrite.
-  useEffect(() => {
-    const checkAuth = async () => {
-      // Clean up old session persistence method from Firebase implementation
-      localStorage.removeItem('currentUser');
+    const checkSession = async () => {
+      setLoading(true);
       try {
-        const appwriteUser = await appwriteService.getCurrentAccount();
+        const appwriteUser = await authService.getCurrentUser();
         if (appwriteUser) {
-          // If a user is logged into Appwrite, find their corresponding data in our local state.
-          let localUser = allUsers.find(u => u.uid === appwriteUser.$id);
-
-          if (!localUser) {
-            // This can happen if the user signed up (e.g., via OAuth) but their local data was cleared.
-            // We create a local representation to ensure the app functions correctly.
-            console.log(`Found Appwrite user ${appwriteUser.email} without local data. Creating record.`);
-            localUser = {
-              uid: appwriteUser.$id,
-              name: appwriteUser.name,
-              email: appwriteUser.email,
-              role: 'visitor', // Default to 'visitor' for safety
-            };
-            setAllUsers(prev => [...prev, localUser!]);
-          }
-          setCurrentUser(localUser);
+          // Use function form of setState to avoid dependency on allUsers
+          setAllUsers(prevUsers => {
+            let userInDb = prevUsers.find(u => u.email === appwriteUser.email);
+            if (userInDb) {
+              setCurrentUser(userInDb);
+              return prevUsers; // No change to the list
+            } else {
+              // This is a new user (e.g., from Google Sign-In)
+              console.log("New user detected from session, adding to list:", appwriteUser.name);
+              const newUser: User = {
+                uid: appwriteUser.$id,
+                name: appwriteUser.name,
+                email: appwriteUser.email,
+                role: 'visitor', // Default role for new sign-ups
+                subscriptionPlan: 'free',
+                phone: appwriteUser.phone || '',
+                profilePictureUrl: '',
+                score: 0,
+                badge: undefined,
+              };
+              setCurrentUser(newUser); // Set the new user as current
+              return [...prevUsers, newUser]; // Add them to the master list
+            }
+          });
+        } else {
+          setCurrentUser(null);
         }
       } catch (error) {
-        console.error("Failed to check Appwrite session:", error);
+        console.error("Session check failed", error);
+        setCurrentUser(null);
       } finally {
         setLoading(false);
       }
     };
-    checkAuth();
-  }, []); // The empty dependency array ensures this runs only once on app startup.
 
+    checkSession();
+  }, []); // FIX: Empty dependency array to run only once on mount and prevent infinite loops.
 
-  const handleNavigate = (page: Page, data?: any, options?: { replace?: boolean }) => {
-    if (options?.replace) {
-      const newHistory = [{ page, data }];
-      setHistory(newHistory);
-      setHistoryIndex(0);
+  // Navigation Logic
+  const navigate = (page: Page, data: any = null, options: { replace?: boolean } = {}) => {
+    const newState = { page, data };
+    if (options.replace) {
+      setHistory(prev => [...prev.slice(0, historyIndex), newState]);
     } else {
-      const currentHistory = history.slice(0, historyIndex + 1);
-      const lastEntry = currentHistory[currentHistory.length - 1];
-      if (lastEntry.page === page && JSON.stringify(lastEntry.data) === JSON.stringify(data)) return;
-      currentHistory.push({ page, data });
-      setHistory(currentHistory);
-      setHistoryIndex(currentHistory.length - 1);
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(newState);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
     }
     window.scrollTo(0, 0);
   };
-  
-  const handleGoBack = () => { if (historyIndex > 0) setHistoryIndex(prevIndex => prevIndex - 1); };
-  const handleGoForward = () => { if (historyIndex < history.length - 1) setHistoryIndex(prevIndex => prevIndex + 1); };
-  const canGoBack = historyIndex > 0;
-  const canGoForward = historyIndex < history.length - 1;
 
-  const handleLogout = async () => {
+  const goBack = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(prev => prev - 1);
+    }
+  };
+
+  const goForward = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(prev => prev + 1);
+    }
+  };
+
+  useEffect(() => {
+    sessionStorage.setItem('navigationHistory', JSON.stringify(history));
+    sessionStorage.setItem('navigationHistoryIndex', historyIndex.toString());
+  }, [history, historyIndex]);
+
+  // Auth Handlers
+  const onLogin = async (email: string, password: string) => {
+    const appwriteUser = await authService.loginUser(email, password);
+    const userInDb = allUsers.find(u => u.email === appwriteUser.email);
+    if (userInDb) {
+      setCurrentUser(userInDb);
+      navigate('home', null, { replace: true });
+    } else {
+      console.error("Logged in user not found in local user database:", appwriteUser.email);
+      throw new Error(t('loginPage.error'));
+    }
+  };
+  
+  const onGoogleSignIn = () => {
     try {
-        await appwriteService.deleteCurrentSession();
-        setCurrentUser(null);
-        handleNavigate('home');
+      authService.googleSignIn();
     } catch (error) {
-        console.error("Failed to logout with Appwrite:", error);
-        alert('Logout failed. Please try again.');
+      console.error("Google Sign In failed to initiate", error);
     }
   };
 
-  const handleLogin = async (email: string, password: string): Promise<void> => {
-    const appwriteUser = await appwriteService.createEmailSession(email, password);
-    let localUser = allUsers.find(u => u.uid === appwriteUser.$id);
-    
-    if (!localUser) {
-        // This case can happen if a user was created via OAuth
-        // but is now logging in with email/password (if they set one).
-        localUser = {
-            uid: appwriteUser.$id,
-            name: appwriteUser.name,
-            email: appwriteUser.email,
-            role: 'visitor', // Default role for safety
-        };
-        setAllUsers(prev => [...prev, localUser!]);
+  const onRegister = async (name: string, email: string, password: string, role: 'visitor' | 'agent') => {
+    const appwriteUser = await authService.registerUser(email, password, name);
+    const newUser: User = {
+      uid: appwriteUser.$id,
+      name: appwriteUser.name,
+      email: appwriteUser.email,
+      role: role,
+      subscriptionPlan: 'free',
+      phone: '',
+      profilePictureUrl: '',
+    };
+    setAllUsers(prev => [...prev, newUser]);
+    navigate('registrationSuccess', { email: newUser.email });
+  };
+
+  const onLogout = async () => {
+    await authService.logoutUser();
+    setCurrentUser(null);
+    navigate('home', null, { replace: true });
+  };
+  
+  const onUpdateProfile = (updatedUser: User, newProfilePicture: File | null) => {
+    // In a real app, you would upload the newProfilePicture file to storage
+    // and get a URL, then update the user object with that URL.
+    // For this mock, we'll just update the user data.
+    console.log("Updating profile for:", updatedUser.name);
+    console.log("New picture file:", newProfilePicture?.name);
+
+    setAllUsers(prev => prev.map(u => u.uid === updatedUser.uid ? updatedUser : u));
+  };
+  
+  const onSuccessfulPayment = () => {
+    if (currentUser) {
+      const updatedUser = { ...currentUser, subscriptionPlan: 'premium' as const };
+       setAllUsers(prev => prev.map(u => u.uid === updatedUser.uid ? updatedUser : u));
     }
-    
-    setCurrentUser(localUser);
-
-    if (localUser.role === 'admin') handleNavigate('adminDashboard', undefined, { replace: true });
-    else if (localUser.role === 'agent') handleNavigate('dashboard', undefined, { replace: true });
-    else handleNavigate('listings', undefined, { replace: true });
-  };
-  
-  const handleRegister = async (name: string, email: string, password: string, role: 'visitor' | 'agent'): Promise<void> => {
-      if(allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-          throw new AppwriteException(t('registerPage.errorExists'));
-      }
-      
-      const appwriteUser = await appwriteService.createAccount(email, password, name);
-      
-      const newUser: User = { uid: appwriteUser.$id, name, email, role };
-      if (role === 'agent') newUser.subscriptionPlan = 'free';
-      
-      setAllUsers(prev => [...prev, newUser]);
-      handleNavigate('registrationSuccess', { email: newUser.email });
-  };
-
-  const handleGoogleSignIn = () => {
-    appwriteService.createGoogleOAuth2Session();
+    navigate('pricing'); // Or a success page
   };
 
 
-  const handleSearch = (filters: any) => setSearchFilters(filters);
-  
-  const processMediaFiles = (files: File[]): Media[] => files.map(file => ({ url: URL.createObjectURL(file), type: file.type.startsWith('image/') ? 'image' : 'video' }));
-
+  // Property Handlers
   const handleAddProperty = (propertyData: Omit<Property, 'id' | 'media'>, mediaFiles: File[]) => {
-    if (!currentUser) return;
-    const newMedia = processMediaFiles(mediaFiles);
-    const newProperty: Property = { id: `prop${Date.now()}`, ...propertyData, media: newMedia };
+    console.log("Adding property", propertyData.title, "with", mediaFiles.length, "files");
+    const newProperty: Property = {
+      ...propertyData,
+      id: `prop${Date.now()}`,
+      media: mediaFiles.map(file => ({
+        type: file.type.startsWith('image/') ? 'image' : 'video',
+        url: URL.createObjectURL(file), // Note: This URL is temporary
+      })),
+    };
     setProperties(prev => [newProperty, ...prev]);
   };
   
   const handleEditProperty = (updatedProperty: Property, newMediaFiles: File[]) => {
-      const newMedia = processMediaFiles(newMediaFiles);
-      const finalMedia = [...updatedProperty.media, ...newMedia];
-      const finalProperty = { ...updatedProperty, media: finalMedia };
-      setProperties(prev => prev.map(p => p.id === updatedProperty.id ? finalProperty : p));
-  };
-  
-  const handleDeleteProperty = (id: string) => setProperties(prev => prev.filter(p => p.id !== id));
-  
-  const handleDeleteUser = (uid: string) => {
-      if (currentUser?.uid === uid) {
-          alert(t('adminDashboardPage.cannotDeleteSelf'));
-          return;
-      }
-      setAllUsers(prev => prev.filter(u => u.uid !== uid));
-      setProperties(prev => prev.filter(p => p.agentUid !== uid));
+      console.log("Editing property", updatedProperty.title, "with", newMediaFiles.length, "new files");
+      const newMedia: Media[] = newMediaFiles.map(file => ({
+        type: file.type.startsWith('image/') ? 'image' : 'video',
+        url: URL.createObjectURL(file),
+      }));
+
+      const finalProperty = {
+          ...updatedProperty,
+          media: [...updatedProperty.media, ...newMedia],
+      };
+
+      setProperties(prev => prev.map(p => p.id === finalProperty.id ? finalProperty : p));
   };
 
+  const handleDeleteProperty = (id: string) => {
+    setProperties(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Message Handler
   const handleSendMessage = (messageData: Omit<Message, 'id' | 'timestamp'>) => {
-    const newMessage: Message = { id: `msg${Date.now()}`, ...messageData, timestamp: new Date() };
+    const newMessage: Message = {
+      ...messageData,
+      id: `msg${Date.now()}`,
+      timestamp: new Date(),
+    };
     setMessages(prev => [newMessage, ...prev]);
   };
-  
-  const handleUpdateProfile = (updatedUser: User, newProfilePicture: File | null) => {
-      if (!currentUser) return;
-      let finalUser = { ...updatedUser };
-      if (newProfilePicture) finalUser.profilePictureUrl = URL.createObjectURL(newProfilePicture);
-      setAllUsers(prevUsers => prevUsers.map(u => u.uid === finalUser.uid ? finalUser : u));
-      setCurrentUser(finalUser);
-  };
 
-  const handleUpgradePlan = () => {
-    if (!currentUser) return;
-    const updatedUser = { ...currentUser, subscriptionPlan: 'premium' as const };
-    setCurrentUser(updatedUser);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-    setAllUsers(prev => prev.map(u => u.uid === currentUser.uid ? updatedUser : u));
-    handleNavigate('dashboard');
-  };
-
-  const handleAddCity = (regionName: string, cityName: string) => {
-    if (!regionName || !cityName.trim()) return;
-    const trimmedCityName = cityName.trim();
-    const newLocations = JSON.parse(JSON.stringify(dynamicLocations));
-    const region = newLocations[regionName as keyof typeof newLocations];
-    if (region && !region.hasOwnProperty(trimmedCityName)) {
-        region[trimmedCityName] = [];
-        setDynamicLocations(newLocations);
-    }
-  };
-
-  const handleAddNeighborhood = (regionName: string, cityName: string, neighborhoodName: string) => {
-    if (!regionName || !cityName || !neighborhoodName.trim()) return;
-    const trimmedNeighborhoodName = neighborhoodName.trim();
-    const newLocations = JSON.parse(JSON.stringify(dynamicLocations));
-    const city = newLocations[regionName as keyof typeof newLocations]?.[cityName];
-    if (city && !city.includes(trimmedNeighborhoodName)) {
-        city.push(trimmedNeighborhoodName);
-        setDynamicLocations(newLocations);
-    }
-  };
-
-  const handleAddRating = (propertyId: string, agentUid: string, rating: number) => {
-    if (!currentUser) return;
-    setRatings(prev => {
-        const existingRatingIndex = prev.findIndex(r => r.propertyId === propertyId && r.visitorUid === currentUser.uid);
-        if (existingRatingIndex > -1) {
-            const updatedRatings = [...prev];
-            updatedRatings[existingRatingIndex] = { ...updatedRatings[existingRatingIndex], rating, timestamp: new Date() };
-            return updatedRatings;
-        } else {
-            const newRating: Rating = { id: `rating_${Date.now()}`, propertyId, agentUid, visitorUid: currentUser.uid, rating, timestamp: new Date() };
-            return [...prev, newRating];
-        }
+  // Location Handlers
+  const handleAddCity = (region: string, cityName: string) => {
+    setDynamicLocations((prev: any) => {
+      const newLocations = JSON.parse(JSON.stringify(prev));
+      if (!newLocations[region]) newLocations[region] = {};
+      if (!newLocations[region][cityName]) {
+          newLocations[region][cityName] = [];
+      }
+      return newLocations;
     });
   };
+  
+  const handleAddNeighborhood = (region: string, city: string, neighborhoodName: string) => {
+      setDynamicLocations((prev: any) => {
+        const newLocations = JSON.parse(JSON.stringify(prev));
+        if (newLocations[region]?.[city] && !newLocations[region][city].includes(neighborhoodName)) {
+           newLocations[region][city].push(neighborhoodName);
+        }
+        return newLocations;
+      });
+  };
+
+  // Rating Handler
+  const handleAddRating = (propertyId: string, agentUid: string, rating: number) => {
+    if (!currentUser) return;
+    const existingRatingIndex = ratings.findIndex(r => r.propertyId === propertyId && r.visitorUid === currentUser.uid);
+    const newRating: Rating = {
+      id: `rating${Date.now()}`,
+      propertyId,
+      agentUid,
+      visitorUid: currentUser.uid,
+      rating,
+      timestamp: new Date(),
+    };
+    if (existingRatingIndex > -1) {
+      setRatings(prev => {
+        const newRatings = [...prev];
+        newRatings[existingRatingIndex] = newRating;
+        return newRatings;
+      });
+    } else {
+      setRatings(prev => [...prev, newRating]);
+    }
+  };
+
+  // Admin Handlers
+  const handleDeleteUser = (uid: string) => {
+    const adminUser = allUsers.find(u => u.uid === uid && u.role === 'admin');
+    if (adminUser && allUsers.filter(u => u.role === 'admin').length <= 1) {
+      alert(t('adminDashboardPage.cannotDeleteSelf'));
+      return;
+    }
+    setAllUsers(prev => prev.filter(u => u.uid !== uid));
+    // Also delete their properties
+    setProperties(prev => prev.filter(p => p.agentUid !== uid));
+  };
+
+
+  if (loading && !currentUser) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-brand-dark">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-brand-red"></div>
+      </div>
+    );
+  }
 
   const renderPage = () => {
-    if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
     switch (currentPage) {
-      case 'listings': return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations} />;
-      case 'propertyDetail': const agent = allUsers.find(u => u.uid === pageData.agentUid); return <PropertyDetailsPage property={pageData} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
+      case 'home':
+        return <HomePage properties={properties} onNavigate={navigate} onSearch={setSearchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
+      case 'listings':
+        return <ListingsPage properties={properties} onNavigate={navigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations} />;
+      case 'propertyDetail':
+        const agent = allUsers.find(u => u.uid === (pageData as Property).agentUid);
+        return <PropertyDetailsPage property={pageData as Property} agent={agent} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
       case 'dashboard':
-        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
+        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { navigate('home'); return null; }
         const agentProperties = properties.filter(p => p.agentUid === currentUser.uid);
-        const agentMessagesCount = messages.filter(m => m.agentUid === currentUser.uid).length;
-        const currentAgentData = allUsers.find(u => u.uid === currentUser.uid);
-        return <DashboardPage user={currentAgentData || currentUser} properties={agentProperties} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} messageCount={agentMessagesCount} />;
-       case 'addProperty':
-         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
-         if (currentUser.role === 'agent' && currentUser.subscriptionPlan === 'free' && properties.filter(p => p.agentUid === currentUser.uid).length >= 5) { handleNavigate('pricing'); return null; }
-        return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
-       case 'editProperty':
-         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin') || (currentUser.role !== 'admin' && currentUser.uid !== pageData.agentUid)) { handleNavigate('home'); return null; }
-         return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
-       case 'messages':
-          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('home'); return null; }
-          const myMessages = messages.filter(m => m.agentUid === currentUser.uid);
-          return <MessagesPage messages={myMessages} />;
-       case 'profileSettings':
-          if (!currentUser) { handleNavigate('login'); return null; }
-          return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
-       case 'login': return <LoginPage onLogin={handleLogin} onGoogleSignIn={handleGoogleSignIn} onNavigate={handleNavigate} />;
-       case 'register': return <RegisterPage onRegister={handleRegister} onGoogleSignIn={handleGoogleSignIn} onNavigate={handleNavigate} />;
-       case 'registrationSuccess': return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
-       case 'adminDashboard':
-           if (!currentUser || currentUser.role !== 'admin') { handleNavigate('home'); return null; }
-           return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={handleNavigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
+        const messageCount = messages.filter(m => m.agentUid === currentUser.uid).length;
+        return <DashboardPage user={currentUser} properties={agentProperties} onNavigate={navigate} onDeleteProperty={handleDeleteProperty} messageCount={messageCount}/>;
+      case 'addProperty':
+        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { navigate('home'); return null; }
+        return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
+      case 'editProperty':
+         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { navigate('home'); return null; }
+        return <EditPropertyPage propertyToEdit={pageData as Property} onEditProperty={handleEditProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
+      case 'contact':
+        return <ContactPage />;
+      case 'about':
+        return <AboutPage />;
+      case 'termsOfUse':
+        return <TermsOfUsePage onNavigate={navigate} />;
+      case 'privacyPolicy':
+        return <PrivacyPolicyPage onNavigate={navigate} />;
+      case 'login':
+        return <LoginPage onLogin={onLogin} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate} />;
+      case 'register':
+        return <RegisterPage onRegister={onRegister} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate} />;
+      case 'messages':
+        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { navigate('home'); return null; }
+        const agentMessages = messages.filter(m => m.agentUid === currentUser.uid);
+        return <MessagesPage messages={agentMessages} />;
+      case 'profileSettings':
+        if (!currentUser) { navigate('login'); return null; }
+        return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={onUpdateProfile} onNavigate={navigate}/>;
+      case 'registrationSuccess':
+        return <RegistrationSuccessPage email={(pageData as any)?.email} onNavigate={navigate} />;
+      case 'adminDashboard':
+        if (!currentUser || currentUser.role !== 'admin') { navigate('home'); return null; }
+        return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={navigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
        case 'pricing':
-          if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
-          return <PricingPage currentUser={currentUser} onNavigateToPayment={() => handleNavigate('payment')} />;
-       case 'payment':
-          if (!currentUser || currentUser.role !== 'agent') { handleNavigate('home'); return null; }
-          return <PaymentPage currentUser={currentUser} onSuccessfulPayment={handleUpgradePlan} onNavigate={handleNavigate} />;
-       case 'careers': return <CareersPage />;
-       case 'contact': return <ContactPage />;
-       case 'about': return <AboutPage />;
-       case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;
-       case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={handleNavigate} />;
-      case 'home': default:
-        return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} allUsers={allUsers} locations={mergedLocations} />;
+        if (!currentUser || currentUser.role !== 'agent') { navigate('home'); return null; }
+        return <PricingPage currentUser={currentUser} onNavigateToPayment={() => navigate('payment')} />;
+      case 'payment':
+        if (!currentUser || currentUser.role !== 'agent') { navigate('pricing'); return null; }
+        return <PaymentPage currentUser={currentUser} onSuccessfulPayment={onSuccessfulPayment} onNavigate={navigate} />;
+      case 'careers':
+        return <CareersPage />;
+      default:
+        return <HomePage properties={properties} onNavigate={navigate} onSearch={setSearchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations} />;
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen font-sans bg-brand-dark text-gray-200">
-        <Header 
-          user={currentUser} 
-          onNavigate={handleNavigate} 
-          onLogout={handleLogout}
-          onGoBack={handleGoBack}
-          onGoForward={handleGoForward}
-          canGoBack={canGoBack}
-          canGoForward={canGoForward}
-        />
-        <main className="flex-grow animate-fade-in-up" key={currentPage + historyIndex}>{renderPage()}</main>
-        <Footer onNavigate={handleNavigate} />
+    <div className="flex flex-col min-h-screen">
+      <Header 
+        user={currentUser} 
+        onNavigate={navigate} 
+        onLogout={onLogout}
+        onGoBack={goBack}
+        onGoForward={goForward}
+        canGoBack={historyIndex > 0}
+        canGoForward={historyIndex < history.length - 1}
+      />
+      <main className="flex-grow">
+        {renderPage()}
+      </main>
+      <Footer onNavigate={navigate}/>
     </div>
   );
 };

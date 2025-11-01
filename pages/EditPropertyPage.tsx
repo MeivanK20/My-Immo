@@ -17,7 +17,7 @@ interface EditPropertyPageProps {
 
 const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onEditProperty, onNavigate, locations, onAddCity, onAddNeighborhood }) => {
   const { t } = useLanguage();
-  const [propertyData, setPropertyData] = useState({ phone: '', ...propertyToEdit });
+  const [propertyData, setPropertyData] = useState({ ...propertyToEdit, phone: propertyToEdit.phone || '' });
   const [newMediaFiles, setNewMediaFiles] = useState<File[]>([]);
   const [newMediaPreviews, setNewMediaPreviews] = useState<{url: string, type: 'image' | 'video'}[]>([]);
   const [isAddCityModalOpen, setAddCityModalOpen] = useState(false);
@@ -28,7 +28,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
   const regions = Object.keys(locations);
 
   useEffect(() => {
-    setPropertyData({ phone: '', ...propertyToEdit });
+    setPropertyData({ ...propertyToEdit, phone: propertyToEdit.phone || '' });
     return () => {
         newMediaPreviews.forEach(p => URL.revokeObjectURL(p.url));
     }
@@ -173,7 +173,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
               </div>
           </div>
 
-          <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone || ''} onChange={handleChange} placeholder="6XX XXX XXX" />
+          <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" />
 
           <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="secondary" onClick={() => onNavigate('dashboard')}>{t('addPropertyPage.cancel')}</Button>
