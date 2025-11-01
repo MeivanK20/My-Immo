@@ -4,8 +4,7 @@ import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { locations as staticLocations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
-import * as authService from './services/authService';
-import { AppwriteException } from 'appwrite';
+import { api, AppwriteException } from './lib/appwrite';
 
 
 import Header from './components/Header';
@@ -252,7 +251,7 @@ const App: React.FC = () => {
     const checkSession = async () => {
       setLoading(true);
       try {
-        const appwriteUser = await authService.getCurrentUser();
+        const appwriteUser = await api.getCurrentAccount();
         if (appwriteUser) {
           // Use function form of setState to avoid dependency on allUsers
           setAllUsers(prevUsers => {
@@ -290,7 +289,7 @@ const App: React.FC = () => {
     };
 
     checkSession();
-  }, []); // FIX: Empty dependency array to run only once on mount and prevent infinite loops.
+  }, []); // Empty dependency array to run only once on mount.
 
   // Navigation Logic
   const navigate = (page: Page, data: any = null, options: { replace?: boolean } = {}) => {
@@ -325,27 +324,45 @@ const App: React.FC = () => {
 
   // Auth Handlers
   const onLogin = async (email: string, password: string) => {
-    const appwriteUser = await authService.loginUser(email, password);
+    const appwriteUser = await api.createEmailSession(email, password);
     const userInDb = allUsers.find(u => u.email === appwriteUser.email);
+    
     if (userInDb) {
       setCurrentUser(userInDb);
-      navigate('home', null, { replace: true });
     } else {
-      console.error("Logged in user not found in local user database:", appwriteUser.email);
-      throw new Error(t('loginPage.error'));
+      // This is a critical recovery step. If a user is authenticated by Appwrite
+      // but not found in our local user list (e.g., localStorage was cleared),
+      // we should re-create them in our local state to avoid locking them out.
+      console.warn("User authenticated with Appwrite but not found in local state. Re-creating user profile.", appwriteUser.email);
+      const newUser: User = {
+        uid: appwriteUser.$id,
+        name: appwriteUser.name,
+        email: appwriteUser.email,
+        role: 'visitor', // Default role for recovered users
+        subscriptionPlan: 'free',
+        phone: appwriteUser.phone || '',
+        profilePictureUrl: '',
+        score: 0,
+        badge: undefined,
+      };
+      // Add the recovered user to the master list and set them as current
+      setAllUsers(prev => [...prev, newUser]);
+      setCurrentUser(newUser);
     }
+
+    navigate('home', null, { replace: true });
   };
   
   const onGoogleSignIn = () => {
     try {
-      authService.googleSignIn();
+      api.createGoogleOAuth2Session();
     } catch (error) {
       console.error("Google Sign In failed to initiate", error);
     }
   };
 
   const onRegister = async (name: string, email: string, password: string, role: 'visitor' | 'agent') => {
-    const appwriteUser = await authService.registerUser(email, password, name);
+    const appwriteUser = await api.createAccount(email, password, name);
     const newUser: User = {
       uid: appwriteUser.$id,
       name: appwriteUser.name,
@@ -360,7 +377,7 @@ const App: React.FC = () => {
   };
 
   const onLogout = async () => {
-    await authService.logoutUser();
+    await api.deleteCurrentSession();
     setCurrentUser(null);
     navigate('home', null, { replace: true });
   };
