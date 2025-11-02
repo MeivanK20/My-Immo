@@ -125,10 +125,28 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // The SIGNED_IN event is triggered on login and also on redirect from OAuth.
       if (event === 'SIGNED_IN' && session?.user) {
-        const profile = await authService.getProfile(session.user.id);
+        let profile = await authService.getProfile(session.user.id);
+        
+        // If profile doesn't exist, it's a first-time OAuth login.
+        // We create a profile for them.
+        if (!profile) {
+          console.log("Profile not found for OAuth user, creating one...");
+          profile = await authService.createProfileForProvider(session.user);
+          if (profile) {
+            // After creating the profile, we refetch all data to get the new user list
+            await fetchData(); 
+            setCurrentUser(profile);
+            // Navigate away from the URL with tokens to a clean URL.
+            handleNavigate('listings', undefined, { replace: true });
+            return; // Exit early to prevent double data fetching.
+          }
+        }
+        
+        // For regular logins or if profile already existed.
         setCurrentUser(profile);
-        fetchData(); // Refetch data on login
+        await fetchData();
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
         setProperties([]);
@@ -141,13 +159,14 @@ const App: React.FC = () => {
       }
     });
 
-    // Check initial session
+    // Check initial session on app load
     const checkSession = async () => {
       const session = await authService.getCurrentUserSession();
       if (session?.user) {
         const profile = await authService.getProfile(session.user.id);
         setCurrentUser(profile);
       }
+      // Fetch data regardless of session, but some data might be empty if not logged in.
       fetchData();
     };
     checkSession();

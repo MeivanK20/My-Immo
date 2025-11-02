@@ -1,4 +1,5 @@
 
+
 import { supabase } from '../lib/supabase';
 import { User } from '../types';
 
@@ -115,3 +116,35 @@ export const updatePassword = async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
 }
+
+export const createProfileForProvider = async (providerUser: any): Promise<User | null> => {
+    if (!providerUser) return null;
+
+    const { user_metadata } = providerUser;
+    
+    const newUserProfile = {
+        id: providerUser.id,
+        name: user_metadata.full_name || user_metadata.name || 'New User',
+        email: user_metadata.email,
+        role: 'visitor' as 'visitor', // Default role for OAuth signups
+        profile_picture_url: user_metadata.avatar_url || user_metadata.picture,
+    };
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .insert(newUserProfile)
+        .select()
+        .single();
+    
+    if (error) {
+        console.error("Error creating profile for OAuth user:", error);
+        // If the profile already exists (e.g., due to a race condition or previous attempt),
+        // we can try fetching it instead of failing.
+        if (error.code === '23505') { // unique constraint violation
+            return getProfile(providerUser.id);
+        }
+        return null; // Return null on other errors
+    }
+
+    return data as User | null;
+};
