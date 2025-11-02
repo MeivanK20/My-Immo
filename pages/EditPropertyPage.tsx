@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Property, NavigationFunction, AddCityFunction, AddNeighborhoodFunction } from '../types';
 import Input from '../components/common/Input';
@@ -32,6 +33,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
     return () => {
         newMediaPreviews.forEach(p => URL.revokeObjectURL(p.url));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyToEdit]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
@@ -5,15 +6,14 @@ import Logo from '../components/common/Logo';
 import { NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
-import { authService } from '../services/authService';
 
 interface LoginPageProps {
   onLogin: (email: string, password: string) => Promise<void>;
-  onGoogleSignIn?: () => void; // optionnel, Appwrite gère le login
+  onGoogleLogin: () => void;
   onNavigate: NavigationFunction;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleLogin, onNavigate }) => {
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,23 +26,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
     setIsLoading(true);
     try {
       await onLogin(email, password);
-      // Navigation gérée dans App.tsx ou via route après login
     } catch (err: any) {
       setError(err.message || t('loginPage.error'));
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignInClick = () => {
-    setError('');
-    setIsLoading(true);
-    try {
-      // Utilise Appwrite pour créer la session Google
-      authService.createGoogleOAuth2Session();
-      // La redirection est automatique via Appwrite (success URL)
-    } catch (err: any) {
-      setError(err.message || t('loginPage.error'));
       setIsLoading(false);
     }
   };
@@ -53,8 +39,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
         <div className="flex justify-center cursor-pointer" onClick={() => onNavigate('home')}>
           <Logo />
         </div>
-
+        
         <div className="bg-brand-card p-8 rounded-lg shadow-2xl">
+          <div className="bg-brand-dark/50 border border-brand-card/80 p-4 rounded-lg mb-6 text-sm">
+            <h3 className="font-semibold text-white mb-2">{t('loginPage.demoCredentials')}</h3>
+            <ul className="space-y-1 text-gray-400">
+                <li><strong>{t('loginPage.demoAdmin')}:</strong> admin@immo.cm</li>
+                <li><strong>{t('loginPage.demoAgent')}:</strong> agent@immo.cm</li>
+                <li><strong>{t('loginPage.demoVisitor')}:</strong> visitor@immo.cm</li>
+                <li className="pt-1"><strong>{t('loginPage.demoPassword')}:</strong> password</li>
+            </ul>
+            <p className="text-xs text-gray-500 mt-3">{t('loginPage.demoNote')}</p>
+          </div>
+
           <h2 className="text-center text-2xl font-bold text-white mb-6">
             {t('loginPage.title')}
           </h2>
@@ -84,15 +81,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
                   autoComplete="current-password"
                   disabled={isLoading}
                 />
-                <div className="text-right mt-2">
-                    <button
-                        type="button"
-                        onClick={() => onNavigate('forgotPassword')}
-                        className="text-sm font-medium text-brand-red hover:text-brand-red/80"
-                    >
-                        {t('loginPage.forgotPassword')}
-                    </button>
-                </div>
+            </div>
+            <div className="flex items-center justify-end">
+              <div className="text-sm">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('forgotPassword')}
+                  className="font-medium text-brand-red hover:text-brand-red/80"
+                >
+                  {t('loginPage.forgotPassword')}
+                </button>
+              </div>
             </div>
             <div>
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -101,24 +100,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
             </div>
           </form>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-brand-dark" />
+          <div className="mt-6 relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-brand-card/80" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-brand-card text-gray-400">
-                {t('loginPage.orContinueWith')}
-              </span>
+              <span className="px-2 bg-brand-card text-gray-400">Or continue with</span>
             </div>
           </div>
 
-          {/* Intégration du bouton Google avec Appwrite */}
-          <div>
-            <GoogleLoginButton
-              onClick={handleGoogleSignInClick}
-              disabled={isLoading}
-              label={t('loginPage.googleSignIn')}
-            />
+          <div className="mt-6">
+            <GoogleLoginButton onClick={onGoogleLogin} disabled={isLoading} label="Sign in with Google" />
           </div>
 
           <p className="mt-6 text-center text-sm text-gray-400">

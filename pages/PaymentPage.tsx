@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { NavigationFunction, User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -44,7 +45,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ currentUser, onSuccessfulPaym
       last_name: currentUser.name.split(' ').slice(1).join(' '),
       // This is a public test key. Replace with your own live key.
       service_key: 'L573B75E569844B', 
-      item_ref: `PREMIUM-${currentUser.uid}-${Date.now()}`,
+      item_ref: `PREMIUM-${currentUser.id}-${Date.now()}`,
       title: t('pricingPage.premiumPlan'),
       description: t('pricingPage.subtitle'),
       onComplete: (payment: any) => {

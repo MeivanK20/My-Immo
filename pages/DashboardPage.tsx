@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Property, User, NavigationFunction, Message } from '../types';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -32,12 +33,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, 
   };
   const handleCloseModal = () => setConfirmModal({ isOpen: false, id: null });
   
-  const myProperties = properties.filter(p => p.agentUid === currentUser.uid);
-  const messageCount = messages.filter(m => m.agentUid === currentUser.uid).length;
-  const isFreePlan = currentUser.role === 'agent' && currentUser.subscriptionPlan === 'free';
-  const FREE_PLAN_LIMIT = 5;
-  const canAddProperty = !isFreePlan || myProperties.length < FREE_PLAN_LIMIT;
-  const limitReached = isFreePlan && myProperties.length >= FREE_PLAN_LIMIT;
+  const myProperties = properties;
+  const messageCount = messages.length;
 
   const getBadgeComponent = () => {
     switch(currentUser.badge) {
@@ -61,12 +58,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, 
       <div className="container mx-auto px-6 py-8">
         {/* User info */}
         <div className="flex items-center gap-4 mb-6">
-          <img src={currentUser.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=ef4444&color=fff`} alt={currentUser.name} className="w-16 h-16 rounded-full" />
+          <img src={currentUser.profile_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=ef4444&color=fff`} alt={currentUser.name} className="w-16 h-16 rounded-full" />
           <div>
             <h2 className="text-xl font-bold text-white">{currentUser.name}</h2>
             <p className="text-gray-400">{currentUser.email}</p>
           </div>
-          <Button onClick={onLogout} variant="secondary" className="ml-auto">Déconnexion</Button>
+          <Button onClick={onLogout} variant="secondary" className="ml-auto">{t('header.logout')}</Button>
         </div>
 
         <h1 className="text-3xl font-bold text-white mb-6">{t('dashboardPage.title')}</h1>
@@ -86,17 +83,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, 
           </div>
         </div>
 
-        {/* Free plan warning */}
-        {isFreePlan && (
-          <div className={`p-4 rounded-md mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 ${limitReached ? 'bg-red-500/20 border-l-4 border-red-400 text-red-200' : 'bg-blue-500/20 border-l-4 border-blue-400 text-blue-200'}`}>
-            <div>
-              <p className="font-bold">{limitReached ? t('dashboardPage.upgradePromptTitle') : t('dashboardPage.freePlanInfoTitle')}</p>
-              <p>{t('dashboardPage.freePlanLimit', { count: myProperties.length, limit: FREE_PLAN_LIMIT })}</p>
-            </div>
-            <Button onClick={() => onNavigate('pricing')} variant="primary" className="flex-shrink-0">{t('dashboardPage.upgradeNow')}</Button>
-          </div>
-        )}
-
         {/* Buttons */}
         <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
           <div/> {/* Empty div for spacing */}
@@ -105,10 +91,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, 
               {t('dashboardPage.viewMessages')}
               {messageCount > 0 && <span className="absolute -top-2 -right-2 bg-brand-red text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{messageCount}</span>}
             </Button>
-            <Button 
-              onClick={() => onNavigate(canAddProperty ? 'addProperty' : 'pricing')}
-              title={!canAddProperty ? t('dashboardPage.upgradePrompt') : ''}
-            >
+            <Button onClick={() => onNavigate('addProperty')}>
               {t('dashboardPage.addProperty')}
             </Button>
           </div>

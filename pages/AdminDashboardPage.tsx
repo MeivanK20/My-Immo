@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Property, User, NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -22,8 +23,8 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ allUsers, allPr
     message: string;
   }>({ isOpen: false, type: null, id: null, message: '' });
 
-  const getAgentName = (agentUid: string) => {
-    return allUsers.find(u => u.uid === agentUid)?.name || 'N/A';
+  const getAgentName = (agentId: string) => {
+    return allUsers.find(u => u.id === agentId)?.name || 'N/A';
   };
 
   const formatPrice = (price: number) => {
@@ -95,12 +96,12 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ allUsers, allPr
                   </thead>
                   <tbody className="bg-brand-card divide-y divide-brand-dark">
                     {allUsers.map(user => (
-                      <tr key={user.uid} className="hover:bg-brand-dark/50 transition-colors">
+                      <tr key={user.id} className="hover:bg-brand-dark/50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{user.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{user.email}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 capitalize">{user.role}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button onClick={() => handleDeleteClick('user', user.uid)} className="text-red-500 hover:text-red-400">{t('adminDashboardPage.delete')}</button>
+                          <button onClick={() => handleDeleteClick('user', user.id)} className="text-red-500 hover:text-red-400">{t('adminDashboardPage.delete')}</button>
                         </td>
                       </tr>
                     ))}
@@ -133,7 +134,7 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ allUsers, allPr
                     {allProperties.map(property => (
                       <tr key={property.id} className="hover:bg-brand-dark/50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{property.title}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{getAgentName(property.agentUid)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{getAgentName(property.agent_id)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200 font-semibold">{formatPrice(property.price)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button onClick={() => onNavigate('propertyDetail', property)} className="text-indigo-400 hover:text-indigo-300 mr-4">{t('adminDashboardPage.view')}</button>

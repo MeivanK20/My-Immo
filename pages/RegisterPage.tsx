@@ -1,18 +1,19 @@
+
 import React, { useState } from 'react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
-import { User, NavigationFunction } from '../types';
+import { NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 
 interface RegisterPageProps {
   onRegister: (name: string, email: string, password: string, role: 'visitor' | 'agent') => Promise<void>;
-  onGoogleSignIn: () => void;
+  onGoogleLogin: () => void;
   onNavigate: NavigationFunction;
 }
 
-const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleSignIn, onNavigate }) => {
+const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, onNavigate }) => {
   const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -32,16 +33,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleSignIn,
     try {
       await onRegister(name, email, password, role);
       // Navigation is handled inside the onRegister implementation in App.tsx
-    } catch (error: any) {
-      setError(error.message || t('registerPage.errorExists'));
+    } catch (err: any) {
+      setError(err.message || t('registerPage.errorExists'));
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGoogleSignUpClick = () => {
-    setError('');
-    onGoogleSignIn();
   };
 
   return (
@@ -105,26 +101,20 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleSignIn,
               </Button>
             </div>
           </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-brand-dark" />
+          
+          <div className="mt-6 relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-brand-card/80" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-brand-card text-gray-400">
-                {t('registerPage.orContinueWith')}
-              </span>
+              <span className="px-2 bg-brand-card text-gray-400">Or continue with</span>
             </div>
           </div>
 
-          <div>
-            <GoogleLoginButton
-              onClick={handleGoogleSignUpClick}
-              disabled={isLoading}
-              label={t('registerPage.googleSignUp')}
-            />
+          <div className="mt-6">
+            <GoogleLoginButton onClick={onGoogleLogin} disabled={isLoading} label="Sign up with Google" />
           </div>
-          
+
           <p className="mt-6 text-center text-sm text-gray-400">
             {t('registerPage.haveAccount')}{' '}
             <button onClick={() => onNavigate('login')} className="font-medium text-brand-red hover:text-brand-red/80">

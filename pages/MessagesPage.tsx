@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Message } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -8,7 +9,7 @@ interface MessagesPageProps {
 
 const MessagesPage: React.FC<MessagesPageProps> = ({ messages }) => {
   const { t, locale } = useLanguage();
-  const sortedMessages = [...messages].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  const sortedMessages = [...messages].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -21,17 +22,17 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ messages }) => {
                 <div>
                   <p className="font-semibold text-lg text-white">
                     {t('messagesPage.subject')}{' '}
-                    <span className="font-normal">{msg.propertyTitle}</span>
+                    <span className="font-normal">{msg.property_title}</span>
                   </p>
                   <p className="text-sm text-gray-400">
                     {t('messagesPage.receivedOn')}{' '}
-                    {new Date(msg.timestamp).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+                    {new Date(msg.created_at).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')}
                   </p>
                 </div>
                 <div className="text-right mt-2 sm:mt-0">
-                  <p className="font-semibold text-white">{msg.visitorName}</p>
-                  <a href={`mailto:${msg.visitorEmail}`} className="text-blue-400 hover:underline text-sm">{msg.visitorEmail}</a><br/>
-                  <a href={`tel:${msg.visitorPhone}`} className="text-blue-400 hover:underline text-sm">{msg.visitorPhone}</a>
+                  <p className="font-semibold text-white">{msg.visitor_name}</p>
+                  <a href={`mailto:${msg.visitor_email}`} className="text-blue-400 hover:underline text-sm">{msg.visitor_email}</a><br/>
+                  <a href={`tel:${msg.visitor_phone}`} className="text-blue-400 hover:underline text-sm">{msg.visitor_phone}</a>
                 </div>
               </div>
               <div className="bg-brand-dark/50 p-4 rounded-md mt-4">

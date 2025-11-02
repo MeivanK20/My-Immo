@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import Modal from './common/Modal';
 import Input from './common/Input';
@@ -10,7 +12,7 @@ interface ContactAgentModalProps {
   onClose: () => void;
   property: Property;
   agent: User;
-  onSendMessage: (messageData: Omit<Message, 'id' | 'timestamp'>) => void;
+  onSendMessage: (messageData: Omit<Message, 'id' | 'created_at'>) => void;
   currentUser: User | null;
 }
 
@@ -32,6 +34,12 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
   });
   const [submitted, setSubmitted] = useState(false);
 
+  // FIX: Added missing handleChange function to update form state.
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({...prev, [name]: value}));
+  };
+
   useEffect(() => {
     if (isOpen) {
       if (currentUser) {
@@ -52,22 +60,18 @@ const ContactAgentModal: React.FC<ContactAgentModalProps> = ({ isOpen, onClose, 
     } else {
       setSubmitted(false);
     }
-  }, [currentUser, isOpen, property, t]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, isOpen, property.title]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const messageData = {
-      propertyId: property.id,
-      propertyTitle: property.title,
-      agentUid: agent.uid,
-      visitorName: formData.name,
-      visitorEmail: formData.email,
-      visitorPhone: formData.phone,
+      property_id: property.id,
+      property_title: property.title,
+      agent_id: agent.id,
+      visitor_name: formData.name,
+      visitor_email: formData.email,
+      visitor_phone: formData.phone,
       message: formData.message,
     };
     onSendMessage(messageData);

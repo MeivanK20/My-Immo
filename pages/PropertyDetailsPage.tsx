@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Property, User, Media, Message, Rating } from '../types';
 import ContactAgentModal from '../components/ContactAgentModal';
@@ -12,9 +13,9 @@ const BronzeBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6
 interface PropertyDetailsPageProps {
   property: Property;
   agent: User | undefined;
-  onSendMessage: (messageData: Omit<Message, 'id' | 'timestamp'>) => void;
+  onSendMessage: (messageData: Omit<Message, 'id' | 'created_at'>) => void;
   currentUser: User | null;
-  onAddRating: (propertyId: string, agentUid: string, rating: number) => void;
+  onAddRating: (propertyId: string, agentId: string, rating: number) => void;
   ratings: Rating[];
 }
 
@@ -38,10 +39,10 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
 
   const { id, title, description, price, type, bedrooms, bathrooms, area, media, city, neighborhood, region, phone } = property;
 
-  const currentUserRating = ratings.find(r => r.propertyId === id && r.visitorUid === currentUser?.uid)?.rating || 0;
-  const canRate = currentUser && currentUser.role === 'visitor' && currentUser.uid !== property.agentUid;
+  const currentUserRating = ratings.find(r => r.property_id === id && r.visitor_id === currentUser?.id)?.rating || 0;
+  const canRate = currentUser && currentUser.role === 'visitor' && currentUser.id !== property.agent_id;
 
-  const agentRatings = ratings.filter(r => r.agentUid === agent?.uid);
+  const agentRatings = ratings.filter(r => r.agent_id === agent?.id);
   const averageAgentRating = agentRatings.length > 0 ? agentRatings.reduce((acc, curr) => acc + curr.rating, 0) / agentRatings.length : 0;
 
 
@@ -140,7 +141,7 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
                     <div className="mt-8 pt-6 border-t border-brand-dark">
                         <h2 className="text-xl font-semibold text-white mb-3">{t('propertyDetailsPage.rateThisProperty')}</h2>
                         <div className="flex items-center gap-4">
-                            <StarRating rating={currentUserRating} onRatingChange={(r) => onAddRating(id, property.agentUid, r)} />
+                            <StarRating rating={currentUserRating} onRatingChange={(r) => onAddRating(id, property.agent_id, r)} />
                             {currentUserRating > 0 && <span className="text-gray-400">{t('propertyDetailsPage.yourRating')}: {currentUserRating}/5</span>}
                         </div>
                     </div>
@@ -155,7 +156,7 @@ const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({ property, age
                       {agent ? (
                           <div className="text-center">
                               <img 
-                                src={agent.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=ef4444&color=fff`} 
+                                src={agent.profile_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=ef4444&color=fff`} 
                                 alt={`Profil de ${agent.name}`}
                                 className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-brand-red"
                               />

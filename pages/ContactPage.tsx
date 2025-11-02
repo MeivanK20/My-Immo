@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { createZendeskTicket } from '../services/zendeskService';
 
 const ContactPage: React.FC = () => {
   const { t } = useLanguage();
@@ -25,18 +24,19 @@ const ContactPage: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    setSubmitted(false);
+    
+    // --- SIMULATION OF BACKEND CALL ---
+    console.log("--- CONTACT FORM SUBMISSION (SIMULATED) ---");
+    console.log("This is a simulation. In a real app, this data would be sent to a secure backend.");
+    console.log("Form Data:", formState);
 
-    try {
-      await createZendeskTicket(formState);
-      setSubmitted(true);
-      setFormState({ name: '', email: '', subject: '', message: '' });
-    } catch (err) {
-      setError(t('contactPage.sendError'));
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    // --- END SIMULATION ---
+    
+    setIsLoading(false);
+    setSubmitted(true);
+    setFormState({ name: '', email: '', subject: '', message: '' });
   };
 
   return (

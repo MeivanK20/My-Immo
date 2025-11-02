@@ -19,7 +19,8 @@ export const mockProperties: Property[] = [
     city: 'Yaoundé',
     region: 'Centre',
     neighborhood: 'Bastos',
-    agentUid: 'agent01',
+    // FIX: Changed agentUid to agent_id to match the Property type.
+    agent_id: 'agent01',
     phone: '655 886 086'
   },
   {
@@ -40,7 +41,8 @@ export const mockProperties: Property[] = [
     city: 'Douala',
     region: 'Littoral',
     neighborhood: 'Bonapriso',
-    agentUid: 'agent01',
+    // FIX: Changed agentUid to agent_id to match the Property type.
+    agent_id: 'agent01',
     phone: '699 123 456'
   },
   {
@@ -59,7 +61,8 @@ export const mockProperties: Property[] = [
     city: 'Yaoundé',
     region: 'Centre',
     neighborhood: 'Mvan',
-    agentUid: 'agent01',
+    // FIX: Changed agentUid to agent_id to match the Property type.
+    agent_id: 'agent01',
     phone: '677 789 012'
   },
   {
@@ -78,7 +81,8 @@ export const mockProperties: Property[] = [
     city: 'Limbe',
     region: 'Sud-Ouest',
     neighborhood: 'Down Beach',
-    agentUid: 'agent01',
+    // FIX: Changed agentUid to agent_id to match the Property type.
+    agent_id: 'agent01',
   },
    {
     id: 'prop5',
@@ -96,7 +100,8 @@ export const mockProperties: Property[] = [
     city: 'Douala',
     region: 'Littoral',
     neighborhood: 'Akwa',
-    agentUid: 'agent01',
+    // FIX: Changed agentUid to agent_id to match the Property type.
+    agent_id: 'agent01',
     phone: '650 112 233'
   },
   {
@@ -115,6 +120,7 @@ export const mockProperties: Property[] = [
     city: 'Bafoussam',
     region: 'Ouest',
     neighborhood: 'Tamdja',
-    agentUid: 'agent01',
+    // FIX: Changed agentUid to agent_id to match the Property type.
+    agent_id: 'agent01',
   }
 ];

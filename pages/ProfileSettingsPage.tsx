@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, NavigationFunction } from '../types';
 import Input from '../components/common/Input';
@@ -25,18 +26,27 @@ const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, 
     phone: currentUser.phone || '',
   });
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(currentUser.profilePictureUrl || null);
+  const [preview, setPreview] = useState<string | null>(currentUser.profile_picture_url || null);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (!profilePicture) {
-      setPreview(currentUser.profilePictureUrl || null);
+      setPreview(currentUser.profile_picture_url || null);
       return;
     }
     const objectUrl = URL.createObjectURL(profilePicture);
     setPreview(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
-  }, [profilePicture, currentUser.profilePictureUrl]);
+  }, [profilePicture, currentUser.profile_picture_url]);
+
+  useEffect(() => {
+    setFormData({
+        name: currentUser.name,
+        email: currentUser.email,
+        phone: currentUser.phone || '',
+    });
+    setPreview(currentUser.profile_picture_url || null)
+  }, [currentUser])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -115,6 +125,22 @@ const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, 
           <Button type="submit">{t('profileSettingsPage.saveChanges')}</Button>
         </div>
       </form>
+
+      {currentUser.role === 'agent' && (
+        <div className="mt-8 bg-brand-card p-8 rounded-lg shadow-lg">
+          <h2 className="text-xl font-semibold text-white mb-4">{t('profileSettingsPage.subscriptionTitle')}</h2>
+          <div className="flex justify-between items-center">
+            <p className="text-gray-300">
+              {t('profileSettingsPage.currentPlan')}: <span className="font-bold text-white capitalize">{currentUser.subscription_plan}</span>
+            </p>
+            {currentUser.subscription_plan !== 'premium' && (
+              <Button onClick={() => onNavigate('pricing')}>
+                {t('profileSettingsPage.upgradePlan')}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,80 +1,117 @@
-// src/services/authService.ts
-import { account } from "../lib/appwriteConfig";
-import { ID, OAuthProvider, AppwriteException } from "../lib/appwrite";
 
-export const authService = {
-  /**
-   * Creates a new user account.
-   * @param email The user's email.
-   * @param password The user's password.
-   * @param name The user's name.
-   * @returns A promise that resolves with the newly created user object.
-   */
-  createAccount: (email: string, password: string, name: string) => {
-    return account.create(ID.unique(), email, password, name);
-  },
+import { supabase } from '../lib/supabase';
+import { User } from '../types';
 
-  /**
-   * Creates an email and password session (logs the user in).
-   * @param email The user's email.
-   * @param password The user's password.
-   * @returns A promise that resolves with the session object.
-   */
-  createEmailSession: (email: string, password: string) => {
-    return account.createEmailPasswordSession(email, password);
-  },
+export const signUpWithEmail = async (name: string, email: string, password: string, role: 'visitor' | 'agent'): Promise<void> => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name,
+        role,
+      },
+    },
+  });
 
-  /**
-   * Initiates the Google OAuth2 login flow.
-   */
-  createGoogleOAuth2Session: () => {
-    const successUrl = `${window.location.origin}`;
-    const failureUrl = `${window.location.origin}/login`;
-    account.createOAuth2Session(
-      OAuthProvider.Google,
-      successUrl,
-      failureUrl
-    );
-  },
+  if (error) throw error;
+  if (!data.user) throw new Error('Sign up failed.');
 
-  /**
-   * Deletes the current user session (logs the user out).
-   */
-  deleteCurrentSession: () => account.deleteSession("current"),
+  // Create a corresponding profile in the 'profiles' table
+  const { error: profileError } = await supabase.from('profiles').insert({
+    id: data.user.id,
+    name,
+    email,
+    role,
+    subscription_plan: role === 'agent' ? 'free' : undefined,
+  });
 
-  /**
-   * Fetches the currently logged-in user's account data.
-   */
-  getCurrentAccount: async () => {
-    try {
-      const user = await account.get();
-      return user;
-    } catch (err) {
-      if (err instanceof AppwriteException && err.code !== 401) {
-          console.error("Appwrite Error fetching account:", err);
-      }
-      return null;
-    }
-  },
-
-  /**
-   * Initiates the password recovery process for a user.
-   * @param email The user's email.
-   */
-  createPasswordRecovery: (email: string) => {
-    // Appwrite will append the userId and secret to this URL.
-    const recoveryUrl = window.location.origin;
-    return account.createRecovery(email, recoveryUrl);
-  },
-  
-  /**
-   * Completes the password recovery process.
-   * @param userId The user ID from the recovery email link.
-   * @param secret The secret from the recovery email link.
-   * @param password The new password.
-   * @param passwordAgain The new password confirmation.
-   */
-  updatePasswordRecovery: (userId: string, secret: string, password: string, passwordAgain: string) => {
-    return account.updateRecovery(userId, secret, password, passwordAgain);
-  },
+  if (profileError) {
+    // Optional: Delete the auth user if profile creation fails to keep things clean
+    await supabase.auth.admin.deleteUser(data.user.id);
+    throw profileError;
+  }
 };
+
+export const signInWithEmail = async (email: string, password: string): Promise<User | null> => {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  if (!data.user) return null;
+  return await getProfile(data.user.id);
+};
+
+export const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+    });
+    if (error) throw error;
+};
+
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+};
+
+export const getCurrentUserSession = async () => {
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+};
+
+export const getProfile = async (userId: string): Promise<User | null> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') { // PGRST116: "exact one row not found"
+    console.error('Error fetching profile:', error);
+    return null;
+  }
+  return data as User | null;
+};
+
+export const updateProfile = async (user: User, profilePictureFile: File | null = null) => {
+    let profilePictureUrl = user.profile_picture_url;
+
+    if (profilePictureFile) {
+        const filePath = `${user.id}/${Date.now()}_${profilePictureFile.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, profilePictureFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        profilePictureUrl = data.publicUrl;
+    }
+
+    const profileData = {
+        name: user.name,
+        phone: user.phone,
+        profile_picture_url: profilePictureUrl,
+        subscription_plan: user.subscription_plan,
+    };
+    
+    const { data, error } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', user.id)
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data as User;
+}
+
+export const sendPasswordResetEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin, // Redirects back to the app after email link click
+    });
+    if (error) throw error;
+};
+
+export const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+}

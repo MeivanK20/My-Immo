@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -32,7 +33,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onNavigate, user,
   const { title, media, price, type, bedrooms, bathrooms, area, city, neighborhood } = property;
   const firstMedia = media?.[0];
 
-  const isPremium = agent?.subscriptionPlan === 'premium';
+  const isPremium = agent?.subscription_plan === 'premium';
 
   const renderBadge = () => {
     if (!agent?.badge) return null;

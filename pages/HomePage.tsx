@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
@@ -54,7 +55,7 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
     { name: 'Partner 8', logoUrl: 'https://i.imgur.com/oiogd0B.png' },
   ];
   
-  const getAgentForProperty = (property: Property) => allUsers.find(u => u.uid === property.agentUid);
+  const getAgentForProperty = (property: Property) => allUsers.find(u => u.id === property.agent_id);
 
   return (
     <div>

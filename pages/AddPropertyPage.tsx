@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Property, User, NavigationFunction, AddCityFunction, AddNeighborhoodFunction } from '../types';
 import Input from '../components/common/Input';
@@ -8,7 +9,7 @@ import Modal from '../components/common/Modal';
 
 interface AddPropertyPageProps {
   user: User;
-  onAddProperty: (property: Omit<Property, 'id' | 'media' >, mediaFiles: File[]) => void;
+  onAddProperty: (property: Omit<Property, 'id' | 'media' | 'agent_id'>, mediaFiles: File[]) => void;
   onNavigate: NavigationFunction;
   locations: any;
   onAddCity: AddCityFunction;
@@ -69,7 +70,6 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
       bedrooms: parseInt(propertyData.bedrooms, 10),
       bathrooms: parseInt(propertyData.bathrooms, 10),
       area: parseInt(propertyData.area, 10),
-      agentUid: user.uid,
       type: propertyData.type as 'rent' | 'sale',
     };
     

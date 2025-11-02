@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { User } from '../types';
 import Button from '../components/common/Button';
@@ -66,7 +67,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPaym
           planName={t('pricingPage.freePlan')}
           price={t('pricingPage.freePrice')}
           features={[t('pricingPage.freeFeature1'), t('pricingPage.freeFeature2'), t('pricingPage.freeFeature3')]}
-          isCurrent={currentUser.subscriptionPlan === 'free'}
+          isCurrent={currentUser.subscription_plan === 'free'}
         />
 
         {/* Premium Plan */}
@@ -74,7 +75,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPaym
           planName={t('pricingPage.premiumPlan')}
           price={t('pricingPage.premiumPrice')}
           features={[t('pricingPage.premiumFeature1'), t('pricingPage.premiumFeature2'), t('pricingPage.premiumFeature3'), t('pricingPage.premiumFeature4')]}
-          isCurrent={currentUser.subscriptionPlan === 'premium'}
+          isCurrent={currentUser.subscription_plan === 'premium'}
           isPremium={true}
         />
       </div>

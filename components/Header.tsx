@@ -127,7 +127,8 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
                   aria-label="Menu utilisateur"
                   aria-expanded={isMenuOpen}
                 >
-                  <img src={user.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=ef4444&color=fff`} alt="User avatar" className="h-10 w-10 rounded-full object-cover" />
+                  {/* FIX: Changed user.profilePictureUrl to user.profile_picture_url to match User type */}
+                  <img src={user.profile_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=ef4444&color=fff`} alt="User avatar" className="h-10 w-10 rounded-full object-cover" />
                 </button>
                 {isMenuOpen && (
                    <div className="absolute right-0 mt-2 w-56 bg-brand-card rounded-md shadow-lg py-1 z-20 ring-1 ring-black/50">
@@ -137,13 +138,8 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
                     {(user.role === 'agent' || user.role === 'admin') && (
                       <button onClick={() => { onNavigate('dashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.dashboard')}</button>
                     )}
-                    {user.role === 'agent' && user.subscriptionPlan === 'free' && (
-                        <button onClick={() => { onNavigate('pricing'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm font-bold text-green-400 hover:bg-green-500/10 transition-colors">{t('header.upgradePlan')}</button>
-                    )}
                     <button onClick={() => { onNavigate('profileSettings'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.profileSettings')}</button>
                     
-                    <div className="border-t border-brand-dark/50 my-1"></div>
-                    <button onClick={() => { onNavigate('appwriteDemo'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">Appwrite Demo</button>
                     <div className="border-t border-brand-dark/50 my-1"></div>
                     
                     <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.logout')}</button>

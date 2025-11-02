@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
@@ -60,11 +61,11 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
 
     // Sort to bring premium listings to the top
     filtered.sort((a, b) => {
-        const agentA = allUsers.find(u => u.uid === a.agentUid);
-        const agentB = allUsers.find(u => u.uid === b.agentUid);
+        const agentA = allUsers.find(u => u.id === a.agent_id);
+        const agentB = allUsers.find(u => u.id === b.agent_id);
 
-        const isPremiumA = agentA?.subscriptionPlan === 'premium';
-        const isPremiumB = agentB?.subscriptionPlan === 'premium';
+        const isPremiumA = agentA?.subscription_plan === 'premium';
+        const isPremiumB = agentB?.subscription_plan === 'premium';
 
         if (isPremiumA && !isPremiumB) return -1;
         if (!isPremiumA && isPremiumB) return 1;
@@ -75,7 +76,7 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
 
   }, [properties, filters, allUsers]);
 
-  const getAgentForProperty = (property: Property) => allUsers.find(u => u.uid === property.agentUid);
+  const getAgentForProperty = (property: Property) => allUsers.find(u => u.id === property.agent_id);
 
   return (
     <div className="container mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
