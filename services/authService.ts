@@ -56,4 +56,25 @@ export const authService = {
       return null;
     }
   },
+
+  /**
+   * Initiates the password recovery process for a user.
+   * @param email The user's email.
+   */
+  createPasswordRecovery: (email: string) => {
+    // Appwrite will append the userId and secret to this URL.
+    const recoveryUrl = window.location.origin;
+    return account.createRecovery(email, recoveryUrl);
+  },
+  
+  /**
+   * Completes the password recovery process.
+   * @param userId The user ID from the recovery email link.
+   * @param secret The secret from the recovery email link.
+   * @param password The new password.
+   * @param passwordAgain The new password confirmation.
+   */
+  updatePasswordRecovery: (userId: string, secret: string, password: string, passwordAgain: string) => {
+    return account.updateRecovery(userId, secret, password, passwordAgain);
+  },
 };

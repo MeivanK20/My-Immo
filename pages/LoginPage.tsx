@@ -73,16 +73,27 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigate }) => {
               autoComplete="email"
               disabled={isLoading}
             />
-            <Input
-              label={t('loginPage.password')}
-              id="login-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              disabled={isLoading}
-            />
+            <div>
+                <Input
+                  label={t('loginPage.password')}
+                  id="login-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  disabled={isLoading}
+                />
+                <div className="text-right mt-2">
+                    <button
+                        type="button"
+                        onClick={() => onNavigate('forgotPassword')}
+                        className="text-sm font-medium text-brand-red hover:text-brand-red/80"
+                    >
+                        {t('loginPage.forgotPassword')}
+                    </button>
+                </div>
+            </div>
             <div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? `${t('loginPage.loggingIn')}...` : t('loginPage.login')}
