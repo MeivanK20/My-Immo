@@ -176,12 +176,14 @@ const App: React.FC = () => {
   const goForward=()=>{ if(historyIndex<history.length-1)setHistoryIndex(historyIndex+1); };
   useEffect(()=>{ sessionStorage.setItem('navigationHistory',JSON.stringify(history)); sessionStorage.setItem('navigationHistoryIndex',historyIndex.toString()); },[history,historyIndex]);
 
-  const onLogin=async(email:string,password:string)=>{
-    const appUser=await authService.createEmailSession(email,password);
-    const u = allUsers.find(u=>u.email===appUser.email);
-    if(u) setCurrentUser(u);
-    else{ const newU:User={ uid:appUser.$id, name:appUser.name,email:appUser.email,role:'visitor',subscriptionPlan:'free',phone:appUser.phone||'',profilePictureUrl:'',score:0,badge:undefined }; setAllUsers(prev=>[...prev,newU]); setCurrentUser(newU);}
-    navigate('home',null,{replace:true});
+  const onLogin = async (email: string, password: string) => {
+    // Step 1: Create the session. This will set the session cookie.
+    await authService.createEmailSession(email, password);
+    // Step 2: Re-run the session check. This will call account.get() with the new session
+    // and update the currentUser state for the whole app.
+    await checkSession();
+    // Step 3: Navigate home. checkSession will set the user, triggering re-render.
+    navigate('home', null, { replace: true });
   };
   const onGoogleSignIn=()=>authService.createGoogleOAuth2Session();
   const onRegister=async(name:string,email:string,password:string,role:'visitor'|'agent')=>{

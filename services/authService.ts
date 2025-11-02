@@ -2,12 +2,6 @@
 import { account } from "../lib/appwriteConfig";
 import { ID, OAuthProvider, AppwriteException } from "../lib/appwrite";
 
-// A helper function to create a user session and then immediately get the user's account data.
-const createSessionAndGetAccount = async (promise: Promise<any>) => {
-    await promise;
-    return await account.get();
-};
-
 export const authService = {
   /**
    * Creates a new user account.
@@ -24,10 +18,10 @@ export const authService = {
    * Creates an email and password session (logs the user in).
    * @param email The user's email.
    * @param password The user's password.
-   * @returns A promise that resolves with the user's account data upon successful login.
+   * @returns A promise that resolves with the session object.
    */
   createEmailSession: (email: string, password: string) => {
-    return createSessionAndGetAccount(account.createEmailPasswordSession(email, password));
+    return account.createEmailPasswordSession(email, password);
   },
 
   /**
