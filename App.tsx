@@ -247,11 +247,6 @@ const App: React.FC = () => {
       case 'listings': return <ListingsPage properties={properties} onNavigate={navigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
       case 'propertyDetail': return <PropertyDetailsPage property={pageData as Property} agent={allUsers.find(u=>u.uid==(pageData as Property).agentUid)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings}/>;
       case 'dashboard':
-        // User must be logged in as an agent or admin to see the dashboard.
-        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) {
-          navigate('home', null, { replace: true });
-          return null;
-        }
         return <DashboardPage
           currentUser={currentUser}
           properties={properties}
