@@ -117,12 +117,17 @@ export const updatePassword = async (password: string) => {
     if (error) throw error;
 }
 
-export const createProfileForProvider = async (providerUser: any): Promise<User | null> => {
+// This function is robust against race conditions with backend triggers.
+// It handles creating a profile for a new OAuth user, and also updating an
+// incomplete profile that might have been created by the default SQL trigger
+// which doesn't know the user's role.
+export const createOrUpdateProfileForProvider = async (providerUser: any): Promise<User | null> => {
     if (!providerUser) return null;
 
     const { user_metadata } = providerUser;
     
-    const newUserProfile = {
+    // We ensure a 'visitor' role is set, as the SQL trigger might leave it null.
+    const userProfileData = {
         id: providerUser.id,
         name: user_metadata.full_name || user_metadata.name || 'New User',
         email: user_metadata.email,
@@ -132,18 +137,13 @@ export const createProfileForProvider = async (providerUser: any): Promise<User 
 
     const { data, error } = await supabase
         .from('profiles')
-        .insert(newUserProfile)
+        .upsert(userProfileData, { onConflict: 'id' }) // Upsert the profile data
         .select()
         .single();
     
     if (error) {
-        console.error("Error creating profile for OAuth user:", error);
-        // If the profile already exists (e.g., due to a race condition or previous attempt),
-        // we can try fetching it instead of failing.
-        if (error.code === '23505') { // unique constraint violation
-            return getProfile(providerUser.id);
-        }
-        return null; // Return null on other errors
+        console.error("Error upserting profile for OAuth user:", error);
+        return null;
     }
 
     return data as User | null;

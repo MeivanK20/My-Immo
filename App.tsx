@@ -1,7 +1,6 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
-// FIX: Imported the 'Media' type to resolve type errors.
 import { Page, User, Property, Message, Rating, Media } from './types';
 import { locations as staticLocations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
@@ -75,12 +74,18 @@ const App: React.FC = () => {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [dynamicLocations, setDynamicLocations] = usePersistentState('myImmoLocations', staticLocations);
   
-  const [isLoading, setIsLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
 
   const handleNavigate = useCallback((page: Page, data?: any, options?: { replace?: boolean }) => {
+    // Clean the URL hash if it contains auth tokens from OAuth redirect
+    if (window.location.hash.includes('access_token')) {
+        window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+    }
+
     const newHistoryState = { page, data };
     if (options?.replace) {
       setHistory([newHistoryState]);
@@ -123,56 +128,44 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Effect for handling authentication state changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // The SIGNED_IN event is triggered on login and also on redirect from OAuth.
-      if (event === 'SIGNED_IN' && session?.user) {
-        let profile = await authService.getProfile(session.user.id);
-        
-        // If profile doesn't exist, it's a first-time OAuth login.
-        // We create a profile for them.
-        if (!profile) {
-          console.log("Profile not found for OAuth user, creating one...");
-          profile = await authService.createProfileForProvider(session.user);
-          if (profile) {
-            // After creating the profile, we refetch all data to get the new user list
-            await fetchData(); 
-            setCurrentUser(profile);
-            // Navigate away from the URL with tokens to a clean URL.
-            handleNavigate('listings', undefined, { replace: true });
-            return; // Exit early to prevent double data fetching.
-          }
+        let userProfile: User | null = null;
+        if (session?.user) {
+            userProfile = await authService.getProfile(session.user.id);
+            // Handle first-time OAuth login where a profile might be missing or incomplete
+            if (event === 'SIGNED_IN' && (!userProfile || !userProfile.role)) {
+                userProfile = await authService.createOrUpdateProfileForProvider(session.user);
+                if (userProfile) {
+                    handleNavigate('listings', undefined, { replace: true });
+                }
+            }
         }
         
-        // For regular logins or if profile already existed.
-        setCurrentUser(profile);
-        await fetchData();
-      } else if (event === 'SIGNED_OUT') {
-        setCurrentUser(null);
-        setProperties([]);
-        setAllUsers([]);
-        setMessages([]);
-        setRatings([]);
-        handleNavigate('home', undefined, { replace: true });
-      } else if (event === 'PASSWORD_RECOVERY') {
-         handleNavigate('resetPassword');
-      }
+        setCurrentUser(userProfile);
+        setAuthLoading(false); // Authentication check is complete
+
+        if (event === 'SIGNED_OUT') {
+            setProperties([]);
+            setAllUsers([]);
+            setMessages([]);
+            setRatings([]);
+            handleNavigate('home', undefined, { replace: true });
+        } else if (event === 'PASSWORD_RECOVERY') {
+            handleNavigate('resetPassword');
+        }
     });
-
-    // Check initial session on app load
-    const checkSession = async () => {
-      const session = await authService.getCurrentUserSession();
-      if (session?.user) {
-        const profile = await authService.getProfile(session.user.id);
-        setCurrentUser(profile);
-      }
-      // Fetch data regardless of session, but some data might be empty if not logged in.
-      fetchData();
-    };
-    checkSession();
-
+    
     return () => subscription.unsubscribe();
-  }, [fetchData, handleNavigate]);
+  }, [handleNavigate]);
+
+  // Effect for fetching data after authentication is resolved
+  useEffect(() => {
+    if (!authLoading) {
+        fetchData();
+    }
+  }, [authLoading, fetchData]);
 
   const handleLogout = () => authService.signOut();
 
@@ -277,7 +270,7 @@ const App: React.FC = () => {
   const addNeighborhood = (r:string, c:string, n:string) => {}; // Placeholder
 
   const renderPage = () => {
-    if (isLoading && !dataError) {
+    if (authLoading || (isLoading && !dataError)) {
        return <div className="flex justify-center items-center h-[calc(100vh-200px)]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
     }
     switch (currentPage) {
