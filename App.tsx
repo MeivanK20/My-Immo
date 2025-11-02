@@ -177,13 +177,48 @@ const App: React.FC = () => {
   useEffect(()=>{ sessionStorage.setItem('navigationHistory',JSON.stringify(history)); sessionStorage.setItem('navigationHistoryIndex',historyIndex.toString()); },[history,historyIndex]);
 
   const onLogin = async (email: string, password: string) => {
-    // Step 1: Create the session. This will set the session cookie.
+    // 1. Create the session with Appwrite.
     await authService.createEmailSession(email, password);
-    // Step 2: Re-run the session check. This will call account.get() with the new session
-    // and update the currentUser state for the whole app.
-    await checkSession();
-    // Step 3: Navigate home. checkSession will set the user, triggering re-render.
-    navigate('home', null, { replace: true });
+
+    // 2. Fetch the user's account data immediately after session creation.
+    const appUser = await authService.getCurrentAccount();
+
+    if (appUser) {
+      // 3. Find the user in the local state or create a new user object.
+      let userToNavigate = allUsers.find(u => u.email === appUser.email);
+      
+      if (!userToNavigate) {
+        const newUser: User = {
+          uid: appUser.$id,
+          name: appUser.name,
+          email: appUser.email,
+          role: 'visitor', // Default role for new sign-ins via social for example
+          subscriptionPlan: 'free',
+          phone: appUser.phone || '',
+          profilePictureUrl: '',
+          score: 0,
+          badge: undefined
+        };
+        // Add the new user to the global state and use it for navigation
+        setAllUsers(prev => [...prev, newUser]);
+        userToNavigate = newUser;
+      }
+      
+      // 4. Set the found/created user as the current user for the app.
+      setCurrentUser(userToNavigate);
+
+      // 5. Navigate based on the user's role.
+      if (userToNavigate.role === 'agent' || userToNavigate.role === 'admin') {
+        navigate('dashboard', null, { replace: true });
+      } else {
+        navigate('home', null, { replace: true });
+      }
+    } else {
+      // Fallback in case user data couldn't be fetched.
+      // This will refresh the app state and keep the user on the homepage.
+      await checkSession();
+      navigate('home', null, { replace: true });
+    }
   };
   const onGoogleSignIn=()=>authService.createGoogleOAuth2Session();
   const onRegister=async(name:string,email:string,password:string,role:'visitor'|'agent')=>{
