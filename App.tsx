@@ -166,60 +166,42 @@ const App: React.FC = () => {
 
   useEffect(()=>{ checkSession(); }, [retryTrigger, checkSession]);
 
-  const navigate=(page:Page,data:any=null,opts:{replace?:boolean}={})=>{
-    const newState={page,data};
-    if(opts.replace){ setHistory(h=>[...h.slice(0,historyIndex), newState]); } 
-    else{ const h=history.slice(0,historyIndex+1); h.push(newState); setHistory(h); setHistoryIndex(h.length-1); }
-    window.scrollTo(0,0);
-  };
+  const navigate = useCallback((page: Page, data: any = null, opts: { replace?: boolean } = {}) => {
+    const newState = { page, data };
+    if (opts.replace) {
+      setHistory(h => [...h.slice(0, historyIndex), newState]);
+    } else {
+      const newHistory = [...history.slice(0, historyIndex + 1), newState];
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+    window.scrollTo(0, 0);
+  }, [history, historyIndex]);
+
   const goBack=()=>{ if(historyIndex>0)setHistoryIndex(historyIndex-1); };
   const goForward=()=>{ if(historyIndex<history.length-1)setHistoryIndex(historyIndex+1); };
   useEffect(()=>{ sessionStorage.setItem('navigationHistory',JSON.stringify(history)); sessionStorage.setItem('navigationHistoryIndex',historyIndex.toString()); },[history,historyIndex]);
+  
+  useEffect(() => {
+    // This effect runs after a state change, including when currentUser is set.
+    // It safely redirects the user away from guest-only pages once they are logged in.
+    if (currentUser && (currentPage === 'login' || currentPage === 'register')) {
+        if (currentUser.role === 'agent' || currentUser.role === 'admin') {
+            navigate('dashboard', null, { replace: true });
+        } else {
+            navigate('home', null, { replace: true });
+        }
+    }
+  }, [currentUser, currentPage, navigate]);
 
   const onLogin = async (email: string, password: string) => {
-    // 1. Create the session with Appwrite.
+    // Create the session with Appwrite.
     await authService.createEmailSession(email, password);
-
-    // 2. Fetch the user's account data immediately after session creation.
-    const appUser = await authService.getCurrentAccount();
-
-    if (appUser) {
-      // 3. Find the user in the local state or create a new user object.
-      let userToNavigate = allUsers.find(u => u.email === appUser.email);
-      
-      if (!userToNavigate) {
-        const newUser: User = {
-          uid: appUser.$id,
-          name: appUser.name,
-          email: appUser.email,
-          role: 'visitor', // Default role for new sign-ins via social for example
-          subscriptionPlan: 'free',
-          phone: appUser.phone || '',
-          profilePictureUrl: '',
-          score: 0,
-          badge: undefined
-        };
-        // Add the new user to the global state and use it for navigation
-        setAllUsers(prev => [...prev, newUser]);
-        userToNavigate = newUser;
-      }
-      
-      // 4. Set the found/created user as the current user for the app.
-      setCurrentUser(userToNavigate);
-
-      // 5. Navigate based on the user's role.
-      if (userToNavigate.role === 'agent' || userToNavigate.role === 'admin') {
-        navigate('dashboard', null, { replace: true });
-      } else {
-        navigate('home', null, { replace: true });
-      }
-    } else {
-      // Fallback in case user data couldn't be fetched.
-      // This will refresh the app state and keep the user on the homepage.
-      await checkSession();
-      navigate('home', null, { replace: true });
-    }
+    // Re-check the session. This will update the `currentUser` state,
+    // which in turn will trigger the redirection `useEffect` above.
+    await checkSession();
   };
+
   const onGoogleSignIn=()=>authService.createGoogleOAuth2Session();
   const onRegister=async(name:string,email:string,password:string,role:'visitor'|'agent')=>{
     const appUser=await authService.createAccount(email,password,name);
@@ -247,6 +229,10 @@ const App: React.FC = () => {
       case 'listings': return <ListingsPage properties={properties} onNavigate={navigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
       case 'propertyDetail': return <PropertyDetailsPage property={pageData as Property} agent={allUsers.find(u=>u.uid==(pageData as Property).agentUid)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings}/>;
       case 'dashboard':
+        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) {
+          navigate('home', null, { replace: true });
+          return null;
+        }
         return <DashboardPage
           currentUser={currentUser}
           properties={properties}
@@ -254,22 +240,22 @@ const App: React.FC = () => {
           onNavigate={navigate}
           onDeleteProperty={handleDeleteProperty}
         />;
-      case 'addProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home');return null;} return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
-      case 'editProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home');return null;} return <EditPropertyPage propertyToEdit={pageData as Property} onEditProperty={handleEditProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
+      case 'addProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home', null, { replace: true });return null;} return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
+      case 'editProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home', null, { replace: true });return null;} return <EditPropertyPage propertyToEdit={pageData as Property} onEditProperty={handleEditProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
       case 'contact': return <ContactPage/>;
       case 'about': return <AboutPage/>;
       case 'termsOfUse': return <TermsOfUsePage onNavigate={navigate}/>;
       case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={navigate}/>;
-      case 'login': return <LoginPage onLogin={onLogin} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate}/>;
-      case 'register': return <RegisterPage onRegister={onRegister} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate}/>;
-      case 'messages': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home');return null;} return <MessagesPage messages={messages.filter(m=>m.agentUid===currentUser.uid)}/>;
-      case 'profileSettings': if(!currentUser){navigate('login');return null;} return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={onUpdateProfile} onNavigate={navigate}/>;
+      case 'login': if (currentUser) { navigate('home', null, { replace: true }); return null; } return <LoginPage onLogin={onLogin} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate}/>;
+      case 'register': if (currentUser) { navigate('home', null, { replace: true }); return null; } return <RegisterPage onRegister={onRegister} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate}/>;
+      case 'messages': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home', null, { replace: true });return null;} return <MessagesPage messages={messages.filter(m=>m.agentUid===currentUser.uid)}/>;
+      case 'profileSettings': if(!currentUser){navigate('login', null, { replace: true });return null;} return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={onUpdateProfile} onNavigate={navigate}/>;
       case 'registrationSuccess': return <RegistrationSuccessPage email={(pageData as any)?.email} onNavigate={navigate}/>;
-      case 'adminDashboard': if(!currentUser||currentUser.role!=='admin'){navigate('home');return null;} return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={navigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty}/>;
-      case 'pricing': if(!currentUser||currentUser.role!=='agent'){navigate('home');return null;} return <PricingPage currentUser={currentUser} onNavigateToPayment={()=>navigate('payment')}/>;
-      case 'payment': if(!currentUser||currentUser.role!=='agent'){navigate('pricing');return null;} return <PaymentPage currentUser={currentUser} onSuccessfulPayment={onSuccessfulPayment} onNavigate={navigate}/>;
+      case 'adminDashboard': if(!currentUser||currentUser.role!=='admin'){navigate('home', null, { replace: true });return null;} return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={navigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty}/>;
+      case 'pricing': if(!currentUser||currentUser.role!=='agent'){navigate('home', null, { replace: true });return null;} return <PricingPage currentUser={currentUser} onNavigateToPayment={()=>navigate('payment')}/>;
+      case 'payment': if(!currentUser||currentUser.role!=='agent'){navigate('pricing', null, { replace: true });return null;} return <PaymentPage currentUser={currentUser} onSuccessfulPayment={onSuccessfulPayment} onNavigate={navigate}/>;
       case 'careers': return <CareersPage/>;
-      case 'appwriteDemo': if (!currentUser) { navigate('login'); return null; } return <AppwriteDemoPage currentUser={currentUser} />;
+      case 'appwriteDemo': if (!currentUser) { navigate('login', null, { replace: true }); return null; } return <AppwriteDemoPage currentUser={currentUser} />;
       default: return <HomePage properties={properties} onNavigate={navigate} onSearch={setSearchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
     }
   };
