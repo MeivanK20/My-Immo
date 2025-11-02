@@ -1,4 +1,4 @@
-export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard' | 'pricing' | 'payment' | 'careers';
+export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard' | 'pricing' | 'payment' | 'careers' | 'appwriteDemo';
 
 export interface User {
   uid: string;
@@ -51,6 +51,13 @@ export interface Job {
   location: string;
   typeKey: string;
   descriptionKey: string;
+}
+
+export interface Todo {
+  $id: string;
+  task: string;
+  isComplete: boolean;
+  userId: string;
 }
 
 export type NavigationFunction = (page: Page, data?: any, options?: { replace?: boolean }) => void;

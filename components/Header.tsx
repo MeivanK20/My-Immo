@@ -141,6 +141,11 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
                         <button onClick={() => { onNavigate('pricing'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm font-bold text-green-400 hover:bg-green-500/10 transition-colors">{t('header.upgradePlan')}</button>
                     )}
                     <button onClick={() => { onNavigate('profileSettings'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.profileSettings')}</button>
+                    
+                    <div className="border-t border-brand-dark/50 my-1"></div>
+                    <button onClick={() => { onNavigate('appwriteDemo'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">Appwrite Demo</button>
+                    <div className="border-t border-brand-dark/50 my-1"></div>
+                    
                     <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.logout')}</button>
                      <button onClick={() => { toggleLanguage(); setIsMenuOpen(false); }} className="sm:hidden flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">
                         {locale === 'fr' ? <GbFlag /> : <FrFlag />}

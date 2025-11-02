@@ -396,4 +396,5 @@ export const fr = {
     job_type_fulltime: 'Temps plein',
     job_type_internship: 'Stage',
   },
+  failedToFetchError: "Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet et vous assurer que l'application est autorisée dans les paramètres de votre projet Appwrite (CORS).",
 };

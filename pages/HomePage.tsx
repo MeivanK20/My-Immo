@@ -61,7 +61,7 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
       {/* Hero Section */}
       <section 
         className="relative h-[600px] flex items-center justify-center text-white overflow-hidden bg-cover bg-center"
-        style={{ backgroundImage: "url('https://media.istockphoto.com/id/511061090/fr/photo/immeuble-de-bureaux-d-affaires-%C3%A0-londres-angleterre.jpg?s=612x612&w=0&k=20&c=scQoGk-DPnMZowbHpkwOmyA0XmXg7OHqfT56odC9rUk=')" }}
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=2070&auto=format&fit=crop')" }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/60 to-transparent"></div>
         <div className="relative z-10 text-center px-4 animate-fade-in-up">

@@ -1,73 +1,65 @@
-import { Client, Account, ID, AppwriteException } from "appwrite";
+// src/services/authService.ts
+import { account } from "../lib/appwriteConfig";
+import { ID, OAuthProvider, AppwriteException } from "../lib/appwrite";
 
-// ✅ Initialisation du client Appwrite
-const client = new Client();
-
-client
-  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
-  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID);
-
-// ✅ Export des services Appwrite
-export const account = new Account(client);
-export { ID };
-
-/**
- * Enregistre un nouvel utilisateur
- * @param email - Email de l'utilisateur
- * @param password - Mot de passe
- * @param name - Nom de l'utilisateur
- */
-export const registerUser = async (email: string, password: string, name: string) => {
-  try {
-    const user = await account.create(ID.unique(), email, password, name);
-    return user;
-  } catch (error) {
-    if (error instanceof AppwriteException) {
-      throw new Error(error.message);
-    }
-    throw error;
-  }
+// A helper function to create a user session and then immediately get the user's account data.
+const createSessionAndGetAccount = async (promise: Promise<any>) => {
+    await promise;
+    return await account.get();
 };
 
-/**
- * Connecte un utilisateur existant
- * @param email - Email
- * @param password - Mot de passe
- */
-export const loginUser = async (email: string, password: string) => {
-  try {
-    const session = await account.createEmailSession(email, password);
-    return session;
-  } catch (error) {
-    if (error instanceof AppwriteException) {
-      throw new Error(error.message);
-    }
-    throw error;
-  }
-};
+export const authService = {
+  /**
+   * Creates a new user account.
+   * @param email The user's email.
+   * @param password The user's password.
+   * @param name The user's name.
+   * @returns A promise that resolves with the newly created user object.
+   */
+  createAccount: (email: string, password: string, name: string) => {
+    return account.create(ID.unique(), email, password, name);
+  },
 
-/**
- * Déconnecte l'utilisateur actuel
- */
-export const logoutUser = async () => {
-  try {
-    await account.deleteSession("current");
-  } catch (error) {
-    if (error instanceof AppwriteException) {
-      throw new Error(error.message);
-    }
-    throw error;
-  }
-};
+  /**
+   * Creates an email and password session (logs the user in).
+   * @param email The user's email.
+   * @param password The user's password.
+   * @returns A promise that resolves with the user's account data upon successful login.
+   */
+  createEmailSession: (email: string, password: string) => {
+    return createSessionAndGetAccount(account.createEmailPasswordSession(email, password));
+  },
 
-/**
- * Récupère l'utilisateur actuellement connecté
- */
-export const getCurrentUser = async () => {
-  try {
-    const user = await account.get();
-    return user;
-  } catch (error) {
-    return null; // Pas de session active
-  }
+  /**
+   * Initiates the Google OAuth2 login flow.
+   */
+  createGoogleOAuth2Session: () => {
+    const successUrl = `${window.location.origin}`;
+    const failureUrl = `${window.location.origin}/login`;
+    account.createOAuth2Session(
+      OAuthProvider.Google,
+      successUrl,
+      failureUrl
+    );
+  },
+
+  /**
+   * Deletes the current user session (logs the user out).
+   */
+  deleteCurrentSession: () => account.deleteSession("current"),
+
+  /**
+   * Fetches the currently logged-in user's account data.
+   */
+  getCurrentAccount: async () => {
+    try {
+      const user = await account.get();
+      return user;
+    } catch (err) {
+      if (err instanceof AppwriteException && err.code !== 401) {
+          console.error("Appwrite Error fetching account:", err);
+      }
+      return null;
+    }
+  },
 };

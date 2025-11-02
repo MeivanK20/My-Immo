@@ -4,7 +4,7 @@ import Button from '../components/common/Button';
 import Logo from '../components/common/Logo';
 import { User, NavigationFunction } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import GoogleIcon from '../components/icons/GoogleIcon';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 
 interface RegisterPageProps {
   onRegister: (name: string, email: string, password: string, role: 'visitor' | 'agent') => Promise<void>;
@@ -118,16 +118,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleSignIn,
           </div>
 
           <div>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full flex items-center justify-center gap-3"
+            <GoogleLoginButton
               onClick={handleGoogleSignUpClick}
               disabled={isLoading}
-            >
-              <GoogleIcon />
-              {t('registerPage.googleSignUp')}
-            </Button>
+              label={t('registerPage.googleSignUp')}
+            />
           </div>
           
           <p className="mt-6 text-center text-sm text-gray-400">

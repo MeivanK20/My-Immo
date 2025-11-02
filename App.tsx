@@ -4,7 +4,8 @@ import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
 import { locations as staticLocations } from './data/locations';
 import { useLanguage } from './contexts/LanguageContext';
-import * as authService from './services/authService';
+// FIX: Changed import to correctly reference the exported 'authService' object.
+import { authService } from './services/authService';
 import { AppwriteException } from './lib/appwrite';
 
 import Header from './components/Header';
@@ -29,6 +30,7 @@ import PricingPage from './pages/PricingPage';
 import PaymentPage from './pages/PaymentPage';
 import CareersPage from './pages/CareersPage';
 import ConnectionErrorBanner from './components/common/ConnectionErrorBanner';
+import AppwriteDemoPage from './pages/AppwriteDemoPage';
 
 const DATA_VERSION = 1;
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
@@ -136,7 +138,7 @@ const App: React.FC = () => {
     });
   }, [properties, ratings]);
 
-  useEffect(() => { if(currentUser){ const u = allUsers.find(u=>u.uid===currentUser.uid); if(u) setCurrentUser(u); } }, [allUsers, currentUser]);
+  useEffect(()=>{ if(currentUser){ const u = allUsers.find(u=>u.uid===currentUser.uid); if(u) setCurrentUser(u); } }, [allUsers, currentUser]);
 
   const checkSession = useCallback(async () => {
     setLoading(true); setConnectionError(null);
@@ -150,9 +152,17 @@ const App: React.FC = () => {
           setCurrentUser(newU); return [...prev,newU];
         });
       } else setCurrentUser(null);
-    } catch(err:any){ console.error(err); setConnectionError(err.message||'Session failed'); setCurrentUser(null); }
+    } catch(err:any){ 
+        console.error(err); 
+        if (err.message?.includes('Failed to fetch')) {
+             setConnectionError(t('fr.failedToFetchError', { defaultValue: 'Could not connect to the server. Please check your internet connection and ensure the app is allowed in your Appwrite project settings (CORS).' }));
+        } else {
+            setConnectionError(err.message||'Session failed'); 
+        }
+        setCurrentUser(null); 
+    }
     finally{ setLoading(false); }
-  }, []);
+  }, [t]);
 
   useEffect(()=>{ checkSession(); }, [retryTrigger, checkSession]);
 
@@ -182,8 +192,9 @@ const App: React.FC = () => {
   const onLogout=async()=>{ await authService.deleteCurrentSession(); setCurrentUser(null); navigate('home',null,{replace:true}); };
 
   // Property, Message, Rating, Location, Admin, Profile, Payment handlers
-  const handleAddProperty=(p:Omit<Property,'id'|'media'>,files:File[])=>{ const np:Property={...p,id:`prop${Date.now()}`,media:files.map(f=>({type:f.type.startsWith('image/')?'image':'video',url:URL.createObjectURL(f)}))}; setProperties(prev=>[np,...prev]); };
-  const handleEditProperty=(p:Property,files:File[])=>{ const newMedia=files.map(f=>({type:f.type.startsWith('image/')?'image':'video',url:URL.createObjectURL(f)})); setProperties(prev=>prev.map(prop=>prop.id===p.id?{...p,media:[...p.media,...newMedia]}:prop)); };
+  // FIX: Explicitly type the return of the .map() function to Media to solve type inference issue.
+  const handleAddProperty = (p: Omit<Property, 'id' | 'media'>, files: File[]) => { const np: Property = { ...p, id: `prop${Date.now()}`, media: files.map((f): Media => ({ type: f.type.startsWith('image/') ? 'image' : 'video', url: URL.createObjectURL(f) })) }; setProperties(prev => [np, ...prev]); };
+  const handleEditProperty = (p: Property, files: File[]) => { const newMedia: Media[] = files.map((f): Media => ({ type: f.type.startsWith('image/') ? 'image' : 'video', url: URL.createObjectURL(f) })); setProperties(prev => prev.map(prop => prop.id === p.id ? { ...p, media: [...p.media, ...newMedia] } : prop)); };
   const handleDeleteProperty=(id:string)=>setProperties(prev=>prev.filter(p=>p.id!==id));
   const handleSendMessage=(m:Omit<Message,'id'|'timestamp'>)=>{ const newM:Message={...m,id:`msg${Date.now()}`,timestamp:new Date()}; setMessages(prev=>[newM,...prev]); };
   const handleAddRating=(pid:string,agentUid:string,rating:number)=>{ if(!currentUser)return; const idx=ratings.findIndex(r=>r.propertyId===pid && r.visitorUid===currentUser.uid); const newR:Rating={id:`rating${Date.now()}`,propertyId:pid,agentUid,visitorUid:currentUser.uid,rating,timestamp:new Date()}; if(idx>-1){ setRatings(prev=>{const arr=[...prev];arr[idx]=newR;return arr;}); } else setRatings(prev=>[...prev,newR]); };
@@ -198,7 +209,19 @@ const App: React.FC = () => {
       case 'home': return <HomePage properties={properties} onNavigate={navigate} onSearch={setSearchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
       case 'listings': return <ListingsPage properties={properties} onNavigate={navigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
       case 'propertyDetail': return <PropertyDetailsPage property={pageData as Property} agent={allUsers.find(u=>u.uid==(pageData as Property).agentUid)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings}/>;
-      case 'dashboard': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home');return null;} return <DashboardPage user={currentUser} properties={properties.filter(p=>p.agentUid===currentUser.uid)} onNavigate={navigate} onDeleteProperty={handleDeleteProperty} messageCount={messages.filter(m=>m.agentUid===currentUser.uid).length}/>;
+      case 'dashboard':
+        // User must be logged in as an agent or admin to see the dashboard.
+        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) {
+          navigate('home', null, { replace: true });
+          return null;
+        }
+        return <DashboardPage
+          currentUser={currentUser}
+          properties={properties}
+          messages={messages}
+          onNavigate={navigate}
+          onDeleteProperty={handleDeleteProperty}
+        />;
       case 'addProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home');return null;} return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
       case 'editProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home');return null;} return <EditPropertyPage propertyToEdit={pageData as Property} onEditProperty={handleEditProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
       case 'contact': return <ContactPage/>;
@@ -214,6 +237,7 @@ const App: React.FC = () => {
       case 'pricing': if(!currentUser||currentUser.role!=='agent'){navigate('home');return null;} return <PricingPage currentUser={currentUser} onNavigateToPayment={()=>navigate('payment')}/>;
       case 'payment': if(!currentUser||currentUser.role!=='agent'){navigate('pricing');return null;} return <PaymentPage currentUser={currentUser} onSuccessfulPayment={onSuccessfulPayment} onNavigate={navigate}/>;
       case 'careers': return <CareersPage/>;
+      case 'appwriteDemo': if (!currentUser) { navigate('login'); return null; } return <AppwriteDemoPage currentUser={currentUser} />;
       default: return <HomePage properties={properties} onNavigate={navigate} onSearch={setSearchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
     }
   };

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { getCurrentUser } from "../services/authService";
+// FIX: Correctly import the authService object instead of a named export.
+import { authService } from "../services/authService";
 import Button from "./common/Button";
 
 const PingButton: React.FC = () => {
@@ -12,7 +13,8 @@ const PingButton: React.FC = () => {
     setResponse(null);
     setError(null);
     try {
-      const user = await getCurrentUser();
+      // FIX: Call the correct method on the authService object.
+      const user = await authService.getCurrentAccount();
       setResponse(user || "No user is currently logged in.");
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
@@ -24,7 +26,7 @@ const PingButton: React.FC = () => {
   return (
     <div className="w-full max-w-md p-6 bg-brand-card rounded-lg shadow-lg">
       <Button onClick={handlePing} disabled={isLoading} className="w-full">
-        {isLoading ? "Pinging..." : "Ping Appwrite (getCurrentUser)"}
+        {isLoading ? "Pinging..." : "Ping Appwrite (getCurrentAccount)"}
       </Button>
       
       {response && (
