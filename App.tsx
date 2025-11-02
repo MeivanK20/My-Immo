@@ -32,11 +32,6 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import DataErrorBanner from './components/common/DataErrorBanner';
 
-const getInitialHistoryState = () => ({
-  history: [{ page: 'home' as Page, data: null }],
-  historyIndex: 0,
-});
-
 function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
     const [state, setState] = useState<T>(() => {
         try {
@@ -61,11 +56,11 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch
 
 
 const App: React.FC = () => {
-  const [initialHistoryState] = useState(getInitialHistoryState);
-  const [history, setHistory] = useState<{ page: Page; data: any; }[]>(initialHistoryState.history);
-  const [historyIndex, setHistoryIndex] = useState<number>(initialHistoryState.historyIndex);
+  const [history, setHistory] = usePersistentState<{ page: Page; data: any }[]>('myImmoHistory', [{ page: 'home', data: null }]);
+  const [historyIndex, setHistoryIndex] = usePersistentState<number>('myImmoHistoryIndex', 0);
   
-  const { page: currentPage, data: pageData } = history[historyIndex];
+  const validHistoryIndex = Math.max(0, Math.min(historyIndex, history.length - 1));
+  const { page: currentPage, data: pageData } = history[validHistoryIndex];
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -91,13 +86,13 @@ const App: React.FC = () => {
       setHistory([newHistoryState]);
       setHistoryIndex(0);
     } else {
-      const newHistory = history.slice(0, historyIndex + 1);
+      const newHistory = history.slice(0, validHistoryIndex + 1);
       newHistory.push(newHistoryState);
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
     }
     window.scrollTo(0, 0);
-  }, [history, historyIndex]);
+  }, [history, validHistoryIndex, setHistory, setHistoryIndex]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -261,10 +256,10 @@ const App: React.FC = () => {
   };
 
   // Other handlers
-  const handleGoBack = () => { if (historyIndex > 0) setHistoryIndex(prevIndex => prevIndex - 1); };
-  const handleGoForward = () => { if (historyIndex < history.length - 1) setHistoryIndex(prevIndex => prevIndex + 1); };
-  const canGoBack = historyIndex > 0;
-  const canGoForward = historyIndex < history.length - 1;
+  const handleGoBack = () => { if (validHistoryIndex > 0) setHistoryIndex(prevIndex => prevIndex - 1); };
+  const handleGoForward = () => { if (validHistoryIndex < history.length - 1) setHistoryIndex(prevIndex => prevIndex + 1); };
+  const canGoBack = validHistoryIndex > 0;
+  const canGoForward = validHistoryIndex < history.length - 1;
   const handleSearch = (filters: any) => setSearchFilters(filters);
   const addCity = (r:string, c:string) => {}; // Placeholder
   const addNeighborhood = (r:string, c:string, n:string) => {}; // Placeholder
@@ -275,12 +270,21 @@ const App: React.FC = () => {
     }
     switch (currentPage) {
       case 'listings': return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={staticLocations} />;
-      case 'propertyDetail':
-        if (!pageData || !properties.find(p => p.id === pageData.id)) {
+      case 'propertyDetail': {
+        const propertyId = pageData?.id;
+        if (!propertyId) {
           handleNavigate('home', undefined, { replace: true });
           return null;
         }
-        return <PropertyDetailsPage property={pageData} agent={allUsers.find(u => u.id === pageData.agent_id)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={()=>{}} ratings={ratings} />;
+        const freshProperty = properties.find(p => p.id === propertyId);
+        if (!freshProperty) {
+          if (!isLoading) {
+            handleNavigate('home', undefined, { replace: true });
+          }
+          return null;
+        }
+        return <PropertyDetailsPage property={freshProperty} agent={allUsers.find(u => u.id === freshProperty.agent_id)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={()=>{}} ratings={ratings} />;
+      }
       case 'dashboard':
         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('login', undefined, { replace: true }); return null; }
         const agentProperties = properties.filter(p => p.agent_id === currentUser.id);
@@ -289,12 +293,25 @@ const App: React.FC = () => {
        case 'addProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('login', undefined, { replace: true }); return null; }
         return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={staticLocations} onAddCity={addCity} onAddNeighborhood={addNeighborhood} />;
-       case 'editProperty':
-         if (!pageData || !properties.find(p => p.id === pageData.id) || !currentUser || (currentUser.role !== 'admin' && currentUser.id !== pageData.agent_id)) { 
+       case 'editProperty': {
+         const propertyId = pageData?.id;
+         if (!propertyId) {
+           handleNavigate('home', undefined, { replace: true });
+           return null;
+         }
+         const freshPropertyToEdit = properties.find(p => p.id === propertyId);
+         if (!freshPropertyToEdit) {
+           if (!isLoading) {
+             handleNavigate('home', undefined, { replace: true });
+           }
+           return null;
+         }
+         if (!currentUser || (currentUser.role !== 'admin' && currentUser.id !== freshPropertyToEdit.agent_id)) { 
            handleNavigate('home', undefined, { replace: true }); 
            return null; 
          }
-         return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} locations={staticLocations} onAddCity={addCity} onAddNeighborhood={addNeighborhood} />;
+         return <EditPropertyPage propertyToEdit={freshPropertyToEdit} onEditProperty={handleEditProperty} onNavigate={handleNavigate} locations={staticLocations} onAddCity={addCity} onAddNeighborhood={addNeighborhood} />;
+       }
        case 'messages':
           if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { handleNavigate('login', undefined, { replace: true }); return null; }
           const myMessages = messages.filter(m => m.agent_id === currentUser.id);
@@ -343,7 +360,7 @@ const App: React.FC = () => {
           {dataError ? (
             <DataErrorBanner error={dataError} onRetry={fetchData} />
           ) : (
-            <div className="animate-fade-in-up" key={currentPage + historyIndex}>
+            <div className="animate-fade-in-up" key={currentPage + validHistoryIndex}>
               {renderPage()}
             </div>
           )}
