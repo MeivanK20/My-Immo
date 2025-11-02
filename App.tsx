@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Page, User, Property, Media, Message, Rating } from './types';
 import { mockProperties } from './data/properties';
 import { mockUsers } from './data/users';
@@ -145,7 +145,7 @@ const App: React.FC = () => {
     try {
       const appUser = await authService.getCurrentAccount();
       if(appUser){
-        setAllUsers(prev=>{
+        setAllUsers(prev=>{ // This is async and might not reflect immediately
           const u = prev.find(u=>u.email===appUser.email);
           if(u){ setCurrentUser(u); return prev; }
           const newU:User={ uid:appUser.$id, name:appUser.name, email:appUser.email, role:'visitor', subscriptionPlan:'free', phone:appUser.phone||'', profilePictureUrl:'', score:0, badge:undefined };
@@ -174,7 +174,7 @@ const App: React.FC = () => {
   const navigate = useCallback((page: Page, data: any = null, opts: { replace?: boolean } = {}) => {
     const newState = { page, data };
     if (opts.replace) {
-      setHistory(h => [...h.slice(0, historyIndex), newState]);
+      setHistory(h => [...h.slice(0, h.length -1), newState]);
     } else {
       const newHistory = [...history.slice(0, historyIndex + 1), newState];
       setHistory(newHistory);
@@ -182,6 +182,24 @@ const App: React.FC = () => {
     }
     window.scrollTo(0, 0);
   }, [history, historyIndex]);
+
+  // Effect for post-login redirection
+  const prevUserRef = useRef<User | null>();
+  useEffect(() => {
+    prevUserRef.current = currentUser;
+  });
+  const prevUser = prevUserRef.current;
+
+  useEffect(() => {
+    // A login event is detected when we transition from no user to a user.
+    if (!prevUser && currentUser) {
+      if (currentUser.role === 'agent' || currentUser.role === 'admin') {
+        navigate('dashboard', null, { replace: true });
+      } else {
+        navigate('listings', null, { replace: true });
+      }
+    }
+  }, [currentUser, prevUser, navigate]);
 
   const goBack=()=>{ if(historyIndex>0)setHistoryIndex(historyIndex-1); };
   const goForward=()=>{ if(historyIndex<history.length-1)setHistoryIndex(historyIndex+1); };
@@ -244,13 +262,13 @@ const App: React.FC = () => {
     };
     
     // 1. Handle initial loading
-    if (loading && !currentUser && !connectionError) {
+    if (loading) {
         return <div className="flex justify-center items-center h-screen bg-brand-dark"><div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-brand-red"/></div>;
     }
 
     // 2. Redirect logged-in users from guest-only pages
     if (currentUser && guestOnlyPages.includes(currentPage)) {
-        const targetPage = (currentUser.role === 'agent' || currentUser.role === 'admin') ? 'dashboard' : 'home';
+        const targetPage = (currentUser.role === 'agent' || currentUser.role === 'admin') ? 'dashboard' : 'listings';
         navigate(targetPage, null, { replace: true });
         return null; // Render nothing during redirection
     }
