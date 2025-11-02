@@ -86,7 +86,7 @@ const App: React.FC = () => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [retryTrigger, setRetryTrigger] = useState(0);
   const [searchFilters, setSearchFilters] = useState({});
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const mergedLocations = useMemo(() => {
     const merged = JSON.parse(JSON.stringify(staticLocations));
@@ -155,14 +155,19 @@ const App: React.FC = () => {
     } catch(err:any){ 
         console.error(err); 
         if (err.message?.includes('Failed to fetch')) {
-             setConnectionError(t('fr.failedToFetchError', { defaultValue: 'Could not connect to the server. Please check your internet connection and ensure the app is allowed in your Appwrite project settings (CORS).' }));
+            const hostname = window.location.hostname;
+            const errorDetails = locale === 'fr'
+                ? `Ceci est souvent un problème de CORS. Veuillez vérifier dans la console de votre projet Appwrite > Platforms, et vous assurer que le nom d'hôte '${hostname}' est ajouté. Vérifiez également que l'URL de l'endpoint dans le code est correcte.`
+                : `This is often a CORS issue. Please check your Appwrite project console > Platforms, and ensure the hostname '${hostname}' is added. Also, verify that the endpoint URL in the code is correct.`;
+
+            setConnectionError(`${t('failedToFetchError')} ${errorDetails}`);
         } else {
             setConnectionError(err.message||'Session failed'); 
         }
         setCurrentUser(null); 
     }
     finally{ setLoading(false); }
-  }, [t]);
+  }, [t, locale]);
 
   useEffect(()=>{ checkSession(); }, [retryTrigger, checkSession]);
 
@@ -239,6 +244,7 @@ const App: React.FC = () => {
           messages={messages}
           onNavigate={navigate}
           onDeleteProperty={handleDeleteProperty}
+          onLogout={onLogout}
         />;
       case 'addProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home', null, { replace: true });return null;} return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
       case 'editProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home', null, { replace: true });return null;} return <EditPropertyPage propertyToEdit={pageData as Property} onEditProperty={handleEditProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;

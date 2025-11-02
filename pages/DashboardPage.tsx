@@ -3,7 +3,6 @@ import { Property, User, NavigationFunction, Message } from '../types';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
 import Modal from '../components/common/Modal';
-import { authService } from '../services/authService';
 
 const GoldBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clipRule="evenodd" /></svg>;
 const SilverBadge = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clipRule="evenodd" /></svg>;
@@ -15,16 +14,12 @@ interface DashboardPageProps {
   messages: Message[];
   onNavigate: NavigationFunction;
   onDeleteProperty: (id: string) => void;
+  onLogout: () => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, messages, onNavigate, onDeleteProperty }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, messages, onNavigate, onDeleteProperty, onLogout }) => {
   const { t, locale } = useLanguage();
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; id: string | null; }>({ isOpen: false, id: null });
-
-  const handleLogout = async () => {
-    await authService.deleteCurrentSession();
-    onNavigate('home', null, { replace: true });
-  };
   
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(locale === 'fr' ? 'fr-CM' : 'en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 }).format(price);
@@ -71,7 +66,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, 
             <h2 className="text-xl font-bold text-white">{currentUser.name}</h2>
             <p className="text-gray-400">{currentUser.email}</p>
           </div>
-          <Button onClick={handleLogout} variant="secondary" className="ml-auto">Déconnexion</Button>
+          <Button onClick={onLogout} variant="secondary" className="ml-auto">Déconnexion</Button>
         </div>
 
         <h1 className="text-3xl font-bold text-white mb-6">{t('dashboardPage.title')}</h1>

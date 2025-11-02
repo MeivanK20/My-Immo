@@ -397,5 +397,5 @@ export const en = {
     job_type_fulltime: 'Full-time',
     job_type_internship: 'Internship',
   },
-  failedToFetchError: "Could not connect to the server. Please check your internet connection and ensure the app is allowed in your Appwrite project settings (CORS).",
+  failedToFetchError: "Could not connect to the server.",
 };
