@@ -187,23 +187,8 @@ const App: React.FC = () => {
   const goForward=()=>{ if(historyIndex<history.length-1)setHistoryIndex(historyIndex+1); };
   useEffect(()=>{ sessionStorage.setItem('navigationHistory',JSON.stringify(history)); sessionStorage.setItem('navigationHistoryIndex',historyIndex.toString()); },[history,historyIndex]);
   
-  useEffect(() => {
-    // This effect runs after a state change, including when currentUser is set.
-    // It safely redirects the user away from guest-only pages once they are logged in.
-    if (currentUser && (currentPage === 'login' || currentPage === 'register')) {
-        if (currentUser.role === 'agent' || currentUser.role === 'admin') {
-            navigate('dashboard', null, { replace: true });
-        } else {
-            navigate('home', null, { replace: true });
-        }
-    }
-  }, [currentUser, currentPage, navigate]);
-
   const onLogin = async (email: string, password: string) => {
-    // Create the session with Appwrite.
     await authService.createEmailSession(email, password);
-    // Re-check the session. This will update the `currentUser` state,
-    // which in turn will trigger the redirection `useEffect` above.
     await checkSession();
   };
 
@@ -213,7 +198,16 @@ const App: React.FC = () => {
     const newU:User={uid:appUser.$id,name:appUser.name,email:appUser.email,role,subscriptionPlan:'free',phone:'',profilePictureUrl:''};
     setAllUsers(prev=>[...prev,newU]); navigate('registrationSuccess',{email:newU.email});
   };
-  const onLogout=async()=>{ await authService.deleteCurrentSession(); setCurrentUser(null); navigate('home',null,{replace:true}); };
+  const onLogout=async()=>{ 
+    try {
+      await authService.deleteCurrentSession(); 
+    } catch (e) {
+      console.error("Failed to delete session on server, logging out locally.", e);
+    } finally {
+      setCurrentUser(null); 
+      navigate('home',null,{replace:true}); 
+    }
+  };
 
   // Property, Message, Rating, Location, Admin, Profile, Payment handlers
   // FIX: Explicitly type the return of the .map() function to Media to solve type inference issue.
@@ -229,44 +223,77 @@ const App: React.FC = () => {
   const onSuccessfulPayment=()=>{ if(currentUser){ const u={...currentUser,subscriptionPlan:'premium' as const}; setAllUsers(prev=>prev.map(user=>user.uid===u.uid?u:user)); } navigate('pricing'); };
 
   const renderPage=()=>{
+    const guestOnlyPages: Page[] = ['login', 'register', 'registrationSuccess'];
+    const protectedPages: Partial<Record<Page, Array<User['role']>>> = {
+        dashboard: ['agent', 'admin'],
+        addProperty: ['agent', 'admin'],
+        editProperty: ['agent', 'admin'],
+        messages: ['agent', 'admin'],
+        profileSettings: ['visitor', 'agent', 'admin'],
+        adminDashboard: ['admin'],
+        pricing: ['agent', 'admin'],
+        payment: ['agent', 'admin'],
+        appwriteDemo: ['visitor', 'agent', 'admin'],
+    };
+
+    const pageIsProtected = (page: Page): boolean => page in protectedPages;
+    const canAccess = (page: Page, user: User | null): boolean => {
+        if (!pageIsProtected(page)) return true; // Public page
+        if (!user) return false; // Guest trying to access protected page
+        return protectedPages[page]?.includes(user.role) ?? false;
+    };
+    
+    // 1. Handle initial loading
+    if (loading && !currentUser && !connectionError) {
+        return <div className="flex justify-center items-center h-screen bg-brand-dark"><div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-brand-red"/></div>;
+    }
+
+    // 2. Redirect logged-in users from guest-only pages
+    if (currentUser && guestOnlyPages.includes(currentPage)) {
+        const targetPage = (currentUser.role === 'agent' || currentUser.role === 'admin') ? 'dashboard' : 'home';
+        navigate(targetPage, null, { replace: true });
+        return null; // Render nothing during redirection
+    }
+
+    // 3. Redirect unauthorized users from protected pages
+    if (!canAccess(currentPage, currentUser)) {
+        const targetPage = currentUser ? 'home' : 'login';
+        navigate(targetPage, null, { replace: true });
+        return null; // Render nothing during redirection
+    }
+
+    // 4. Render the correct page
     switch(currentPage){
       case 'home': return <HomePage properties={properties} onNavigate={navigate} onSearch={setSearchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
       case 'listings': return <ListingsPage properties={properties} onNavigate={navigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
-      case 'propertyDetail': return <PropertyDetailsPage property={pageData as Property} agent={allUsers.find(u=>u.uid==(pageData as Property).agentUid)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings}/>;
-      case 'dashboard':
-        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) {
-          navigate('home', null, { replace: true });
-          return null;
-        }
-        return <DashboardPage
-          currentUser={currentUser}
-          properties={properties}
-          messages={messages}
-          onNavigate={navigate}
-          onDeleteProperty={handleDeleteProperty}
-          onLogout={onLogout}
-        />;
-      case 'addProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home', null, { replace: true });return null;} return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
-      case 'editProperty': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home', null, { replace: true });return null;} return <EditPropertyPage propertyToEdit={pageData as Property} onEditProperty={handleEditProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
+      case 'propertyDetail': return <PropertyDetailsPage property={pageData as Property} agent={allUsers.find(u=>u.uid===(pageData as Property).agentUid)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings}/>;
+      case 'login': return <LoginPage onLogin={onLogin} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate}/>;
+      case 'register': return <RegisterPage onRegister={onRegister} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate}/>;
+      case 'registrationSuccess': return <RegistrationSuccessPage email={(pageData as any)?.email} onNavigate={navigate}/>;
+      
+      // We can now assume currentUser is not null for these routes due to the guards above
+      case 'dashboard': return <DashboardPage currentUser={currentUser!} properties={properties} messages={messages} onNavigate={navigate} onDeleteProperty={handleDeleteProperty} onLogout={onLogout} />;
+      case 'addProperty': return <AddPropertyPage user={currentUser!} onAddProperty={handleAddProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
+      case 'editProperty': return <EditPropertyPage propertyToEdit={pageData as Property} onEditProperty={handleEditProperty} onNavigate={navigate} locations={mergedLocations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood}/>;
+      case 'messages': return <MessagesPage messages={messages.filter(m=>m.agentUid===currentUser!.uid)}/>;
+      case 'profileSettings': return <ProfileSettingsPage currentUser={currentUser!} onUpdateProfile={onUpdateProfile} onNavigate={navigate}/>;
+      case 'adminDashboard': return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={navigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty}/>;
+      case 'pricing': return <PricingPage currentUser={currentUser!} onNavigateToPayment={()=>navigate('payment')}/>;
+      case 'payment': return <PaymentPage currentUser={currentUser!} onSuccessfulPayment={onSuccessfulPayment} onNavigate={navigate}/>;
+      case 'appwriteDemo': return <AppwriteDemoPage currentUser={currentUser!} />;
+      
+      // Public static pages
       case 'contact': return <ContactPage/>;
       case 'about': return <AboutPage/>;
       case 'termsOfUse': return <TermsOfUsePage onNavigate={navigate}/>;
       case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={navigate}/>;
-      case 'login': if (currentUser) { navigate('home', null, { replace: true }); return null; } return <LoginPage onLogin={onLogin} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate}/>;
-      case 'register': if (currentUser) { navigate('home', null, { replace: true }); return null; } return <RegisterPage onRegister={onRegister} onGoogleSignIn={onGoogleSignIn} onNavigate={navigate}/>;
-      case 'messages': if(!currentUser||(currentUser.role!=='agent'&&currentUser.role!=='admin')){navigate('home', null, { replace: true });return null;} return <MessagesPage messages={messages.filter(m=>m.agentUid===currentUser.uid)}/>;
-      case 'profileSettings': if(!currentUser){navigate('login', null, { replace: true });return null;} return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={onUpdateProfile} onNavigate={navigate}/>;
-      case 'registrationSuccess': return <RegistrationSuccessPage email={(pageData as any)?.email} onNavigate={navigate}/>;
-      case 'adminDashboard': if(!currentUser||currentUser.role!=='admin'){navigate('home', null, { replace: true });return null;} return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={navigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty}/>;
-      case 'pricing': if(!currentUser||currentUser.role!=='agent'){navigate('home', null, { replace: true });return null;} return <PricingPage currentUser={currentUser} onNavigateToPayment={()=>navigate('payment')}/>;
-      case 'payment': if(!currentUser||currentUser.role!=='agent'){navigate('pricing', null, { replace: true });return null;} return <PaymentPage currentUser={currentUser} onSuccessfulPayment={onSuccessfulPayment} onNavigate={navigate}/>;
       case 'careers': return <CareersPage/>;
-      case 'appwriteDemo': if (!currentUser) { navigate('login', null, { replace: true }); return null; } return <AppwriteDemoPage currentUser={currentUser} />;
-      default: return <HomePage properties={properties} onNavigate={navigate} onSearch={setSearchFilters} user={currentUser} allUsers={allUsers} locations={mergedLocations}/>;
+
+      default: 
+        navigate('home', null, { replace: true });
+        return null;
     }
   };
-
-  if(loading&&!currentUser&&!connectionError) return <div className="flex justify-center items-center h-screen bg-brand-dark"><div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-brand-red"/></div>;
 
   return (
     <div className="flex flex-col min-h-screen">
