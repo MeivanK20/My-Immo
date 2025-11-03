@@ -274,7 +274,10 @@ const App: React.FC = () => {
 
   // --- Handlers ---
   
-  const handleLogout = () => authService.signOut();
+  const handleLogout = () => {
+    authService.signOut();
+    handleNavigate('home', undefined, { replace: true });
+  };
 
   const handleLogin = async (email: string, password: string): Promise<void> => {
     await authService.signInWithEmail(email, password);
