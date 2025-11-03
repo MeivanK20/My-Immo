@@ -263,12 +263,6 @@ export const en = {
     register: 'Sign up',
     error: "Invalid credentials. Please try again.",
     loggingIn: 'Signing in',
-    demoCredentials: 'Demonstration Credentials',
-    demoAdmin: 'Admin',
-    demoAgent: 'Agent',
-    demoVisitor: 'Visitor',
-    demoPassword: 'Password (for all)',
-    demoNote: 'Ensure you have created these users in your Supabase dashboard.',
   },
   registerPage: {
     title: 'Create your account',

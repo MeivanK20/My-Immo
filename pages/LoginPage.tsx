@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
@@ -41,17 +42,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onGoogleLogin, onNavigat
         </div>
         
         <div className="bg-brand-card p-8 rounded-lg shadow-2xl">
-          <div className="bg-brand-dark/50 border border-brand-card/80 p-4 rounded-lg mb-6 text-sm">
-            <h3 className="font-semibold text-white mb-2">{t('loginPage.demoCredentials')}</h3>
-            <ul className="space-y-1 text-gray-400">
-                <li><strong>{t('loginPage.demoAdmin')}:</strong> admin@immo.cm</li>
-                <li><strong>{t('loginPage.demoAgent')}:</strong> agent@immo.cm</li>
-                <li><strong>{t('loginPage.demoVisitor')}:</strong> visitor@immo.cm</li>
-                <li className="pt-1"><strong>{t('loginPage.demoPassword')}:</strong> password</li>
-            </ul>
-            <p className="text-xs text-gray-500 mt-3">{t('loginPage.demoNote')}</p>
-          </div>
-
           <h2 className="text-center text-2xl font-bold text-white mb-6">
             {t('loginPage.title')}
           </h2>

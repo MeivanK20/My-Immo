@@ -263,12 +263,6 @@ export const fr = {
     register: 'Inscrivez-vous',
     error: "Les identifiants sont incorrects. Veuillez réessayer.",
     loggingIn: 'Connexion en cours',
-    demoCredentials: 'Identifiants de Démonstration',
-    demoAdmin: 'Admin',
-    demoAgent: 'Agent',
-    demoVisitor: 'Visiteur',
-    demoPassword: 'Mot de passe (pour tous)',
-    demoNote: "Assurez-vous d'avoir créé ces utilisateurs dans votre dashboard Supabase.",
   },
   registerPage: {
     title: 'Créez votre compte',
