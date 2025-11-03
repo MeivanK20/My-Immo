@@ -1,5 +1,9 @@
 
 
+
+
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Page, User, Property, Message, Rating, Media, Advertisement } from './types';
 import { useLanguage } from './contexts/LanguageContext';
@@ -392,6 +396,26 @@ const App: React.FC = () => {
         console.error('Error updating profile:', error);
       }
   };
+
+  const handleUpdatePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+    if (!currentUser) throw new Error("User not authenticated");
+    await authService.updatePassword(currentUser.email, currentPassword, newPassword);
+  };
+
+  // FIX: Added a dedicated handler for the password reset flow.
+  // This function has the correct signature expected by ResetPasswordPage.
+  const handleResetPassword = async (newPassword: string): Promise<void> => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      throw error;
+    }
+  };
+  
+  const handleDeleteAccount = async (password: string): Promise<void> => {
+    if (!currentUser) throw new Error("User not authenticated");
+    await authService.deleteAccount(currentUser.email, password);
+    // After successful deletion, the onAuthStateChange listener will handle logout.
+  };
   
   const handleSuccessfulPayment = async () => {
     if (currentUser) {
@@ -483,7 +507,7 @@ const App: React.FC = () => {
           return <MessagesPage messages={messages} />;
        case 'profileSettings':
           if (!currentUser) { return null; }
-          return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} />;
+          return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} onUpdatePassword={handleUpdatePassword} onDeleteAccount={handleDeleteAccount} />;
        case 'login': return <LoginPage onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
        case 'register': return <RegisterPage onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
        case 'registrationSuccess': return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
@@ -504,7 +528,7 @@ const App: React.FC = () => {
       case 'forgotPassword':
         return <ForgotPasswordPage onNavigate={handleNavigate} onForgotPassword={authService.sendPasswordResetEmail} />;
       case 'resetPassword':
-        return <ResetPasswordPage onNavigate={handleNavigate} onResetPassword={authService.updatePassword} />;
+        return <ResetPasswordPage onNavigate={handleNavigate} onResetPassword={handleResetPassword} />;
       case 'home': default:
         return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} allUsers={allUsers} locations={locations} />;
     }

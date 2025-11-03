@@ -1,15 +1,20 @@
 
 
+
+
 import React, { useState, useEffect } from 'react';
 import { User, NavigationFunction } from '../types';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
+import Modal from '../components/common/Modal';
 
 interface ProfileSettingsPageProps {
   currentUser: User;
   onUpdateProfile: (updatedUser: User, newProfilePicture: File | null) => void;
   onNavigate: NavigationFunction;
+  onUpdatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  onDeleteAccount: (password: string) => Promise<void>;
 }
 
 const CameraIcon: React.FC = () => (
@@ -19,8 +24,9 @@ const CameraIcon: React.FC = () => (
   </svg>
 );
 
-const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, onUpdateProfile, onNavigate }) => {
+const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, onUpdateProfile, onNavigate, onUpdatePassword, onDeleteAccount }) => {
   const { t } = useLanguage();
+  // Profile state
   const [formData, setFormData] = useState({
     name: currentUser.name,
     email: currentUser.email,
@@ -29,6 +35,20 @@ const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, 
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(currentUser.profile_picture_url || null);
   const [success, setSuccess] = useState(false);
+
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+
+  // Delete account state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmPassword, setDeleteConfirmPassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
   useEffect(() => {
     if (!profilePicture) {
@@ -69,10 +89,53 @@ const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, 
     setSuccess(true);
     setTimeout(() => setSuccess(false), 3000);
   };
+  
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess(false);
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError(t('profileSettingsPage.passwordMismatchError'));
+      return;
+    }
+
+    setIsPasswordLoading(true);
+    try {
+      await onUpdatePassword(currentPassword, newPassword);
+      setPasswordSuccess(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    } catch (err: any) {
+      setPasswordError(t('profileSettingsPage.incorrectPasswordError'));
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
+  const handleAccountDeleteConfirm = async () => {
+    setDeleteError('');
+    if (!deleteConfirmPassword) {
+      setDeleteError('Password is required.');
+      return;
+    }
+    setIsDeleteLoading(true);
+    try {
+      await onDeleteAccount(deleteConfirmPassword);
+      // On success, the auth listener in App.tsx will handle the redirect.
+    } catch (err: any) {
+      setDeleteError(err.message || 'An error occurred.');
+      setIsDeleteLoading(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-2xl">
       <h1 className="text-3xl font-bold text-white mb-6">{t('profileSettingsPage.title')}</h1>
+      
+      {/* Profile Form */}
       <form onSubmit={handleSubmit} className="bg-brand-card p-8 rounded-lg shadow-lg space-y-6">
         {success && (
           <div className="bg-green-500/20 border-l-4 border-green-400 text-green-200 p-4" role="alert">
@@ -91,67 +154,88 @@ const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, 
                 <span className="text-white text-xs mt-1">{t('profileSettingsPage.uploadHint')}</span>
             </div>
           </label>
-          <input 
-            type="file" 
-            id="profile-picture-upload" 
-            className="hidden" 
-            accept="image/*"
-            onChange={handleFileChange} 
-          />
+          <input type="file" id="profile-picture-upload" className="hidden" accept="image/*" onChange={handleFileChange} />
         </div>
-
-        <Input 
-          label={t('profileSettingsPage.fullName')} 
-          name="name" 
-          value={formData.name} 
-          onChange={handleChange} 
-          required 
-        />
-        <Input 
-          label={t('profileSettingsPage.email')} 
-          name="email" 
-          type="email" 
-          value={formData.email} 
-          disabled 
-        />
-        <Input 
-          label={t('profileSettingsPage.phone')} 
-          name="phone" 
-          type="tel"
-          value={formData.phone} 
-          onChange={handleChange} 
-        />
-
+        <div>
+          <Input label={t('profileSettingsPage.fullName')} name="name" value={formData.name} disabled />
+        </div>
+        <div>
+          <Input label={t('profileSettingsPage.email')} name="email" type="email" value={formData.email} disabled />
+          <p className="text-xs text-gray-400 mt-2 px-1">{t('profileSettingsPage.immutableFieldsInfo')}</p>
+        </div>
+        <Input label={t('profileSettingsPage.phone')} name="phone" type="tel" value={formData.phone} onChange={handleChange} />
         <div className="flex justify-end pt-4">
           <Button type="submit">{t('profileSettingsPage.saveChanges')}</Button>
         </div>
       </form>
 
+       {/* Change Password Form */}
+      <form onSubmit={handlePasswordSubmit} className="mt-8 bg-brand-card p-8 rounded-lg shadow-lg space-y-6">
+        <h2 className="text-xl font-semibold text-white mb-4">{t('profileSettingsPage.changePasswordTitle')}</h2>
+        {passwordSuccess && <div className="bg-green-500/20 text-green-200 p-3 rounded-md">{t('profileSettingsPage.passwordSuccessMessage')}</div>}
+        {passwordError && <div className="bg-red-500/20 text-red-400 p-3 rounded-md">{passwordError}</div>}
+        <Input label={t('profileSettingsPage.currentPassword')} name="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+        <Input label={t('profileSettingsPage.newPassword')} name="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+        <Input label={t('profileSettingsPage.confirmNewPassword')} name="confirmNewPassword" type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
+        <div className="flex justify-end pt-4">
+          <Button type="submit" disabled={isPasswordLoading}>{isPasswordLoading ? '...' : t('profileSettingsPage.saveChanges')}</Button>
+        </div>
+      </form>
+
+      {/* Subscription Management */}
       {currentUser.role === 'agent' && (
         <div className="mt-8 bg-brand-card p-8 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold text-white mb-4">{t('profileSettingsPage.subscriptionTitle')}</h2>
           <div className="flex justify-between items-center">
-            <p className="text-gray-300">
-              {t('profileSettingsPage.currentPlan')}: <span className="font-bold text-white capitalize">{currentUser.subscription_plan}</span>
-            </p>
+            <p className="text-gray-300">{t('profileSettingsPage.currentPlan')}: <span className="font-bold text-white capitalize">{currentUser.subscription_plan}</span></p>
             {currentUser.subscription_plan !== 'premium' && (
-              <Button onClick={() => onNavigate('pricing')}>
-                {t('profileSettingsPage.upgradePlan')}
-              </Button>
+              <Button onClick={() => onNavigate('pricing')}>{t('profileSettingsPage.upgradePlan')}</Button>
             )}
           </div>
         </div>
       )}
 
+      {/* Become an Agent CTA */}
       {currentUser.role === 'visitor' && (
         <div className="mt-8 bg-brand-card p-8 rounded-lg shadow-lg text-center">
             <h2 className="text-xl font-semibold text-white mb-2">{t('profileSettingsPage.becomeAgentTitle')}</h2>
             <p className="text-gray-300 mb-6">{t('profileSettingsPage.becomeAgentText')}</p>
-            <Button onClick={() => onNavigate('pricing')}>
-                {t('profileSettingsPage.viewPlans')}
-            </Button>
+            <Button onClick={() => onNavigate('pricing')}>{t('profileSettingsPage.viewPlans')}</Button>
         </div>
       )}
+
+      {/* Danger Zone */}
+      <div className="mt-8 bg-red-900/20 border border-red-500/30 p-8 rounded-lg shadow-lg">
+        <h2 className="text-xl font-semibold text-red-300">{t('profileSettingsPage.dangerZoneTitle')}</h2>
+        <p className="text-gray-400 mt-2 mb-6">{t('profileSettingsPage.deleteAccountText')}</p>
+        <Button variant="primary" onClick={() => setIsDeleteModalOpen(true)} className="bg-red-600 hover:bg-red-700 focus:ring-red-500">{t('profileSettingsPage.deleteAccount')}</Button>
+      </div>
+
+      {/* Delete Account Modal */}
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title={t('profileSettingsPage.deleteAccountModalTitle')}>
+        <div>
+          <p className="text-gray-300">{t('profileSettingsPage.deleteAccountModalText')}</p>
+          {deleteError && <div className="mt-4 bg-red-500/20 text-red-400 p-3 rounded-md text-sm">{deleteError}</div>}
+          <div className="mt-4">
+            <Input
+              label={t('profileSettingsPage.currentPassword')}
+              id="delete-confirm-password"
+              type="password"
+              value={deleteConfirmPassword}
+              onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mt-6 flex justify-end gap-4">
+            <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleteLoading}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="primary" onClick={handleAccountDeleteConfirm} disabled={isDeleteLoading} className="bg-red-600 hover:bg-red-700 focus:ring-red-500">
+              {isDeleteLoading ? '...' : t('profileSettingsPage.deleteAccountConfirmButton')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

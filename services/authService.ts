@@ -106,7 +106,7 @@ export const updateProfile = async (updatedUser: User, newProfilePicture: File |
     }
     
     const profileUpdate: Partial<User> = {
-        name: updatedUser.name,
+        // name: updatedUser.name, // Name is immutable and cannot be changed.
         phone: updatedUser.phone,
         profile_picture_url: profilePictureUrl,
         subscription_plan: updatedUser.subscription_plan,
@@ -134,7 +134,44 @@ export const sendPasswordResetEmail = async (email: string): Promise<void> => {
   if (error) throw error;
 };
 
-export const updatePassword = async (password: string): Promise<void> => {
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) throw error;
+export const updatePassword = async (email: string, currentPassword: string, newPassword: string): Promise<void> => {
+  // Step 1: Verify current password by signing in. This also refreshes the session.
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+  if (signInError) {
+    throw new Error("Incorrect current password provided.");
+  }
+  
+  // Step 2: Update the user's password to the new one.
+  const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+  if (updateError) {
+    console.error('Error updating password:', updateError);
+    throw new Error('Failed to update password. Please try again.');
+  }
+};
+
+/**
+ * Deletes the currently authenticated user.
+ * This function first verifies the user's password by attempting to sign in.
+ * If successful, it calls a secure remote procedure call (RPC) on Supabase
+ * to delete the user's data from all tables (profiles, properties, storage)
+ * and finally from the auth.users table itself.
+ *
+ * NOTE: This requires a corresponding SQL function `delete_current_user()` to be created
+ * in your Supabase project's SQL editor. The function should be security definer
+ * and handle the deletion logic.
+ */
+export const deleteAccount = async (email: string, password: string): Promise<void> => {
+  // Step 1: Verify the password by re-authenticating. This is a secure way to confirm user identity.
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+  if (signInError) {
+    // Use a generic error message for security
+    throw new Error("Incorrect password provided.");
+  }
+  
+  // Step 2: Call the secure backend function to perform the deletion.
+  const { error: rpcError } = await supabase.rpc('delete_current_user');
+  if (rpcError) {
+    console.error('Error calling delete_current_user RPC:', rpcError);
+    throw new Error('Failed to delete account. Please try again.');
+  }
 };
