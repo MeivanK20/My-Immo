@@ -19,7 +19,16 @@ const BenefitsIcon: React.FC<{ name: string }> = ({ name }) => {
 
 const JobCard: React.FC<{ job: Job }> = ({ job }) => {
     const { t } = useLanguage();
-    const mailtoLink = `mailto:hr@myimmo.com?subject=${encodeURIComponent(`Application for ${t(job.title_key)}`)}`;
+    
+    const handleApply = () => {
+        if (job.application_url) {
+            window.open(job.application_url, '_blank', 'noopener,noreferrer');
+        } else {
+            const mailtoLink = `mailto:hr@myimmo.com?subject=${encodeURIComponent(`Application for ${t(job.title_key)}`)}`;
+            window.location.href = mailtoLink;
+        }
+    };
+
     return (
         <div className="bg-brand-card rounded-lg shadow-lg p-6 flex flex-col sm:flex-row justify-between items-start gap-4 transition-all hover:border-brand-red/50 border border-transparent hover:shadow-glow-red">
             <div>
@@ -32,7 +41,7 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
                 <p className="text-gray-300 mt-3">{t(job.description_key)}</p>
             </div>
             <div className="mt-4 sm:mt-0 flex-shrink-0">
-                <Button onClick={() => window.location.href = mailtoLink} variant="primary">{t('careersPage.apply')}</Button>
+                <Button onClick={handleApply} variant="primary">{t('careersPage.apply')}</Button>
             </div>
         </div>
     );

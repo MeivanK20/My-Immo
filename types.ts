@@ -55,6 +55,7 @@ export interface Job {
   description_key: string;
   created_at: string;
   is_active: boolean;
+  application_url?: string;
 }
 
 export interface Todo {
