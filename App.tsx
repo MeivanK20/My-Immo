@@ -1,7 +1,6 @@
 
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { Page, User, Property, Message, Rating, Media } from './types';
+import { Page, User, Property, Message, Rating, Media, Advertisement } from './types';
 import { useLanguage } from './contexts/LanguageContext';
 import * as authService from './services/authService';
 import { supabase } from './lib/supabase';
@@ -65,33 +64,31 @@ type RegionDB = { id: number; name: string };
 type CityDB = { id: number; name: string; region_id: number };
 type NeighborhoodDB = { id: number; name: string; city_id: number };
 
-
 const App: React.FC = () => {
+  // History and Navigation State
   const [history, setHistory] = usePersistentState<{ page: Page; data: any }[]>('myImmoHistory', [{ page: 'home', data: null }]);
   const [historyIndex, setHistoryIndex] = usePersistentState<number>('myImmoHistoryIndex', 0);
-  
   const validHistoryIndex = Math.max(0, Math.min(historyIndex, history.length - 1));
   const { page: currentPage, data: pageData } = history[validHistoryIndex];
 
+  // Core States for Sequential Loading
+  const [authUser, setAuthUser] = useState<any | null>(null); // From Supabase Auth
+  const [currentUser, setCurrentUser] = useState<User | null>(null); // From 'profiles' table
+  const [isLoading, setIsLoading] = useState(true); // Single, unified loading state
+
+  // Application Data States
   const [properties, setProperties] = useState<Property[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [locations, setLocations] = useState<LocationData>({});
-  
-  // States to hold the raw database data for lookups
   const [dbRegions, setDbRegions] = useState<RegionDB[]>([]);
   const [dbCities, setDbCities] = useState<CityDB[]>([]);
-
-  const [authLoading, setAuthLoading] = useState(true);
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
-
-  const isLoading = authLoading || isDataLoading;
-
+  
   const handleNavigate = useCallback((page: Page, data?: any, options?: { replace?: boolean }) => {
     if (window.location.hash.includes('access_token')) {
         window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
@@ -124,7 +121,6 @@ const App: React.FC = () => {
         setDbRegions(regions);
         setDbCities(cities);
 
-        // Transform flat data into the nested structure required by the UI
         const structuredLocations: LocationData = {};
         for (const region of regions) {
             structuredLocations[region.name] = {};
@@ -139,87 +135,122 @@ const App: React.FC = () => {
         setLocations(structuredLocations);
     } catch (error: any) {
         console.error("Failed to fetch locations:", error);
-        setDataError(error.message || String(error));
+        // This error will be caught by the main data fetcher's try-catch block
+        throw error;
     }
   }, []);
 
-  const fetchData = useCallback(async (user: User | null) => {
-    setIsDataLoading(true);
-    setDataError(null);
-    try {
-        await fetchLocations(); // Fetch locations first
-        const [propertiesRes, profilesRes, ratingsRes] = await Promise.all([
-            supabase.from('properties').select('*'),
-            supabase.from('profiles').select('*'),
-            supabase.from('ratings').select('*')
-        ]);
+  // --- SEQUENTIAL LOADING EFFECTS ---
 
-        if (propertiesRes.error) throw propertiesRes.error;
-        if (profilesRes.error) throw profilesRes.error;
-        if (ratingsRes.error) throw ratingsRes.error;
-
-        setProperties(propertiesRes.data as Property[] || []);
-        setAllUsers(profilesRes.data as User[] || []);
-        setRatings(ratingsRes.data as Rating[] || []);
-        
-        if(user && (user.role === 'agent' || user.role === 'admin')) {
-            const { data: messagesData, error: messagesError } = await supabase
-                .from('messages')
-                .select('*')
-                .eq('agent_id', user.id);
-            
-            if (messagesError) throw messagesError;
-            setMessages(messagesData as Message[] || []);
-        } else {
-            setMessages([]);
-        }
-
-    } catch (error: any) {
-        console.error("Failed to fetch data:", error);
-        setDataError(error.message || String(error));
-    } finally {
-        setIsDataLoading(false);
-    }
-  }, [fetchLocations]);
-
+  // EFFECT 1: Primary Auth Listener. Runs once on mount.
+  // Determines if there is an authenticated user session.
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!session) {
-          setCurrentUser(null);
-          if (event === 'SIGNED_OUT') {
-              setProperties([]);
-              setAllUsers([]);
-              setMessages([]);
-              setRatings([]);
-              handleNavigate('home', undefined, { replace: true });
-          }
-      } else {
-          let userProfile = await authService.getProfile(session.user.id);
-          
-          if (!userProfile || !userProfile.role) {
-              console.log("Profile missing or incomplete for active session, attempting to repair...");
-              userProfile = await authService.createOrUpdateProfileForProvider(session.user);
-          }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const currentAuthUser = session?.user || null;
+        setAuthUser(currentAuthUser);
 
-          setCurrentUser(userProfile);
-
-          if (event === 'PASSWORD_RECOVERY') {
-              handleNavigate('resetPassword');
-          }
-      }
-      
-      setAuthLoading(false); 
+        // If user is logged out, we can finish loading immediately.
+        if (!currentAuthUser) {
+            setCurrentUser(null);
+            setIsLoading(false);
+        }
+        if (event === 'PASSWORD_RECOVERY') {
+            handleNavigate('resetPassword');
+        }
     });
-    
+
     return () => subscription.unsubscribe();
   }, [handleNavigate]);
 
+  // EFFECT 2: Profile Fetcher. Runs only when `authUser` changes.
+  // Fetches (or creates/repairs) the user's profile from the database.
   useEffect(() => {
-    if (!authLoading) {
-        fetchData(currentUser);
+    if (!authUser) {
+        // No authenticated user, ensure profile is null. Loading state is handled elsewhere.
+        setCurrentUser(null);
+        return;
     }
-  }, [authLoading, currentUser, fetchData]);
-  
+
+    const fetchAndSetProfile = async () => {
+        let userProfile = await authService.getProfile(authUser.id);
+        
+        if (!userProfile || !userProfile.role) {
+            console.log("Profile missing or incomplete for active session, attempting to repair...");
+            userProfile = await authService.createOrUpdateProfileForProvider(authUser);
+        }
+        setCurrentUser(userProfile);
+    };
+
+    fetchAndSetProfile();
+  }, [authUser]);
+
+  // EFFECT 3: App Data Fetcher. Runs only when `currentUser` changes.
+  // This is the final step in the loading sequence for a logged-in user.
+  useEffect(() => {
+    const clearData = () => {
+        setProperties([]);
+        setAllUsers([]);
+        setMessages([]);
+        setRatings([]);
+        setLocations({});
+        setDbRegions([]);
+        setDbCities([]);
+        setAdvertisements([]);
+    };
+
+    if (!currentUser) {
+        clearData();
+        // Loading is complete for a logged-out user if there was no authUser to begin with.
+        if (!authUser) {
+             setIsLoading(false);
+        }
+        return;
+    }
+
+    const loadAppData = async () => {
+        setDataError(null);
+        try {
+            await fetchLocations();
+            const [propertiesRes, profilesRes, ratingsRes, adsRes] = await Promise.all([
+                supabase.from('properties').select('*'),
+                supabase.from('profiles').select('*'),
+                supabase.from('ratings').select('*'),
+                supabase.from('advertisements').select('*').eq('is_active', true)
+            ]);
+
+            if (propertiesRes.error) throw propertiesRes.error;
+            if (profilesRes.error) throw profilesRes.error;
+            if (ratingsRes.error) throw ratingsRes.error;
+            if (adsRes.error) throw adsRes.error;
+
+            setProperties(propertiesRes.data as Property[] || []);
+            setAllUsers(profilesRes.data as User[] || []);
+            setRatings(ratingsRes.data as Rating[] || []);
+            setAdvertisements(adsRes.data as Advertisement[] || []);
+            
+            if (currentUser.role === 'agent' || currentUser.role === 'admin') {
+                const { data: messagesData, error: messagesError } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('agent_id', currentUser.id);
+                
+                if (messagesError) throw messagesError;
+                setMessages(messagesData as Message[] || []);
+            } else {
+                setMessages([]);
+            }
+        } catch (error: any) {
+            console.error("Failed to fetch data:", error);
+            setDataError(error.message || String(error));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    loadAppData();
+  }, [currentUser, fetchLocations]);
+
+  // EFFECT 4: Redirect Logic. Runs only when loading is complete.
   useEffect(() => {
     if (isLoading) {
         return;
@@ -232,36 +263,40 @@ const App: React.FC = () => {
     const isOnProtectedPage = protectedPages.includes(currentPage);
 
     if (currentUser && isOnAuthPage) {
-        if (currentUser.role === 'admin') {
-            handleNavigate('adminDashboard', undefined, { replace: true });
-        } else if (currentUser.role === 'agent') {
-            handleNavigate('dashboard', undefined, { replace: true });
-        } else {
-            handleNavigate('listings', undefined, { replace: true });
-        }
+        const destination = currentUser.role === 'admin' ? 'adminDashboard' : currentUser.role === 'agent' ? 'dashboard' : 'listings';
+        handleNavigate(destination, undefined, { replace: true });
     }
 
     if (!currentUser && isOnProtectedPage) {
         handleNavigate('login', undefined, { replace: true });
     }
-
   }, [currentUser, currentPage, isLoading, handleNavigate]);
 
-
+  // --- Handlers ---
+  
   const handleLogout = () => authService.signOut();
+
   const handleLogin = async (email: string, password: string): Promise<void> => {
     await authService.signInWithEmail(email, password);
   };
+  
   const handleGoogleLogin = () => authService.signInWithGoogle();
+  
   const handleRegister = (name: string, email: string, password: string, phone: string, role: 'visitor' | 'agent'): Promise<void> => {
     return authService.signUpWithEmail(name, email, password, phone, role).then(() => {
         handleNavigate('registrationSuccess', { email });
     });
   };
 
+  const reloadData = async () => {
+    if (currentUser) {
+        // Re-trigger the data loading effect
+        setCurrentUser(u => u ? {...u} : null);
+    }
+  }
+
   const handleAddProperty = async (propertyData: Omit<Property, 'id' | 'media' | 'agent_id'>, mediaFiles: File[]) => {
     if (!currentUser) return;
-    setIsDataLoading(true);
     try {
         const mediaUrls: Media[] = [];
         for (const file of mediaFiles) {
@@ -279,18 +314,17 @@ const App: React.FC = () => {
         
         if (insertError) throw new Error(`Failed to save property: ${insertError.message}`);
         
-        await fetchData(currentUser);
+        await reloadData();
         handleNavigate('dashboard');
 
     } catch (error) {
         console.error("Error in handleAddProperty:", error);
         setDataError(String(error));
-    } finally {
-        setIsDataLoading(false);
     }
   };
   
   const handleEditProperty = async (updatedProperty: Property, newMediaFiles: File[]) => {
+    if (!currentUser) return;
     const newMedia: Media[] = [];
     for (const file of newMediaFiles) {
         const filePath = `public/${updatedProperty.agent_id}/${Date.now()}-${file.name}`;
@@ -305,26 +339,26 @@ const App: React.FC = () => {
 
     const { error } = await supabase.from('properties').update(finalProperty).eq('id', finalProperty.id);
     if (error) console.error('Error updating property', error);
-    else await fetchData(currentUser);
+    else await reloadData();
   };
   
   const handleDeleteProperty = async (id: string) => {
     const { error } = await supabase.from('properties').delete().eq('id', id);
     if (error) console.error('Error deleting property', error);
-    else await fetchData(currentUser);
+    else await reloadData();
   };
   
   const handleSendMessage = async (messageData: Omit<Message, 'id' | 'created_at'>) => {
     const { error } = await supabase.from('messages').insert([messageData]);
     if (error) console.error('Error sending message', error);
-    else await fetchData(currentUser);
+    else await reloadData();
   };
   
   const handleUpdateProfile = async (updatedUser: User, newProfilePicture: File | null) => {
       try {
         const data = await authService.updateProfile(updatedUser, newProfilePicture);
         setCurrentUser(data);
-        await fetchData(data);
+        await reloadData();
       } catch (error) {
         console.error('Error updating profile:', error);
       }
@@ -350,7 +384,7 @@ const App: React.FC = () => {
         console.error("Error adding city:", error);
         setDataError(error.message);
     } else {
-        await fetchLocations(); // Refresh locations from DB
+        await fetchLocations();
     }
   };
 
@@ -363,7 +397,7 @@ const App: React.FC = () => {
         console.error("Error adding neighborhood:", error);
         setDataError(error.message);
     } else {
-        await fetchLocations(); // Refresh locations from DB
+        await fetchLocations();
     }
   };
 
@@ -374,11 +408,9 @@ const App: React.FC = () => {
   const handleSearch = (filters: any) => setSearchFilters(filters);
 
   const renderPage = () => {
-    if (isLoading) {
-       return <div className="flex justify-center items-center h-[calc(100vh-200px)]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>;
-    }
+    // This function is now only called when isLoading is false
     switch (currentPage) {
-      case 'listings': return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={locations} />;
+      case 'listings': return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={locations} advertisements={advertisements} />;
       case 'propertyDetail': {
         const propertyId = pageData?.id;
         const freshProperty = properties.find(p => p.id === propertyId);
@@ -392,7 +424,7 @@ const App: React.FC = () => {
         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { return null; }
         const agentProperties = properties.filter(p => p.agent_id === currentUser.id);
         const agentMessages = messages.filter(m => m.agent_id === currentUser.id);
-        return <DashboardPage currentUser={currentUser} properties={agentProperties} messages={agentMessages} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} onLogout={handleLogout} />;
+        return <DashboardPage currentUser={currentUser} properties={agentProperties} messages={agentMessages} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} />;
        case 'addProperty':
          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { return null; }
         return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={locations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
@@ -452,8 +484,10 @@ const App: React.FC = () => {
           canGoForward={canGoForward}
         />
         <main className="flex-grow">
-          {dataError ? (
-            <DataErrorBanner error={dataError} onRetry={() => fetchData(currentUser)} />
+          {isLoading ? (
+            <div className="flex justify-center items-center h-[calc(100vh-200px)]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>
+          ) : dataError ? (
+            <DataErrorBanner error={dataError} onRetry={() => currentUser && reloadData()} />
           ) : (
             <div className="animate-fade-in-up" key={currentPage + validHistoryIndex}>
               {renderPage()}

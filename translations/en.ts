@@ -61,10 +61,7 @@ export const en = {
     propertiesFound: '{{count}} Properties found',
     noProperties: 'No properties match your search criteria.',
     adTitle: 'Advertisement',
-    ad1Title: 'Discover our moving services',
-    ad1Text: 'The ideal partner for your new home. Get a free quote!',
-    ad2Title: 'Home Insurance',
-    ad2Text: 'Protect your new property with our tailored offers.',
+    noAds: 'No advertisements at the moment.',
   },
   propertyCard: {
     rent: 'For Rent',

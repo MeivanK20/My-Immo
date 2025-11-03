@@ -1,7 +1,7 @@
 
 
 import React, { useState, useMemo } from 'react';
-import { Property, NavigationFunction, User } from '../types';
+import { Property, NavigationFunction, User, Advertisement } from '../types';
 import PropertyCard from '../components/PropertyCard';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
@@ -14,9 +14,10 @@ interface ListingsPageProps {
   user: User | null;
   allUsers: User[];
   locations: { [region: string]: { [city: string]: string[] } };
+  advertisements: Advertisement[];
 }
 
-const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters, user, allUsers, locations }) => {
+const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters, user, allUsers, locations, advertisements }) => {
   const { t } = useLanguage();
   const [filters, setFilters] = useState({
       region: initialFilters.region || '',
@@ -80,6 +81,8 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
   }, [properties, filters, allUsers]);
 
   const getAgentForProperty = (property: Property) => allUsers.find(u => u.id === property.agent_id);
+  
+  const sidebarAds = advertisements.filter(ad => ad.placement === 'listings_sidebar');
 
   return (
     <div className="container mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
@@ -90,22 +93,18 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
             {t('listingsPage.adTitle')}
           </h3>
           <div className="space-y-4 pt-2">
-             {/* Placeholder for an ad */}
-             <div className="animate-fade-in-up">
-                <a href="#" target="_blank" rel="noopener noreferrer" className="block group">
-                  <img src="https://picsum.photos/seed/ad1/300/250" alt="Ad 1" className="rounded-md w-full object-cover mb-2 transition-transform duration-300 group-hover:scale-105" />
-                  <h4 className="font-semibold text-gray-200 group-hover:text-brand-red transition-colors">{t('listingsPage.ad1Title')}</h4>
-                  <p className="text-sm text-gray-400">{t('listingsPage.ad1Text')}</p>
-                </a>
-             </div>
-             {/* Another placeholder ad */}
-             <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                <a href="#" target="_blank" rel="noopener noreferrer" className="block group">
-                  <img src="https://picsum.photos/seed/ad2/300/250" alt="Ad 2" className="rounded-md w-full object-cover mb-2 transition-transform duration-300 group-hover:scale-105" />
-                  <h4 className="font-semibold text-gray-200 group-hover:text-brand-red transition-colors">{t('listingsPage.ad2Title')}</h4>
-                  <p className="text-sm text-gray-400">{t('listingsPage.ad2Text')}</p>
-                </a>
-             </div>
+             {sidebarAds.map((ad, index) => (
+                <div key={ad.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
+                    <a href={ad.link_url} target="_blank" rel="noopener noreferrer" className="block group">
+                      <img src={ad.image_url} alt={ad.title} className="rounded-md w-full object-cover mb-2 transition-transform duration-300 group-hover:scale-105" />
+                      <h4 className="font-semibold text-gray-200 group-hover:text-brand-red transition-colors">{ad.title}</h4>
+                      <p className="text-sm text-gray-400">{ad.description}</p>
+                    </a>
+                </div>
+             ))}
+             {sidebarAds.length === 0 && (
+                <p className="text-sm text-gray-500">{t('listingsPage.noAds')}</p>
+             )}
           </div>
         </div>
       </aside>

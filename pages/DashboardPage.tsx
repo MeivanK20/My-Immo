@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Property, User, NavigationFunction, Message } from '../types';
 import Button from '../components/common/Button';
@@ -15,10 +16,9 @@ interface DashboardPageProps {
   messages: Message[];
   onNavigate: NavigationFunction;
   onDeleteProperty: (id: string) => void;
-  onLogout: () => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, messages, onNavigate, onDeleteProperty, onLogout }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, messages, onNavigate, onDeleteProperty }) => {
   const { t, locale } = useLanguage();
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; id: string | null; }>({ isOpen: false, id: null });
   
@@ -63,7 +63,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, properties, 
             <h2 className="text-xl font-bold text-white">{currentUser.name}</h2>
             <p className="text-gray-400">{currentUser.email}</p>
           </div>
-          <Button onClick={onLogout} variant="secondary" className="ml-auto">{t('header.logout')}</Button>
         </div>
 
         <h1 className="text-3xl font-bold text-white mb-6">{t('dashboardPage.title')}</h1>

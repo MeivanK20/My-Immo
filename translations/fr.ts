@@ -61,10 +61,7 @@ export const fr = {
     propertiesFound: '{{count}} Propriétés trouvées',
     noProperties: 'Aucune propriété ne correspond à vos critères de recherche.',
     adTitle: 'Publicité',
-    ad1Title: 'Découvrez nos services de déménagement',
-    ad1Text: 'Le partenaire idéal pour votre nouvelle maison. Obtenez un devis gratuit !',
-    ad2Title: 'Assurance Habitation',
-    ad2Text: 'Protégez votre nouveau bien avec nos offres sur mesure.',
+    noAds: 'Aucune publicité pour le moment.',
   },
   propertyCard: {
     rent: 'À Louer',

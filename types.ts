@@ -77,3 +77,14 @@ export interface Message {
   message: string;
   created_at: string; // Changed from timestamp
 }
+
+export interface Advertisement {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  link_url: string;
+  is_active: boolean;
+  placement: string;
+  created_at: string;
+}
