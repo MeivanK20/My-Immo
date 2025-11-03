@@ -1,4 +1,5 @@
 
+
 export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard' | 'careers' | 'pricing' | 'payment' | 'forgotPassword' | 'resetPassword';
 
 export interface User {
@@ -87,4 +88,15 @@ export interface Advertisement {
   is_active: boolean;
   placement: string;
   created_at: string;
+}
+
+export interface Payment {
+  id: string;
+  created_at: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  status: 'succeeded' | 'pending' | 'failed';
+  provider: string;
+  provider_transaction_id?: string;
 }

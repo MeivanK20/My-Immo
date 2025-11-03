@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { NavigationFunction, User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -12,7 +13,7 @@ declare global {
 
 interface PaymentPageProps {
   currentUser: User | null;
-  onSuccessfulPayment: () => void;
+  onSuccessfulPayment: (paymentDetails: any) => void;
   onNavigate: NavigationFunction;
 }
 
@@ -43,20 +44,30 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ currentUser, onSuccessfulPaym
       email: currentUser.email,
       first_name: currentUser.name.split(' ')[0],
       last_name: currentUser.name.split(' ').slice(1).join(' '),
-      // This is a public test key. Replace with your own live key.
-      service_key: 'L573B75E569844B', 
+      service_key: 'e0Ic7UWrUiz56lNDI0mATUbe4ZcVXiDZ', 
       item_ref: `PREMIUM-${currentUser.id}-${Date.now()}`,
       title: t('pricingPage.premiumPlan'),
       description: t('pricingPage.subtitle'),
       onComplete: (payment: any) => {
+        console.log('Paiement Monetbil réussi côté client :', payment);
+        
+        // --- Liaison avec le backend (Simulation) ---
+        // Dans une application réelle, il est IMPÉRATIF d'envoyer la référence de paiement
+        // à votre backend. Votre backend doit ensuite vérifier le statut du paiement
+        // via l'API de Monetbil en utilisant votre "Service Secret".
+        // Ne jamais faire confiance à ce retour côté client pour valider un paiement.
+        // C'est l'unique moyen de sécuriser la transaction.
+        
+        // Pour cette démonstration, nous passons les détails au handler principal qui
+        // va d'abord enregistrer le paiement dans notre BDD avant de mettre à jour le profil.
         setIsLoading(false);
-        onSuccessfulPayment();
+        onSuccessfulPayment(payment);
       },
       onClose: () => {
         setIsLoading(false);
       },
       onError: (err: any) => {
-        console.error('Payment error:', err);
+        console.error('Erreur de paiement:', err);
         setError(err.message || t('contactPage.sendError'));
         setIsLoading(false);
       }

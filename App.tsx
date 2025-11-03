@@ -1,14 +1,10 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Page, User, Property, Message, Rating, Media, Advertisement } from './types';
 import { useLanguage } from './contexts/LanguageContext';
 import * as authService from './services/authService';
 import { supabase } from './lib/supabase';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -417,12 +413,34 @@ const App: React.FC = () => {
     // After successful deletion, the onAuthStateChange listener will handle logout.
   };
   
-  const handleSuccessfulPayment = async () => {
-    if (currentUser) {
-        await authService.updateProfile({ ...currentUser, role: 'agent', subscription_plan: 'premium' });
-        const updatedProfile = await authService.getProfile(currentUser.id);
-        setCurrentUser(updatedProfile);
-        handleNavigate('dashboard', undefined, { replace: true });
+  const handleSuccessfulPayment = async (paymentDetails: any) => {
+    if (!currentUser) return;
+
+    try {
+      // 1. Log the payment in the database for auditing and security.
+      const { error: paymentError } = await supabase.from('payments').insert({
+        user_id: currentUser.id,
+        amount: 10000,
+        currency: 'XAF',
+        status: 'succeeded',
+        provider: 'monetbil',
+        provider_transaction_id: paymentDetails.transaction_id || paymentDetails.paymentId
+      });
+      
+      if (paymentError) {
+        // If logging the payment fails, do not upgrade the user's account.
+        throw new Error(`Failed to record payment: ${paymentError.message}`);
+      }
+
+      // 2. If payment is logged successfully, upgrade the user's profile.
+      await authService.updateProfile({ ...currentUser, role: 'agent', subscription_plan: 'premium' });
+      const updatedProfile = await authService.getProfile(currentUser.id);
+      setCurrentUser(updatedProfile);
+      handleNavigate('dashboard', undefined, { replace: true });
+
+    } catch (error) {
+        console.error("Error during successful payment processing:", error);
+        setDataError(String(error));
     }
   };
 
@@ -463,6 +481,49 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAddRating = async (propertyId: string, agentId: string, rating: number) => {
+    if (!currentUser || currentUser.role !== 'visitor') return;
+
+    try {
+      // First, check if a rating already exists for this user and property
+      const { data: existingRating, error: selectError } = await supabase
+        .from('ratings')
+        .select('id')
+        .eq('property_id', propertyId)
+        .eq('visitor_id', currentUser.id)
+        .single();
+
+      // Handle select errors, but ignore the "PGRST116" error which means no row was found.
+      if (selectError && selectError.code !== 'PGRST116') {
+        throw selectError;
+      }
+
+      if (existingRating) {
+        // If it exists, update it
+        const { error: updateError } = await supabase
+          .from('ratings')
+          .update({ rating: rating, agent_id: agentId })
+          .eq('id', existingRating.id);
+        if (updateError) throw updateError;
+      } else {
+        // If it doesn't exist, insert a new one
+        const { error: insertError } = await supabase.from('ratings').insert({
+          property_id: propertyId,
+          agent_id: agentId,
+          visitor_id: currentUser.id,
+          rating: rating,
+        });
+        if (insertError) throw insertError;
+      }
+      
+      await reloadData();
+
+    } catch (error) {
+      console.error("Error adding/updating rating:", error);
+      setDataError(String(error));
+    }
+  };
+
   const handleGoBack = () => { if (validHistoryIndex > 0) setHistoryIndex(prevIndex => prevIndex - 1); };
   const handleGoForward = () => { if (validHistoryIndex < history.length - 1) setHistoryIndex(prevIndex => prevIndex + 1); };
   const canGoBack = validHistoryIndex > 0;
@@ -480,7 +541,7 @@ const App: React.FC = () => {
             handleNavigate('home', undefined, { replace: true });
             return null;
         }
-        return <PropertyDetailsPage property={freshProperty} agent={allUsers.find(u => u.id === freshProperty.agent_id)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={()=>{}} ratings={ratings} />;
+        return <PropertyDetailsPage property={freshProperty} agent={allUsers.find(u => u.id === freshProperty.agent_id)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
       }
       case 'dashboard':
         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { return null; }
@@ -510,7 +571,7 @@ const App: React.FC = () => {
           return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} onUpdatePassword={handleUpdatePassword} onDeleteAccount={handleDeleteAccount} />;
        case 'login': return <LoginPage onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
        case 'register': return <RegisterPage onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
-       case 'registrationSuccess': return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
+       case 'registrationSuccess': return <RegistrationSuccessPage email={pageData?.email || ''} onNavigate={handleNavigate} />;
        case 'adminDashboard':
            if (!currentUser || currentUser.role !== 'admin') { return null; }
            return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={handleNavigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
@@ -557,6 +618,7 @@ const App: React.FC = () => {
           )}
         </main>
         <Footer onNavigate={handleNavigate} />
+        <SpeedInsights />
     </div>
   );
 };
