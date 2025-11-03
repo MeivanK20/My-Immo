@@ -95,10 +95,12 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
           <div className="space-y-4 pt-2">
              {sidebarAds.map((ad, index) => (
                 <div key={ad.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-                    <a href={ad.link_url} target="_blank" rel="noopener noreferrer" className="block group">
-                      <img src={ad.image_url} alt={ad.title} className="rounded-md w-full object-cover mb-2 transition-transform duration-300 group-hover:scale-105" />
-                      <h4 className="font-semibold text-gray-200 group-hover:text-brand-red transition-colors">{ad.title}</h4>
-                      <p className="text-sm text-gray-400">{ad.description}</p>
+                    <a href={ad.link_url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 group">
+                      <img src={ad.image_url} alt={ad.title} className="rounded-md w-20 h-20 object-cover flex-shrink-0 transition-transform duration-300 group-hover:scale-105" />
+                      <div>
+                        <h4 className="font-semibold text-gray-200 group-hover:text-brand-red transition-colors leading-tight">{ad.title}</h4>
+                        <p className="text-xs text-gray-400 mt-1">{ad.description}</p>
+                      </div>
                     </a>
                 </div>
              ))}

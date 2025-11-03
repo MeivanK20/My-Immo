@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  const MONETBIL_SECRET_KEY = process.env.MONETBIL_SECRET_KEY;
+  const afGHt8e45nV5M93pvNPFpoLu9lfomthJHcHFap12oLjYIrD5QQk5iqaFU6MEGdFG = process.env.afGHt8e45nV5M93pvNPFpoLu9lfomthJHcHFap12oLjYIrD5QQk5iqaFU6MEGdFG;
 
   try {
     const paymentData = req.body;

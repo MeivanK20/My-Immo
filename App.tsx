@@ -71,7 +71,7 @@ const App: React.FC = () => {
   const [history, setHistory] = usePersistentState<{ page: Page; data: any }[]>('myImmoHistory', [{ page: 'home', data: null }]);
   const [historyIndex, setHistoryIndex] = usePersistentState<number>('myImmoHistoryIndex', 0);
   const validHistoryIndex = Math.max(0, Math.min(historyIndex, history.length - 1));
-  const { page: currentPage, data: pageData } = history[validHistoryIndex];
+  const { page: currentPage, data: pageData } = history[validHistoryIndex] || { page: 'home', data: null };
 
   // Core States for Sequential Loading
   const [authUser, setAuthUser] = useState<any | null>(null); // From Supabase Auth
@@ -590,7 +590,7 @@ const App: React.FC = () => {
         if (!currentUser) { return null; }
         return <PricingPage currentUser={currentUser} onNavigateToPayment={() => handleNavigate('payment')} onSelectFreePlan={handleBecomeAgentFree} />;
       case 'payment':
-        if (!currentUser || currentUser.role !== 'agent' || currentUser.subscription_plan === 'premium') { return null; }
+        if (!currentUser || currentUser.role === 'admin' || currentUser.subscription_plan === 'premium') { return null; }
         return <PaymentPage currentUser={currentUser} onSuccessfulPayment={handleSuccessfulPayment} onNavigate={handleNavigate} />;
       case 'forgotPassword':
         return <ForgotPasswordPage onNavigate={handleNavigate} onForgotPassword={authService.sendPasswordResetEmail} />;

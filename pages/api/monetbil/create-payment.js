@@ -19,10 +19,10 @@ export default async function handler(req, res) {
   // Dans une vraie application, vous vérifieriez l'authentification de l'utilisateur ici.
   const { userId, amount, email, phone, name } = req.body;
 
-  const MONETBIL_SERVICE_KEY = process.env.MONETBIL_SERVICE_KEY; // e.g., 'e0Ic7UWrUiz56lNDI0mATUbe4ZcVXiDZ'
-  const MONETBIL_SECRET_KEY = process.env.MONETBIL_SECRET_KEY; // IMPORTANT: Gardez ceci secret sur votre serveur !
+  const e0Ic7UWrUiz56lNDI0mATUbe4ZcVXiDZ = process.env.afGHt8e45nV5M93pvNPFpoLu9lfomthJHcHFap12oLjYIrD5QQk5iqaFU6MEGdFG; // e.g., 'e0Ic7UWrUiz56lNDI0mATUbe4ZcVXiDZ'
+  const e0Ic7UWrUiz56lNDI0mATUbe4ZcVXiDZ = process.env.afGHt8e45nV5M93pvNPFpoLu9lfomthJHcHFap12oLjYIrD5QQk5iqaFU6MEGdFG; // IMPORTANT: Gardez ceci secret sur votre serveur !
 
-  if (!MONETBIL_SERVICE_KEY || !MONETBIL_SECRET_KEY) {
+  if (!e0Ic7UWrUiz56lNDI0mATUbe4ZcVXiDZ || !afGHt8e45nV5M93pvNPFpoLu9lfomthJHcHFap12oLjYIrD5QQk5iqaFU6MEGdFG) {
     return res.status(500).json({ error: 'Les clés Monetbil ne sont pas configurées sur le serveur.' });
   }
 
@@ -33,9 +33,9 @@ export default async function handler(req, res) {
     first_name: name.split(' ')[0],
     last_name: name.split(' ').slice(1).join(' '),
     // 'notify_url' est crucial. C'est l'URL que Monetbil appellera pour confirmer le statut du paiement.
-    notify_url: 'https://VOTRE_SITE_WEB.com/api/monetbil/notify',
+    notify_url: 'https://my-immo-alpha.vercel.app/api/monetbil/notify',
     // 'return_url' est l'URL où l'utilisateur est redirigé après le paiement.
-    return_url: 'https://VOTRE_SITE_WEB.com/dashboard',
+    return_url: 'https://my-immo-alpha.vercel.app/dashboard',
     item_ref: `PREMIUM-${userId}-${Date.now()}`,
     // ... autres paramètres requis par Monetbil
   };
