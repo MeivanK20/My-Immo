@@ -26,134 +26,115 @@ export const signUpWithEmail = async (name: string, email: string, password: str
     phone,
     role,
     subscription_plan: role === 'agent' ? 'free' : undefined,
+    score: 0,
+    badge: 'Bronze'
   });
 
   if (profileError) {
-    // Optional: Delete the auth user if profile creation fails to keep things clean
-    await supabase.auth.admin.deleteUser(data.user.id);
+    // Note: In a production environment with admin rights, you'd want to delete the orphaned auth user.
+    console.error("Failed to create profile, but user was created in auth. Manual cleanup might be required for user ID:", data.user.id);
     throw profileError;
   }
 };
 
-export const signInWithEmail = async (email: string, password: string): Promise<User | null> => {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  if (!data.user) return null;
-  return await getProfile(data.user.id);
+export const signInWithEmail = async (email: string, password: string): Promise<void> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
 };
 
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (): Promise<void> => {
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
     });
     if (error) throw error;
 };
 
-export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+export const signOut = async (): Promise<void> => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
 };
 
-export const getCurrentUserSession = async () => {
-  const { data } = await supabase.auth.getSession();
-  return data.session;
+export const getProfile = async (id: string): Promise<User | null> => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
+    if (error && error.code !== 'PGRST116') { // PGRST116: "The result contains 0 rows"
+        console.error('Error fetching profile:', error);
+        throw error;
+    }
+    return data;
 };
 
-export const getProfile = async (userId: string): Promise<User | null> => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') { // PGRST116: "exact one row not found"
-    console.error('Error fetching profile:', error);
-    return null;
-  }
-  return data as User | null;
-};
+export const createOrUpdateProfileForProvider = async (authUser: any): Promise<User> => {
+    const existingProfile = await getProfile(authUser.id);
+    
+    if (existingProfile) return existingProfile;
 
-export const updateProfile = async (user: User, profilePictureFile: File | null = null) => {
-    let profilePictureUrl = user.profile_picture_url;
+    const roleFromStorage = localStorage.getItem('signUpRole') as 'visitor' | 'agent' | null;
+    localStorage.removeItem('signUpRole'); 
 
-    if (profilePictureFile) {
-        const filePath = `public/${user.id}/${Date.now()}_${profilePictureFile.name}`;
-        const { error: uploadError } = await supabase.storage
-            .from('avatars')
-            .upload(filePath, profilePictureFile, { upsert: true });
+    const newProfileData = {
+        id: authUser.id,
+        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || 'New User',
+        email: authUser.email,
+        profile_picture_url: authUser.user_metadata?.avatar_url,
+        role: roleFromStorage || 'visitor',
+        subscription_plan: roleFromStorage === 'agent' ? 'free' : undefined,
+        score: 0,
+        badge: 'Bronze'
+    };
+
+    const { data, error } = await supabase.from('profiles').upsert(newProfileData).select().single();
+
+    if (error) throw error;
+    if (!data) throw new Error("Could not create or update profile.");
+
+    return data;
+}
+
+export const updateProfile = async (updatedUser: User, newProfilePicture: File | null = null): Promise<User> => {
+    let profilePictureUrl = updatedUser.profile_picture_url;
+
+    if (newProfilePicture) {
+        const filePath = `avatars/${updatedUser.id}/${Date.now()}-${newProfilePicture.name}`;
+        const { error: uploadError } = await supabase.storage.from('profile-pictures').upload(filePath, newProfilePicture, {
+            upsert: true,
+        });
 
         if (uploadError) throw uploadError;
 
-        const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-        profilePictureUrl = data.publicUrl;
+        const { data: urlData } = supabase.storage.from('profile-pictures').getPublicUrl(filePath);
+        profilePictureUrl = urlData.publicUrl;
     }
-
-    const profileData = {
-        name: user.name,
-        phone: user.phone,
-        profile_picture_url: profilePictureUrl,
-        subscription_plan: user.subscription_plan,
-    };
     
+    const profileUpdate: Partial<User> = {
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        profile_picture_url: profilePictureUrl,
+        subscription_plan: updatedUser.subscription_plan,
+        role: updatedUser.role, // Allow role to be updated
+    };
+
     const { data, error } = await supabase
         .from('profiles')
-        .update(profileData)
-        .eq('id', user.id)
+        .update(profileUpdate)
+        .eq('id', updatedUser.id)
         .select()
         .single();
-    
-    if (error) throw error;
-    return data as User;
-}
 
-export const sendPasswordResetEmail = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin, // Redirects back to the app after email link click
-    });
     if (error) throw error;
+    if (!data) throw new Error("Profile update failed.");
+    
+    return data as User;
 };
 
-export const updatePassword = async (password: string) => {
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) throw error;
-}
 
-// This function is robust against race conditions with backend triggers.
-// It handles creating a profile for a new OAuth user, and also updating an
-// incomplete profile that might have been created by the default SQL trigger
-// which doesn't know the user's role.
-export const createOrUpdateProfileForProvider = async (providerUser: any): Promise<User | null> => {
-    if (!providerUser) return null;
+export const sendPasswordResetEmail = async (email: string): Promise<void> => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+  if (error) throw error;
+};
 
-    const { user_metadata } = providerUser;
-    
-    // Check localStorage for a role set during sign-up from the Register page.
-    const signUpRole = localStorage.getItem('signUpRole') as 'visitor' | 'agent' | null;
-    if (signUpRole) {
-        // Important: Clean up the item after reading it to prevent it from being used again on subsequent logins.
-        localStorage.removeItem('signUpRole');
-    }
-
-    const userProfileData = {
-        id: providerUser.id,
-        name: user_metadata.full_name || user_metadata.name || 'New User',
-        email: user_metadata.email,
-        // Use the role from localStorage if available, otherwise default to 'visitor'.
-        // This handles both sign-ups from the register page and sign-ins from the login page.
-        role: signUpRole || ('visitor' as 'visitor'),
-        profile_picture_url: user_metadata.avatar_url || user_metadata.picture,
-    };
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .upsert(userProfileData, { onConflict: 'id' }) // Upsert the profile data
-        .select()
-        .single();
-    
-    if (error) {
-        console.error("Error upserting profile for OAuth user:", error);
-        return null;
-    }
-
-    return data as User | null;
+export const updatePassword = async (password: string): Promise<void> => {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
 };

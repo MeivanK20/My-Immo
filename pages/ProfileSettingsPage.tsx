@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { User, NavigationFunction } from '../types';
 import Input from '../components/common/Input';
@@ -139,6 +140,16 @@ const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ currentUser, 
               </Button>
             )}
           </div>
+        </div>
+      )}
+
+      {currentUser.role === 'visitor' && (
+        <div className="mt-8 bg-brand-card p-8 rounded-lg shadow-lg text-center">
+            <h2 className="text-xl font-semibold text-white mb-2">{t('profileSettingsPage.becomeAgentTitle')}</h2>
+            <p className="text-gray-300 mb-6">{t('profileSettingsPage.becomeAgentText')}</p>
+            <Button onClick={() => onNavigate('pricing')}>
+                {t('profileSettingsPage.viewPlans')}
+            </Button>
         </div>
       )}
     </div>

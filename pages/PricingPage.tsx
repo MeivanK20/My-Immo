@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { User } from '../types';
 import Button from '../components/common/Button';
@@ -7,6 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface PricingPageProps {
   currentUser: User;
   onNavigateToPayment: () => void;
+  onSelectFreePlan: () => void;
 }
 
 const CheckIcon = () => (
@@ -16,12 +18,10 @@ const CheckIcon = () => (
 );
 
 
-const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPayment }) => {
+const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPayment, onSelectFreePlan }) => {
   const { t } = useLanguage();
 
-  const handleUpgradeClick = () => {
-    onNavigateToPayment();
-  };
+  const isVisitor = currentUser.role === 'visitor';
 
   const PlanCard: React.FC<{
     planName: string, 
@@ -29,29 +29,44 @@ const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPaym
     features: string[], 
     isCurrent: boolean, 
     isPremium?: boolean,
-  }> = ({ planName, price, features, isCurrent, isPremium = false }) => (
-    <div className={`border rounded-lg p-8 flex flex-col transition-all duration-300 ${isPremium ? 'border-brand-red/50 transform scale-105 bg-brand-card shadow-2xl shadow-brand-red/10' : 'bg-brand-card/50 border-brand-card'}`}>
-      <h3 className="text-2xl font-bold text-white text-center">{planName}</h3>
-      <p className="text-center text-gray-400 mt-2">
-        <span className="text-4xl font-extrabold text-white">{price}</span> / {t('pricingPage.monthly')}
-      </p>
-      <ul className="mt-8 space-y-4 flex-grow">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-start">
-            <CheckIcon />
-            <span className="ml-3 text-gray-300">{feature}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-8">
-        {isCurrent ? (
-          <Button variant="secondary" className="w-full" disabled>{t('pricingPage.currentPlan')}</Button>
-        ) : isPremium ? (
-          <Button onClick={handleUpgradeClick} className="w-full">{t('pricingPage.upgradeNow')}</Button>
-        ) : null}
-      </div>
-    </div>
-  );
+  }> = ({ planName, price, features, isCurrent, isPremium = false }) => {
+
+    const renderButton = () => {
+        if (isCurrent) {
+            return <Button variant="secondary" className="w-full" disabled>{t('pricingPage.currentPlan')}</Button>;
+        }
+        if (isVisitor) {
+            return isPremium 
+                ? <Button onClick={onNavigateToPayment} className="w-full">{t('pricingPage.getStarted')}</Button>
+                : <Button onClick={onSelectFreePlan} variant="secondary" className="w-full">{t('pricingPage.getStarted')}</Button>;
+        }
+        // At this point, user must be an agent on the free plan, looking at premium
+        if (isPremium) {
+            return <Button onClick={onNavigateToPayment} className="w-full">{t('pricingPage.upgradeNow')}</Button>;
+        }
+        return null;
+    };
+
+    return (
+        <div className={`border rounded-lg p-8 flex flex-col transition-all duration-300 ${isPremium ? 'border-brand-red/50 transform md:scale-105 bg-brand-card shadow-2xl shadow-brand-red/10' : 'bg-brand-card/50 border-brand-card'}`}>
+        <h3 className="text-2xl font-bold text-white text-center">{planName}</h3>
+        <p className="text-center text-gray-400 mt-2">
+            <span className="text-4xl font-extrabold text-white">{price}</span> / {t('pricingPage.monthly')}
+        </p>
+        <ul className="mt-8 space-y-4 flex-grow">
+            {features.map((feature, index) => (
+            <li key={index} className="flex items-start">
+                <CheckIcon />
+                <span className="ml-3 text-gray-300">{feature}</span>
+            </li>
+            ))}
+        </ul>
+        <div className="mt-8">
+            {renderButton()}
+        </div>
+        </div>
+    );
+  };
 
   return (
     <div className="container mx-auto px-6 py-12">

@@ -303,6 +303,9 @@ export const fr = {
     subscriptionTitle: 'Gestion de l\'Abonnement',
     currentPlan: 'Votre plan actuel',
     upgradePlan: 'Mettre à niveau',
+    becomeAgentTitle: 'Devenez un Agent Immobilier',
+    becomeAgentText: 'Publiez vos propres annonces et gérez vos biens. Découvrez nos formules pour commencer.',
+    viewPlans: 'Voir les Formules',
   },
   deleteConfirm: 'Êtes-vous sûr de vouloir supprimer cette propriété ?',
   registrationSuccessPage: {
@@ -385,6 +388,7 @@ export const fr = {
     monthly: 'mois',
     currentPlan: 'Plan Actuel',
     upgradeNow: 'Mettre à niveau',
+    getStarted: 'Commencer',
     freePlan: 'Formule Gratuite',
     freePrice: '0 XAF',
     freeFeature1: 'Jusqu\'à 5 annonces actives',

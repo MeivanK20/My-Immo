@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Page, User, Property, Message, Rating, Media, Advertisement } from './types';
 import { useLanguage } from './contexts/LanguageContext';
@@ -257,7 +258,17 @@ const App: React.FC = () => {
     }
 
     const authPages: Page[] = ['login', 'register', 'forgotPassword', 'resetPassword', 'registrationSuccess'];
-    const protectedPages: Page[] = ['dashboard', 'addProperty', 'editProperty', 'messages', 'profileSettings', 'adminDashboard', 'pricing', 'payment'];
+    
+    // Pages requiring ANY authenticated user
+    const userRequiredPages: Page[] = ['profileSettings', 'pricing']; 
+    
+    // Pages requiring agent/admin role
+    const agentRequiredPages: Page[] = ['dashboard', 'addProperty', 'editProperty', 'messages', 'payment'];
+    
+    // Pages requiring admin role
+    const adminRequiredPages: Page[] = ['adminDashboard'];
+
+    const protectedPages = [...userRequiredPages, ...agentRequiredPages, ...adminRequiredPages];
 
     const isOnAuthPage = authPages.includes(currentPage);
     const isOnProtectedPage = protectedPages.includes(currentPage);
@@ -270,6 +281,21 @@ const App: React.FC = () => {
     if (!currentUser && isOnProtectedPage) {
         handleNavigate('login', undefined, { replace: true });
     }
+
+    // Role-specific protection for logged-in users
+    if (currentUser) {
+        const isAgentOrAdmin = currentUser.role === 'agent' || currentUser.role === 'admin';
+        const isAdmin = currentUser.role === 'admin';
+        
+        if (agentRequiredPages.includes(currentPage) && !isAgentOrAdmin) {
+            handleNavigate('home', undefined, { replace: true });
+        }
+        
+        if (adminRequiredPages.includes(currentPage) && !isAdmin) {
+            handleNavigate('home', undefined, { replace: true });
+        }
+    }
+
   }, [currentUser, currentPage, isLoading, handleNavigate]);
 
   // --- Handlers ---
@@ -369,7 +395,16 @@ const App: React.FC = () => {
   
   const handleSuccessfulPayment = async () => {
     if (currentUser) {
-        await authService.updateProfile({ ...currentUser, subscription_plan: 'premium' });
+        await authService.updateProfile({ ...currentUser, role: 'agent', subscription_plan: 'premium' });
+        const updatedProfile = await authService.getProfile(currentUser.id);
+        setCurrentUser(updatedProfile);
+        handleNavigate('dashboard', undefined, { replace: true });
+    }
+  };
+
+  const handleBecomeAgentFree = async () => {
+    if (currentUser && currentUser.role === 'visitor') {
+        await authService.updateProfile({ ...currentUser, role: 'agent', subscription_plan: 'free' });
         const updatedProfile = await authService.getProfile(currentUser.id);
         setCurrentUser(updatedProfile);
         handleNavigate('dashboard', undefined, { replace: true });
@@ -461,8 +496,8 @@ const App: React.FC = () => {
        case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;
        case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={handleNavigate} />;
        case 'pricing':
-        if (!currentUser || currentUser.role !== 'agent') { return null; }
-        return <PricingPage currentUser={currentUser} onNavigateToPayment={() => handleNavigate('payment')} />;
+        if (!currentUser) { return null; }
+        return <PricingPage currentUser={currentUser} onNavigateToPayment={() => handleNavigate('payment')} onSelectFreePlan={handleBecomeAgentFree} />;
       case 'payment':
         if (!currentUser || currentUser.role !== 'agent' || currentUser.subscription_plan === 'premium') { return null; }
         return <PaymentPage currentUser={currentUser} onSuccessfulPayment={handleSuccessfulPayment} onNavigate={handleNavigate} />;

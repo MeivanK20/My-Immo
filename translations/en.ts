@@ -303,6 +303,9 @@ export const en = {
     subscriptionTitle: 'Subscription Management',
     currentPlan: 'Your current plan',
     upgradePlan: 'Upgrade Plan',
+    becomeAgentTitle: 'Become a Real Estate Agent',
+    becomeAgentText: 'Post your own listings and manage your properties. Check out our plans to get started.',
+    viewPlans: 'View Plans',
   },
   deleteConfirm: 'Are you sure you want to delete this property?',
   registrationSuccessPage: {
@@ -385,6 +388,7 @@ export const en = {
     monthly: 'month',
     currentPlan: 'Current Plan',
     upgradeNow: 'Upgrade Now',
+    getStarted: 'Get Started',
     freePlan: 'Free Plan',
     freePrice: '0 XAF',
     freeFeature1: 'Up to 5 active listings',
