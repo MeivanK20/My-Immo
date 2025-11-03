@@ -49,10 +49,12 @@ export interface Rating {
 
 export interface Job {
   id: string;
-  titleKey: string;
+  title_key: string;
   location: string;
-  typeKey: string;
-  descriptionKey: string;
+  type_key: string;
+  description_key: string;
+  created_at: string;
+  is_active: boolean;
 }
 
 export interface Todo {

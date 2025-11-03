@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Page, User, Property, Message, Rating, Media, Advertisement } from './types';
+import { Page, User, Property, Message, Rating, Media, Advertisement, Job } from './types';
 import { useLanguage } from './contexts/LanguageContext';
 import * as authService from './services/authService';
 import { supabase } from './lib/supabase';
@@ -86,6 +87,7 @@ const App: React.FC = () => {
   const [dbRegions, setDbRegions] = useState<RegionDB[]>([]);
   const [dbCities, setDbCities] = useState<CityDB[]>([]);
   const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
@@ -197,6 +199,7 @@ const App: React.FC = () => {
         setDbRegions([]);
         setDbCities([]);
         setAdvertisements([]);
+        setJobs([]);
     };
 
     if (!currentUser) {
@@ -212,22 +215,25 @@ const App: React.FC = () => {
         setDataError(null);
         try {
             await fetchLocations();
-            const [propertiesRes, profilesRes, ratingsRes, adsRes] = await Promise.all([
+            const [propertiesRes, profilesRes, ratingsRes, adsRes, jobsRes] = await Promise.all([
                 supabase.from('properties').select('*'),
                 supabase.from('profiles').select('*'),
                 supabase.from('ratings').select('*'),
-                supabase.from('advertisements').select('*').eq('is_active', true)
+                supabase.from('advertisements').select('*').eq('is_active', true),
+                supabase.from('jobs').select('*').eq('is_active', true)
             ]);
 
             if (propertiesRes.error) throw propertiesRes.error;
             if (profilesRes.error) throw profilesRes.error;
             if (ratingsRes.error) throw ratingsRes.error;
             if (adsRes.error) throw adsRes.error;
+            if (jobsRes.error) throw jobsRes.error;
 
             setProperties(propertiesRes.data as Property[] || []);
             setAllUsers(profilesRes.data as User[] || []);
             setRatings(ratingsRes.data as Rating[] || []);
             setAdvertisements(adsRes.data as Advertisement[] || []);
+            setJobs(jobsRes.data as Job[] || []);
             
             if (currentUser.role === 'agent' || currentUser.role === 'admin') {
                 const { data: messagesData, error: messagesError } = await supabase
@@ -575,7 +581,7 @@ const App: React.FC = () => {
        case 'adminDashboard':
            if (!currentUser || currentUser.role !== 'admin') { return null; }
            return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={handleNavigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
-       case 'careers': return <CareersPage />;
+       case 'careers': return <CareersPage jobs={jobs} />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;
        case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;

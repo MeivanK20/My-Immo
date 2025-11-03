@@ -1,8 +1,11 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { jobs } from '../data/careers';
 import { Job } from '../types';
 import Button from '../components/common/Button';
+
+interface CareersPageProps {
+    jobs: Job[];
+}
 
 const BenefitsIcon: React.FC<{ name: string }> = ({ name }) => {
     const icons: { [key: string]: React.ReactNode } = {
@@ -16,17 +19,17 @@ const BenefitsIcon: React.FC<{ name: string }> = ({ name }) => {
 
 const JobCard: React.FC<{ job: Job }> = ({ job }) => {
     const { t } = useLanguage();
-    const mailtoLink = `mailto:hr@myimmo.com?subject=${encodeURIComponent(`Application for ${t(job.titleKey)}`)}`;
+    const mailtoLink = `mailto:hr@myimmo.com?subject=${encodeURIComponent(`Application for ${t(job.title_key)}`)}`;
     return (
         <div className="bg-brand-card rounded-lg shadow-lg p-6 flex flex-col sm:flex-row justify-between items-start gap-4 transition-all hover:border-brand-red/50 border border-transparent hover:shadow-glow-red">
             <div>
-                <h3 className="text-xl font-bold text-white">{t(job.titleKey)}</h3>
+                <h3 className="text-xl font-bold text-white">{t(job.title_key)}</h3>
                 <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
                     <span>{job.location}</span>
                     <span className="w-1.5 h-1.5 bg-gray-500 rounded-full"></span>
-                    <span>{t(job.typeKey)}</span>
+                    <span>{t(job.type_key)}</span>
                 </div>
-                <p className="text-gray-300 mt-3">{t(job.descriptionKey)}</p>
+                <p className="text-gray-300 mt-3">{t(job.description_key)}</p>
             </div>
             <div className="mt-4 sm:mt-0 flex-shrink-0">
                 <Button onClick={() => window.location.href = mailtoLink} variant="primary">{t('careersPage.apply')}</Button>
@@ -35,7 +38,7 @@ const JobCard: React.FC<{ job: Job }> = ({ job }) => {
     );
 };
 
-const CareersPage: React.FC = () => {
+const CareersPage: React.FC<CareersPageProps> = ({ jobs }) => {
     const { t } = useLanguage();
 
     return (

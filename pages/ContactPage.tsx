@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
+import { supabase } from '../lib/supabase';
 
 const ContactPage: React.FC = () => {
   const { t } = useLanguage();
@@ -25,18 +26,29 @@ const ContactPage: React.FC = () => {
     setIsLoading(true);
     setError('');
     
-    // --- SIMULATION OF BACKEND CALL ---
-    console.log("--- CONTACT FORM SUBMISSION (SIMULATED) ---");
-    console.log("This is a simulation. In a real app, this data would be sent to a secure backend.");
-    console.log("Form Data:", formState);
+    try {
+      const { error: insertError } = await supabase.from('contact_submissions').insert([
+        {
+          name: formState.name,
+          email: formState.email,
+          subject: formState.subject,
+          message: formState.message,
+        }
+      ]);
+      
+      if (insertError) {
+        throw insertError;
+      }
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // --- END SIMULATION ---
-    
-    setIsLoading(false);
-    setSubmitted(true);
-    setFormState({ name: '', email: '', subject: '', message: '' });
+      setSubmitted(true);
+      setFormState({ name: '', email: '', subject: '', message: '' });
+
+    } catch (err: any) {
+      console.error("Error submitting contact form:", err);
+      setError(err.message || t('contactPage.sendError'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
