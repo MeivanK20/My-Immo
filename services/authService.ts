@@ -3,7 +3,7 @@
 import { supabase } from '../lib/supabase';
 import { User } from '../types';
 
-export const signUpWithEmail = async (name: string, email: string, password: string, role: 'visitor' | 'agent'): Promise<void> => {
+export const signUpWithEmail = async (name: string, email: string, password: string, phone: string, role: 'visitor' | 'agent'): Promise<void> => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -23,6 +23,7 @@ export const signUpWithEmail = async (name: string, email: string, password: str
     id: data.user.id,
     name,
     email,
+    phone,
     role,
     subscription_plan: role === 'agent' ? 'free' : undefined,
   });
@@ -76,7 +77,7 @@ export const updateProfile = async (user: User, profilePictureFile: File | null 
     let profilePictureUrl = user.profile_picture_url;
 
     if (profilePictureFile) {
-        const filePath = `${user.id}/${Date.now()}_${profilePictureFile.name}`;
+        const filePath = `public/${user.id}/${Date.now()}_${profilePictureFile.name}`;
         const { error: uploadError } = await supabase.storage
             .from('avatars')
             .upload(filePath, profilePictureFile, { upsert: true });
@@ -126,12 +127,20 @@ export const createOrUpdateProfileForProvider = async (providerUser: any): Promi
 
     const { user_metadata } = providerUser;
     
-    // We ensure a 'visitor' role is set, as the SQL trigger might leave it null.
+    // Check localStorage for a role set during sign-up from the Register page.
+    const signUpRole = localStorage.getItem('signUpRole') as 'visitor' | 'agent' | null;
+    if (signUpRole) {
+        // Important: Clean up the item after reading it to prevent it from being used again on subsequent logins.
+        localStorage.removeItem('signUpRole');
+    }
+
     const userProfileData = {
         id: providerUser.id,
         name: user_metadata.full_name || user_metadata.name || 'New User',
         email: user_metadata.email,
-        role: 'visitor' as 'visitor', // Default role for OAuth signups
+        // Use the role from localStorage if available, otherwise default to 'visitor'.
+        // This handles both sign-ups from the register page and sign-ins from the login page.
+        role: signUpRole || ('visitor' as 'visitor'),
         profile_picture_url: user_metadata.avatar_url || user_metadata.picture,
     };
 

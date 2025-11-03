@@ -8,7 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 
 interface RegisterPageProps {
-  onRegister: (name: string, email: string, password: string, role: 'visitor' | 'agent') => Promise<void>;
+  onRegister: (name: string, email: string, password: string, phone: string, role: 'visitor' | 'agent') => Promise<void>;
   onGoogleLogin: () => void;
   onNavigate: NavigationFunction;
 }
@@ -18,6 +18,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [role, setRole] = useState<'visitor' | 'agent'>('visitor');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,13 +32,19 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, 
     }
     setIsLoading(true);
     try {
-      await onRegister(name, email, password, role);
+      await onRegister(name, email, password, phone, role);
       // Navigation is handled inside the onRegister implementation in App.tsx
     } catch (err: any) {
       setError(err.message || t('registerPage.errorExists'));
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleSignUp = () => {
+    // Before redirecting to Google, store the selected role.
+    localStorage.setItem('signUpRole', role);
+    onGoogleLogin();
   };
 
   return (
@@ -82,6 +89,15 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, 
               autoComplete="new-password"
               disabled={isLoading}
             />
+            <Input
+              label={t('registerPage.phone')}
+              id="register-phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              autoComplete="tel"
+              disabled={isLoading}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">{t('registerPage.iAmA')}</label>
               <div className="flex gap-4">
@@ -112,7 +128,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoogleLogin, 
           </div>
 
           <div className="mt-6">
-            <GoogleLoginButton onClick={onGoogleLogin} disabled={isLoading} label="Sign up with Google" />
+            <GoogleLoginButton onClick={handleGoogleSignUp} disabled={isLoading} label="Sign up with Google" />
           </div>
 
           <p className="mt-6 text-center text-sm text-gray-400">

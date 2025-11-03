@@ -278,6 +278,7 @@ export const en = {
     fullName: 'Full Name',
     email: 'Email Address',
     password: 'Password',
+    phone: 'Phone Number (Optional)',
     iAmA: 'I am a...',
     visitor: 'Visitor',
     agent: 'Owner / Agent',
@@ -417,6 +418,7 @@ export const en = {
     payNow: 'Pay Now',
   },
   app: {
-    fetchError: "An error occurred while loading data from the server."
+    fetchError: "An error occurred while loading data from the server.",
+    schemaError: "The database does not appear to be initialized. Please run the setup SQL scripts in your Supabase project."
   },
 };

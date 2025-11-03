@@ -278,6 +278,7 @@ export const fr = {
     fullName: 'Nom complet',
     email: 'Adresse e-mail',
     password: 'Mot de passe',
+    phone: 'Numéro de téléphone (Optionnel)',
     iAmA: 'Je suis un...',
     visitor: 'Visiteur',
     agent: 'Propriétaire / Agent',
@@ -417,6 +418,7 @@ export const fr = {
     payNow: 'Payer maintenant',
   },
   app: {
-    fetchError: "Une erreur est survenue lors du chargement des données depuis le serveur."
+    fetchError: "Une erreur est survenue lors du chargement des données depuis le serveur.",
+    schemaError: "La base de données ne semble pas être initialisée. Veuillez exécuter les scripts SQL de configuration dans votre projet Supabase."
   },
 };

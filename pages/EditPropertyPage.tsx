@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Property, NavigationFunction, AddCityFunction, AddNeighborhoodFunction } from '../types';
 import Input from '../components/common/Input';
@@ -11,7 +12,7 @@ interface EditPropertyPageProps {
   propertyToEdit: Property;
   onEditProperty: (property: Property, newMediaFiles: File[]) => void;
   onNavigate: NavigationFunction;
-  locations: any;
+  locations: { [region: string]: { [city: string]: string[] } };
   onAddCity: AddCityFunction;
   onAddNeighborhood: AddNeighborhoodFunction;
 }
@@ -85,7 +86,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
   };
 
   const handleAddNewCity = () => {
-    if (newCityName.trim() === '') return;
+    if (newCityName.trim() === '' || !propertyData.region) return;
     onAddCity(propertyData.region, newCityName.trim());
     setPropertyData(prev => ({ ...prev, city: newCityName.trim(), neighborhood: '' }));
     setNewCityName('');
@@ -93,12 +94,15 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
   };
 
   const handleAddNewNeighborhood = () => {
-    if (newNeighborhoodName.trim() === '') return;
+    if (newNeighborhoodName.trim() === '' || !propertyData.city || !propertyData.region) return;
     onAddNeighborhood(propertyData.region, propertyData.city, newNeighborhoodName.trim());
     setPropertyData(prev => ({ ...prev, neighborhood: newNeighborhoodName.trim() }));
     setNewNeighborhoodName('');
     setAddNeighborhoodModalOpen(false);
   };
+  
+  const citiesForSelectedRegion = propertyData.region ? Object.keys(locations[propertyData.region] || {}) : [];
+  const neighborhoodsForSelectedCity = propertyData.city ? (locations[propertyData.region]?.[propertyData.city] || []) : [];
 
   return (
     <>
@@ -158,7 +162,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
                 <div className="flex-grow">
                   <Select label={t('addPropertyPage.city')} name="city" value={propertyData.city} onChange={handleCityChange} disabled={!propertyData.region} required>
                       <option value="">{t('addPropertyPage.selectCity')}</option>
-                      {propertyData.region && locations[propertyData.region] && Object.keys(locations[propertyData.region]).map(c => <option key={c} value={c}>{c}</option>)}
+                      {citiesForSelectedRegion.map(c => <option key={c} value={c}>{c}</option>)}
                   </Select>
                 </div>
                 <button type="button" onClick={() => setAddCityModalOpen(true)} disabled={!propertyData.region} className="h-11 w-10 flex-shrink-0 bg-brand-dark/50 text-brand-gray hover:bg-brand-dark rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed font-mono text-xl" title={t('addPropertyPage.addNewCity')}>+</button>
@@ -168,7 +172,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
                 <div className="flex-grow">
                   <Select label={t('addPropertyPage.neighborhood')} name="neighborhood" value={propertyData.neighborhood} onChange={handleChange} disabled={!propertyData.city} required>
                       <option value="">{t('addPropertyPage.selectNeighborhood')}</option>
-                      {propertyData.city && locations[propertyData.region]?.[propertyData.city] && (locations[propertyData.region])[propertyData.city].map((n: string) => <option key={n} value={n}>{n}</option>)}
+                      {neighborhoodsForSelectedCity.map((n: string) => <option key={n} value={n}>{n}</option>)}
                   </Select>
                 </div>
                 <button type="button" onClick={() => setAddNeighborhoodModalOpen(true)} disabled={!propertyData.city} className="h-11 w-10 flex-shrink-0 bg-brand-dark/50 text-brand-gray hover:bg-brand-dark rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed font-mono text-xl" title={t('addPropertyPage.addNewNeighborhood')}>+</button>

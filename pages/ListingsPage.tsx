@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
@@ -12,7 +13,7 @@ interface ListingsPageProps {
   initialFilters: any;
   user: User | null;
   allUsers: User[];
-  locations: any;
+  locations: { [region: string]: { [city: string]: string[] } };
 }
 
 const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, initialFilters, user, allUsers, locations }) => {
@@ -27,6 +28,8 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
   });
 
   const regions = useMemo(() => Object.keys(locations), [locations]);
+  const citiesForSelectedRegion = useMemo(() => filters.region ? Object.keys(locations[filters.region] || {}) : [], [filters.region, locations]);
+  const neighborhoodsForSelectedCity = useMemo(() => filters.city ? (locations[filters.region]?.[filters.city] || []) : [], [filters.city, filters.region, locations]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -129,18 +132,14 @@ const ListingsPage: React.FC<ListingsPageProps> = ({ properties, onNavigate, ini
               <div className="flex-grow min-w-[180px]">
                 <Select label={t('listingsPage.city')} name="city" value={filters.city} onChange={handleCityChange} disabled={!filters.region}>
                   <option value="">{t('listingsPage.allCities')}</option>
-                  {filters.region && locations[filters.region as keyof typeof locations] &&
-                    Object.keys(locations[filters.region as keyof typeof locations]).map(c => <option key={c} value={c}>{c}</option>)
-                  }
+                  {citiesForSelectedRegion.map(c => <option key={c} value={c}>{c}</option>)}
                 </Select>
               </div>
 
               <div className="flex-grow min-w-[180px]">
                 <Select label={t('listingsPage.neighborhood')} name="neighborhood" value={filters.neighborhood} onChange={handleFilterChange} disabled={!filters.city}>
                   <option value="">{t('listingsPage.allNeighborhoods')}</option>
-                  {filters.city && locations[filters.region as keyof typeof locations]?.[filters.city as keyof any] &&
-                    (locations[filters.region as keyof typeof locations] as any)[filters.city].map((n: string) => <option key={n} value={n}>{n}</option>)
-                  }
+                  {neighborhoodsForSelectedCity.map((n: string) => <option key={n} value={n}>{n}</option>)}
                 </Select>
               </div>
 

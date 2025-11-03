@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Property, NavigationFunction, User } from '../types';
 import PropertyCard from '../components/PropertyCard';
@@ -12,7 +13,7 @@ interface HomePageProps {
   onSearch: (filters: any) => void;
   user: User | null;
   allUsers: User[];
-  locations: any;
+  locations: { [region: string]: { [city: string]: string[] } };
 }
 
 const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, user, allUsers, locations }) => {
@@ -31,15 +32,15 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
   const regions = useMemo(() => Object.keys(locations), [locations]);
   
   const cities = useMemo(() => {
-      if (region && locations[region as keyof typeof locations]) {
-          return Object.keys(locations[region as keyof typeof locations]);
+      if (region && locations[region]) {
+          return Object.keys(locations[region]);
       }
       return [];
   }, [region, locations]);
 
   const neighborhoods = useMemo(() => {
-      if (region && city && locations[region as keyof typeof locations]?.[city as keyof any]) {
-          return (locations[region as keyof typeof locations] as any)[city];
+      if (region && city && locations[region]?.[city]) {
+          return locations[region][city];
       }
       return [];
   }, [region, city, locations]);
