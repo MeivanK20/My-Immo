@@ -7,7 +7,6 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface PricingPageProps {
   currentUser: User;
-  onNavigateToPayment: () => void;
   onSelectFreePlan: () => void;
 }
 
@@ -18,7 +17,7 @@ const CheckIcon = () => (
 );
 
 
-const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPayment, onSelectFreePlan }) => {
+const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onSelectFreePlan }) => {
   const { t } = useLanguage();
 
   const isVisitor = currentUser.role === 'visitor';
@@ -35,14 +34,11 @@ const PricingPage: React.FC<PricingPageProps> = ({ currentUser, onNavigateToPaym
         if (isCurrent) {
             return <Button variant="secondary" className="w-full" disabled>{t('pricingPage.currentPlan')}</Button>;
         }
-        if (isVisitor) {
-            return isPremium 
-                ? <Button onClick={onNavigateToPayment} className="w-full">{t('pricingPage.getStarted')}</Button>
-                : <Button onClick={onSelectFreePlan} variant="secondary" className="w-full">{t('pricingPage.getStarted')}</Button>;
-        }
-        // At this point, user must be an agent on the free plan, looking at premium
         if (isPremium) {
-            return <Button onClick={onNavigateToPayment} className="w-full">{t('pricingPage.upgradeNow')}</Button>;
+            return <Button className="w-full" disabled title="Paiement en ligne bientôt disponible">{t('pricingPage.upgradeNow')}</Button>;
+        }
+        if (isVisitor && !isPremium) {
+            return <Button onClick={onSelectFreePlan} variant="secondary" className="w-full">{t('pricingPage.getStarted')}</Button>;
         }
         return null;
     };

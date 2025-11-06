@@ -1,6 +1,6 @@
 
 
-export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard' | 'careers' | 'pricing' | 'payment' | 'forgotPassword' | 'resetPassword';
+export type Page = 'home' | 'listings' | 'propertyDetail' | 'dashboard' | 'addProperty' | 'editProperty' | 'contact' | 'about' | 'termsOfUse' | 'privacyPolicy' | 'messages' | 'login' | 'register' | 'profileSettings' | 'registrationSuccess' | 'adminDashboard' | 'careers' | 'pricing' | 'forgotPassword' | 'resetPassword';
 
 export interface User {
   id: string; // Changed from uid to id
@@ -13,6 +13,7 @@ export interface User {
   // Rewards system fields
   score?: number;
   badge?: 'Bronze' | 'Silver' | 'Gold';
+  created_at?: string;
 }
 
 export interface Media {
@@ -91,15 +92,4 @@ export interface Advertisement {
   is_active: boolean;
   placement: string;
   created_at: string;
-}
-
-export interface Payment {
-  id: string;
-  created_at: string;
-  user_id: string;
-  amount: number;
-  currency: string;
-  status: 'succeeded' | 'pending' | 'failed';
-  provider: string;
-  provider_transaction_id?: string;
 }

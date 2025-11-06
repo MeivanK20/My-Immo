@@ -1,5 +1,4 @@
 
-
 export const fr = {
   header: {
     home: 'Accueil',
@@ -329,6 +328,7 @@ export const fr = {
   },
   adminDashboardPage: {
     title: "Panneau d'Administration",
+    statisticsTab: 'Statistiques',
     usersTab: 'Gestion des Utilisateurs',
     propertiesTab: 'Gestion des Propriétés',
     userManagement: 'Gestion des Utilisateurs',
@@ -338,15 +338,20 @@ export const fr = {
     tableRole: 'Rôle',
     tableActions: 'Actions',
     tablePropertyTitle: "Titre de l'annonce",
-    tableAgent: 'Agent',
+    tablePropertyAgent: 'Agent',
+    tableJoinedDate: 'Inscrit le',
     delete: 'Supprimer',
     view: 'Voir',
     noUsers: 'Aucun utilisateur trouvé.',
     noProperties: 'Aucune propriété trouvée.',
     deleteUserConfirm: "Êtes-vous sûr de vouloir supprimer cet utilisateur ? Toutes ses annonces seront également supprimées.",
+    deletePropertyConfirm: "Êtes-vous sûr de vouloir supprimer cette propriété ? Ceci est irréversible.",
     cannotDeleteSelf: "Vous ne pouvez pas supprimer votre propre compte admin.",
     confirmDeleteTitle: 'Confirmer la suppression',
-    deleteUserNotImplemented: "La suppression d'utilisateurs est une opération sensible et doit être effectuée depuis un environnement sécurisé (comme votre tableau de bord Supabase) pour éviter les suppressions accidentelles."
+    deleteUserNotImplemented: "La suppression d'utilisateurs est une opération sensible et doit être effectuée depuis un environnement sécurisé (comme votre tableau de bord Supabase) pour éviter les suppressions accidentelles.",
+    agent: 'Agent',
+    visitor: 'Visiteur',
+    admin: 'Admin',
   },
   careersPage: {
     heroTitle: 'Rejoignez Notre Équipe',

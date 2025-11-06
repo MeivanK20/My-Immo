@@ -1,11 +1,8 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Page, User, Property, Message, Rating, Media, Advertisement, Job } from './types';
 import { useLanguage } from './contexts/LanguageContext';
 import * as authService from './services/authService';
 import { supabase } from './lib/supabase';
-import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -27,10 +24,10 @@ import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import CareersPage from './pages/CareersPage';
 import PricingPage from './pages/PricingPage';
-import PaymentPage from './pages/PaymentPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import DataErrorBanner from './components/common/DataErrorBanner';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
     const [state, setState] = useState<T>(() => {
@@ -74,7 +71,7 @@ const App: React.FC = () => {
   const { page: currentPage, data: pageData } = history[validHistoryIndex] || { page: 'home', data: null };
 
   // Core States for Sequential Loading
-  const [authUser, setAuthUser] = useState<any | null>(null); // From Supabase Auth
+  const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null); // From 'profiles' table
   const [isLoading, setIsLoading] = useState(true); // Single, unified loading state
 
@@ -169,19 +166,28 @@ const App: React.FC = () => {
   // Fetches (or creates/repairs) the user's profile from the database.
   useEffect(() => {
     if (!authUser) {
-        // No authenticated user, ensure profile is null. Loading state is handled elsewhere.
-        setCurrentUser(null);
-        return;
+      setCurrentUser(null);
+      return;
     }
 
     const fetchAndSetProfile = async () => {
+      try {
+        setDataError(null);
         let userProfile = await authService.getProfile(authUser.id);
-        
+
         if (!userProfile || !userProfile.role) {
-            console.log("Profile missing or incomplete for active session, attempting to repair...");
-            userProfile = await authService.createOrUpdateProfileForProvider(authUser);
+          console.log("Profile missing or incomplete for active session, attempting to repair...");
+          userProfile = await authService.createOrUpdateProfileForProvider(authUser);
         }
         setCurrentUser(userProfile);
+      } catch (error: any) {
+        console.error("Caught error while fetching profile:", error);
+        setDataError(error.message || 'Failed to fetch user profile.');
+        // If profile fetch fails, treat user as logged out to prevent broken states
+        setCurrentUser(null);
+        // Also sign out to clear potentially invalid session
+        authService.signOut();
+      }
     };
 
     fetchAndSetProfile();
@@ -255,7 +261,7 @@ const App: React.FC = () => {
     };
 
     loadAppData();
-  }, [currentUser, fetchLocations]);
+  }, [currentUser, fetchLocations, authUser]); // Added authUser to dependencies
 
   // EFFECT 4: Redirect Logic. Runs only when loading is complete.
   useEffect(() => {
@@ -269,7 +275,7 @@ const App: React.FC = () => {
     const userRequiredPages: Page[] = ['profileSettings', 'pricing']; 
     
     // Pages requiring agent/admin role
-    const agentRequiredPages: Page[] = ['dashboard', 'addProperty', 'editProperty', 'messages', 'payment'];
+    const agentRequiredPages: Page[] = ['dashboard', 'addProperty', 'editProperty', 'messages'];
     
     // Pages requiring admin role
     const adminRequiredPages: Page[] = ['adminDashboard'];
@@ -324,9 +330,9 @@ const App: React.FC = () => {
   };
 
   const reloadData = async () => {
-    if (currentUser) {
-        // Re-trigger the data loading effect
-        setCurrentUser(u => u ? {...u} : null);
+    if (authUser) {
+        // Re-trigger the data loading effects by re-setting authUser
+        setAuthUser(u => u ? {...u} : null);
     }
   }
 
@@ -419,37 +425,6 @@ const App: React.FC = () => {
     // After successful deletion, the onAuthStateChange listener will handle logout.
   };
   
-  const handleSuccessfulPayment = async (paymentDetails: any) => {
-    if (!currentUser) return;
-
-    try {
-      // 1. Log the payment in the database for auditing and security.
-      const { error: paymentError } = await supabase.from('payments').insert({
-        user_id: currentUser.id,
-        amount: 10000,
-        currency: 'XAF',
-        status: 'succeeded',
-        provider: 'monetbil',
-        provider_transaction_id: paymentDetails.transaction_id || paymentDetails.paymentId
-      });
-      
-      if (paymentError) {
-        // If logging the payment fails, do not upgrade the user's account.
-        throw new Error(`Failed to record payment: ${paymentError.message}`);
-      }
-
-      // 2. If payment is logged successfully, upgrade the user's profile.
-      await authService.updateProfile({ ...currentUser, role: 'agent', subscription_plan: 'premium' });
-      const updatedProfile = await authService.getProfile(currentUser.id);
-      setCurrentUser(updatedProfile);
-      handleNavigate('dashboard', undefined, { replace: true });
-
-    } catch (error) {
-        console.error("Error during successful payment processing:", error);
-        setDataError(String(error));
-    }
-  };
-
   const handleBecomeAgentFree = async () => {
     if (currentUser && currentUser.role === 'visitor') {
         await authService.updateProfile({ ...currentUser, role: 'agent', subscription_plan: 'free' });
@@ -580,7 +555,13 @@ const App: React.FC = () => {
        case 'registrationSuccess': return <RegistrationSuccessPage email={pageData?.email || ''} onNavigate={handleNavigate} />;
        case 'adminDashboard':
            if (!currentUser || currentUser.role !== 'admin') { return null; }
-           return <AdminDashboardPage allUsers={allUsers} allProperties={properties} onNavigate={handleNavigate} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
+           return <AdminDashboardPage 
+                    onNavigate={handleNavigate} 
+                    allUsers={allUsers} 
+                    allProperties={properties} 
+                    onDeleteUser={handleDeleteUser}
+                    onDeleteProperty={handleDeleteProperty}
+                  />;
        case 'careers': return <CareersPage jobs={jobs} />;
        case 'contact': return <ContactPage />;
        case 'about': return <AboutPage />;
@@ -588,10 +569,7 @@ const App: React.FC = () => {
        case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={handleNavigate} />;
        case 'pricing':
         if (!currentUser) { return null; }
-        return <PricingPage currentUser={currentUser} onNavigateToPayment={() => handleNavigate('payment')} onSelectFreePlan={handleBecomeAgentFree} />;
-      case 'payment':
-        if (!currentUser || currentUser.role === 'admin' || currentUser.subscription_plan === 'premium') { return null; }
-        return <PaymentPage currentUser={currentUser} onSuccessfulPayment={handleSuccessfulPayment} onNavigate={handleNavigate} />;
+        return <PricingPage currentUser={currentUser} onSelectFreePlan={handleBecomeAgentFree} />;
       case 'forgotPassword':
         return <ForgotPasswordPage onNavigate={handleNavigate} onForgotPassword={authService.sendPasswordResetEmail} />;
       case 'resetPassword':
@@ -616,7 +594,7 @@ const App: React.FC = () => {
           {isLoading ? (
             <div className="flex justify-center items-center h-[calc(100vh-200px)]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>
           ) : dataError ? (
-            <DataErrorBanner error={dataError} onRetry={() => currentUser && reloadData()} />
+            <DataErrorBanner error={dataError} onRetry={() => reloadData()} />
           ) : (
             <div className="animate-fade-in-up" key={currentPage + validHistoryIndex}>
               {renderPage()}
@@ -624,7 +602,6 @@ const App: React.FC = () => {
           )}
         </main>
         <Footer onNavigate={handleNavigate} />
-        <SpeedInsights />
     </div>
   );
 };
