@@ -96,20 +96,22 @@ const HomePage: React.FC<HomePageProps> = ({ properties, onNavigate, onSearch, u
         </div>
       </section>
 
-      {/* Featured Properties Section */}
-      <section className="py-24">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center text-white mb-2">{t('homePage.featuredListings')}</h2>
-          <div className="w-24 h-1 bg-brand-red mx-auto mb-12"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProperties.map((property, index) => (
-              <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-                <PropertyCard property={property} onNavigate={onNavigate} user={user} agent={getAgentForProperty(property)} />
-              </div>
-            ))}
+      {/* Featured Properties Section - Only for logged-in users */}
+      {user && (
+        <section className="py-24">
+          <div className="container mx-auto px-6">
+            <h2 className="text-3xl font-bold text-center text-white mb-2">{t('homePage.featuredListings')}</h2>
+            <div className="w-24 h-1 bg-brand-red mx-auto mb-12"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredProperties.map((property, index) => (
+                <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
+                  <PropertyCard property={property} onNavigate={onNavigate} user={user} agent={getAgentForProperty(property)} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Partners Section */}
       <section className="py-24 bg-brand-dark/50">
