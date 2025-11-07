@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Property, NavigationFunction, AddCityFunction, AddNeighborhoodFunction } from '../types';
 import Input from '../components/common/Input';
@@ -45,13 +44,61 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      setNewMediaFiles(prev => [...prev, ...filesArray]);
 
-      const newPreviews = filesArray.map((file: File) => ({
-          url: URL.createObjectURL(file),
-          type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'
-      }));
-      setNewMediaPreviews(prev => [...prev, ...newPreviews]);
+      // FIX: Explicitly type 'file' as File to resolve type inference issues.
+      const validationPromises = filesArray.map((file: File) => {
+        return new Promise<{ file: File, isValid: boolean, error?: string }>((resolve) => {
+          if (!file.type.startsWith('image/')) {
+            resolve({ file, isValid: true });
+            return;
+          }
+
+          const img = new Image();
+          const objectUrl = URL.createObjectURL(file);
+          img.onload = () => {
+            const width = img.width;
+            const height = img.height;
+            URL.revokeObjectURL(objectUrl);
+            if (width < 1200 || height < 800) {
+              const errorMsg = t('addPropertyPage.imageResolutionError', {
+                  fileName: file.name,
+                  width: width,
+                  height: height,
+                  minWidth: 1200,
+                  minHeight: 800,
+              });
+              resolve({ file, isValid: false, error: errorMsg });
+            } else {
+              resolve({ file, isValid: true });
+            }
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            const errorMsg = t('addPropertyPage.imageLoadError', { fileName: file.name });
+            resolve({ file, isValid: false, error: errorMsg });
+          };
+          img.src = objectUrl;
+        });
+      });
+
+      Promise.all(validationPromises).then(results => {
+        const validFiles = results.filter(r => r.isValid).map(r => r.file);
+        const errors = results.filter(r => !r.isValid && r.error).map(r => r.error);
+
+        if (errors.length > 0) {
+          alert(errors.join('\n'));
+        }
+
+        if (validFiles.length > 0) {
+          setNewMediaFiles(prev => [...prev, ...validFiles]);
+
+          const newPreviews = validFiles.map((file: File) => ({
+            url: URL.createObjectURL(file),
+            type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'
+          }));
+          setNewMediaPreviews(prev => [...prev, ...newPreviews]);
+        }
+      });
     }
   };
 
@@ -179,7 +226,7 @@ const EditPropertyPage: React.FC<EditPropertyPageProps> = ({ propertyToEdit, onE
               </div>
           </div>
 
-          <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" />
+          <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" required />
 
           <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="secondary" onClick={() => onNavigate('dashboard')}>{t('addPropertyPage.cancel')}</Button>

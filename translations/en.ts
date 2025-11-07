@@ -1,5 +1,6 @@
 
 
+
 export const en = {
   header: {
     home: 'Home',
@@ -121,7 +122,7 @@ export const en = {
     media: 'Images & Videos',
     uploadFiles: 'Upload files',
     dragAndDrop: 'or drag and drop',
-    mediaHint: 'Images (PNG, JPG) & Videos (MP4, MOV)',
+    mediaHint: 'PNG, JPG (min. 1200x800px), MP4, MOV',
     price: 'Price (XAF)',
     listingType: 'Listing Type',
     rent: 'For Rent',
@@ -135,7 +136,7 @@ export const en = {
     selectCity: 'Select a city',
     neighborhood: 'Neighborhood',
     selectNeighborhood: 'Select a neighborhood',
-    phone: 'Phone Number (Optional)',
+    phone: 'Phone Number',
     cancel: 'Cancel',
     addProperty: 'Add Property',
     alertMinOneMedia: "Please upload at least one image or video.",
@@ -144,11 +145,13 @@ export const en = {
     cityName: 'City Name',
     addNewNeighborhood: 'Add a new neighborhood',
     neighborhoodName: 'Neighborhood Name',
+    imageResolutionError: 'Image "{{fileName}}" is too small ({{width}}x{{height}}). Minimum resolution is {{minWidth}}x{{minHeight}}px.',
+    imageLoadError: 'Could not load image "{{fileName}}".',
   },
   editPropertyPage: {
     title: 'Edit Property',
     addFiles: 'Add files',
-    addMediaHint: 'Add new images or videos.',
+    addMediaHint: 'Add new images (PNG, JPG - min. 1200x800px) or videos (MP4, MOV).',
     saveChanges: 'Save Changes',
     alertMinOneMedia: "A property must have at least one image or video.",
   },
@@ -269,7 +272,7 @@ export const en = {
     fullName: 'Full Name',
     email: 'Email Address',
     password: 'Password',
-    phone: 'Phone Number (Optional)',
+    phone: 'Phone Number',
     iAmA: 'I am a...',
     visitor: 'Visitor',
     agent: 'Owner / Agent',

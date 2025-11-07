@@ -63,12 +63,24 @@ type RegionDB = { id: number; name: string };
 type CityDB = { id: number; name: string; region_id: number };
 type NeighborhoodDB = { id: number; name: string; city_id: number };
 
+interface HistoryState {
+  stack: { page: Page; data: any }[];
+  index: number;
+}
+
 const App: React.FC = () => {
   // History and Navigation State
-  const [history, setHistory] = usePersistentState<{ page: Page; data: any }[]>('myImmoHistory', [{ page: 'home', data: null }]);
-  const [historyIndex, setHistoryIndex] = usePersistentState<number>('myImmoHistoryIndex', 0);
+  const [historyState, setHistoryState] = usePersistentState<HistoryState>(
+    'myImmoHistoryState',
+    {
+      stack: [{ page: 'home', data: null }],
+      index: 0,
+    }
+  );
+  const { stack: history, index: historyIndex } = historyState;
   const validHistoryIndex = Math.max(0, Math.min(historyIndex, history.length - 1));
   const { page: currentPage, data: pageData } = history[validHistoryIndex] || { page: 'home', data: null };
+
 
   // Core States for Sequential Loading
   const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
@@ -93,19 +105,29 @@ const App: React.FC = () => {
     if (window.location.hash.includes('access_token')) {
         window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
     }
-
-    const newHistoryState = { page, data };
-    if (options?.replace) {
-      setHistory([newHistoryState]);
-      setHistoryIndex(0);
-    } else {
-      const newHistory = history.slice(0, validHistoryIndex + 1);
-      newHistory.push(newHistoryState);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-    }
     window.scrollTo(0, 0);
-  }, [history, validHistoryIndex, setHistory, setHistoryIndex]);
+
+    const newHistoryEntry = { page, data };
+
+    setHistoryState(prevState => {
+        const { stack, index } = prevState;
+        const validIndex = Math.max(0, Math.min(index, stack.length - 1));
+
+        if (options?.replace) {
+            return {
+                stack: [newHistoryEntry],
+                index: 0
+            };
+        } else {
+            const newStack = stack.slice(0, validIndex + 1);
+            newStack.push(newHistoryEntry);
+            return {
+                stack: newStack,
+                index: newStack.length - 1
+            };
+        }
+    });
+  }, [setHistoryState]);
 
   const fetchLocations = useCallback(async () => {
     try {
@@ -358,9 +380,9 @@ const App: React.FC = () => {
         await reloadData();
         handleNavigate('dashboard');
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error in handleAddProperty:", error);
-        setDataError(String(error));
+        setDataError(error.message || String(error));
     }
   };
   
@@ -499,16 +521,26 @@ const App: React.FC = () => {
       
       await reloadData();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding/updating rating:", error);
-      setDataError(String(error));
+      setDataError(error.message || String(error));
     }
   };
 
-  const handleGoBack = () => { if (validHistoryIndex > 0) setHistoryIndex(prevIndex => prevIndex - 1); };
-  const handleGoForward = () => { if (validHistoryIndex < history.length - 1) setHistoryIndex(prevIndex => prevIndex + 1); };
-  const canGoBack = validHistoryIndex > 0;
-  const canGoForward = validHistoryIndex < history.length - 1;
+  const handleGoBack = () => {
+    setHistoryState(prevState => ({
+      ...prevState,
+      index: prevState.index > 0 ? prevState.index - 1 : 0
+    }));
+  };
+  const handleGoForward = () => {
+    setHistoryState(prevState => ({
+      ...prevState,
+      index: prevState.index < prevState.stack.length - 1 ? prevState.index + 1 : prevState.index
+    }));
+  };
+  const canGoBack = historyState.index > 0;
+  const canGoForward = historyState.index < historyState.stack.length - 1;
   const handleSearch = (filters: any) => setSearchFilters(filters);
 
   const renderPage = () => {

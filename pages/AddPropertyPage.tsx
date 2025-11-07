@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Property, User, NavigationFunction, AddCityFunction, AddNeighborhoodFunction } from '../types';
 import Input from '../components/common/Input';
@@ -40,13 +39,61 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      setMediaFiles(prev => [...prev, ...filesArray]);
 
-      const newPreviews = filesArray.map((file: File) => ({
-          url: URL.createObjectURL(file),
-          type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'
-      }));
-      setMediaPreviews(prev => [...prev, ...newPreviews]);
+      // FIX: Explicitly type 'file' as File to resolve type inference issues.
+      const validationPromises = filesArray.map((file: File) => {
+        return new Promise<{ file: File, isValid: boolean, error?: string }>((resolve) => {
+          if (!file.type.startsWith('image/')) {
+            resolve({ file, isValid: true });
+            return;
+          }
+
+          const img = new Image();
+          const objectUrl = URL.createObjectURL(file);
+          img.onload = () => {
+            const width = img.width;
+            const height = img.height;
+            URL.revokeObjectURL(objectUrl);
+            if (width < 1200 || height < 800) {
+              const errorMsg = t('addPropertyPage.imageResolutionError', {
+                  fileName: file.name,
+                  width: width,
+                  height: height,
+                  minWidth: 1200,
+                  minHeight: 800,
+              });
+              resolve({ file, isValid: false, error: errorMsg });
+            } else {
+              resolve({ file, isValid: true });
+            }
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            const errorMsg = t('addPropertyPage.imageLoadError', { fileName: file.name });
+            resolve({ file, isValid: false, error: errorMsg });
+          };
+          img.src = objectUrl;
+        });
+      });
+
+      Promise.all(validationPromises).then(results => {
+        const validFiles = results.filter(r => r.isValid).map(r => r.file);
+        const errors = results.filter(r => !r.isValid && r.error).map(r => r.error);
+
+        if (errors.length > 0) {
+          alert(errors.join('\n'));
+        }
+
+        if (validFiles.length > 0) {
+          setMediaFiles(prev => [...prev, ...validFiles]);
+
+          const newPreviews = validFiles.map((file: File) => ({
+            url: URL.createObjectURL(file),
+            type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'
+          }));
+          setMediaPreviews(prev => [...prev, ...newPreviews]);
+        }
+      });
     }
   };
 
@@ -65,16 +112,15 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
       alert(t('addPropertyPage.alertMinOneMedia'));
       return;
     }
-    const newProperty = {
+    const newPropertyData = {
       ...propertyData,
       price: parseInt(propertyData.price, 10),
       bedrooms: parseInt(propertyData.bedrooms, 10),
       bathrooms: parseInt(propertyData.bathrooms, 10),
       area: parseInt(propertyData.area, 10),
-      type: propertyData.type as 'rent' | 'sale',
     };
-    
-    onAddProperty(newProperty, mediaFiles);
+    onAddProperty(newPropertyData, mediaFiles);
+    onNavigate('dashboard');
   };
 
   const handleAddNewCity = () => {
@@ -92,10 +138,9 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
     setNewNeighborhoodName('');
     setAddNeighborhoodModalOpen(false);
   };
-
+  
   const citiesForSelectedRegion = propertyData.region ? Object.keys(locations[propertyData.region] || {}) : [];
   const neighborhoodsForSelectedCity = propertyData.city ? (locations[propertyData.region]?.[propertyData.city] || []) : [];
-
 
   return (
     <>
@@ -114,37 +159,27 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
               <div className="space-y-1 text-center">
                 <svg className="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 <div className="flex text-sm text-gray-400">
-                  <label htmlFor="file-upload" className="relative cursor-pointer bg-brand-card rounded-md font-medium text-brand-red hover:text-brand-red-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-brand-dark focus-within:ring-brand-red">
-                    <span>{t('addPropertyPage.uploadFiles')}</span>
-                    <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*,video/mp4,video/quicktime" onChange={handleFileChange} />
-                  </label>
+                  <label htmlFor="file-upload" className="relative cursor-pointer bg-brand-card rounded-md font-medium text-brand-red hover:text-brand-red-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-brand-dark focus-within:ring-brand-red"><span>{t('addPropertyPage.uploadFiles')}</span><input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*,video/mp4,video/quicktime" onChange={handleFileChange} /></label>
                   <p className="pl-1">{t('addPropertyPage.dragAndDrop')}</p>
                 </div>
                 <p className="text-xs text-gray-500">{t('addPropertyPage.mediaHint')}</p>
               </div>
             </div>
-              {mediaPreviews.length > 0 && (
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {mediaPreviews.map((item, index) => (
-                      <div key={index} className="relative group aspect-w-1 aspect-h-1">
-                      {item.type === 'image' ? (
-                          <img src={item.url} alt={`preview ${index}`} className="w-full h-full object-cover rounded-md" />
-                      ) : (
-                          <video src={item.url} className="w-full h-full object-cover rounded-md" />
-                      )}
-                      <button type="button" onClick={() => removeMedia(index)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Remove media">X</button>
-                      </div>
-                  ))}
+            {mediaPreviews.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {mediaPreviews.map((item, index) => (
+                  <div key={item.url} className="relative group aspect-w-1 aspect-h-1">
+                    {item.type === 'image' ? <img src={item.url} alt={`preview ${index}`} className="w-full h-full object-cover rounded-md" /> : <video src={item.url} className="w-full h-full object-cover rounded-md" />}
+                    <button type="button" onClick={() => removeMedia(index)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Remove media">X</button>
                   </div>
-              )}
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input label={t('addPropertyPage.price')} name="price" type="number" value={propertyData.price} onChange={handleChange} required />
-            <Select label={t('addPropertyPage.listingType')} name="type" value={propertyData.type} onChange={handleChange}>
-              <option value="rent">{t('addPropertyPage.rent')}</option>
-              <option value="sale">{t('addPropertyPage.sale')}</option>
-            </Select>
+            <Select label={t('addPropertyPage.listingType')} name="type" value={propertyData.type} onChange={handleChange}><option value="rent">{t('addPropertyPage.rent')}</option><option value="sale">{t('addPropertyPage.sale')}</option></Select>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -158,15 +193,15 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
             
             <div className="flex items-end gap-2">
                 <div className="flex-grow">
-                    <Select label={t('addPropertyPage.city')} name="city" value={propertyData.city} onChange={handleCityChange} disabled={!propertyData.region} required>
-                        <option value="">{t('addPropertyPage.selectCity')}</option>
-                        {citiesForSelectedRegion.map(c => <option key={c} value={c}>{c}</option>)}
-                    </Select>
+                  <Select label={t('addPropertyPage.city')} name="city" value={propertyData.city} onChange={handleCityChange} disabled={!propertyData.region} required>
+                      <option value="">{t('addPropertyPage.selectCity')}</option>
+                      {citiesForSelectedRegion.map(c => <option key={c} value={c}>{c}</option>)}
+                  </Select>
                 </div>
                 <button type="button" onClick={() => setAddCityModalOpen(true)} disabled={!propertyData.region} className="h-11 w-10 flex-shrink-0 bg-brand-dark/50 text-brand-gray hover:bg-brand-dark rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed font-mono text-xl" title={t('addPropertyPage.addNewCity')}>+</button>
-            </div>
+              </div>
 
-            <div className="flex items-end gap-2">
+              <div className="flex items-end gap-2">
                 <div className="flex-grow">
                   <Select label={t('addPropertyPage.neighborhood')} name="neighborhood" value={propertyData.neighborhood} onChange={handleChange} disabled={!propertyData.city} required>
                       <option value="">{t('addPropertyPage.selectNeighborhood')}</option>
@@ -174,10 +209,10 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
                   </Select>
                 </div>
                 <button type="button" onClick={() => setAddNeighborhoodModalOpen(true)} disabled={!propertyData.city} className="h-11 w-10 flex-shrink-0 bg-brand-dark/50 text-brand-gray hover:bg-brand-dark rounded-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed font-mono text-xl" title={t('addPropertyPage.addNewNeighborhood')}>+</button>
-            </div>
+              </div>
           </div>
 
-          <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" />
+          <Input label={t('addPropertyPage.phone')} name="phone" type="tel" value={propertyData.phone} onChange={handleChange} placeholder="6XX XXX XXX" required />
 
           <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="secondary" onClick={() => onNavigate('dashboard')}>{t('addPropertyPage.cancel')}</Button>
