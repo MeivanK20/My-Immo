@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Logo from './common/Logo';
-import { User, NavigationFunction } from '../types';
+import { User, NavigationFunction, Page } from '../types';
 import Button from './common/Button';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -45,9 +45,10 @@ interface HeaderProps {
   onGoForward: () => void;
   canGoBack: boolean;
   canGoForward: boolean;
+  currentPage: Page;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, onGoForward, canGoBack, canGoForward }) => {
+const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, onGoForward, canGoBack, canGoForward, currentPage }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { t, locale, setLocale } = useLanguage();
@@ -76,6 +77,8 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+  
+  const showNavArrows = !!user || currentPage !== 'home';
 
   return (
     <header className="bg-brand-dark/80 backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b border-brand-card/50">
@@ -84,73 +87,73 @@ const Header: React.FC<HeaderProps> = ({ user, onNavigate, onLogout, onGoBack, o
           <div className="cursor-pointer" onClick={() => onNavigate('home')}>
             <Logo variant="dark" size="small" />
           </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <button
-                onClick={onGoBack}
-                disabled={!canGoBack}
-                className="p-2 rounded-full text-brand-gray hover:text-white hover:bg-brand-card/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                aria-label={t('header.goBack')}
-            >
-                <BackArrowIcon />
-            </button>
-            <button
-                onClick={onGoForward}
-                disabled={!canGoForward}
-                className="p-2 rounded-full text-brand-gray hover:text-white hover:bg-brand-card/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                aria-label={t('header.goForward')}
-            >
-                <ForwardArrowIcon />
-            </button>
-          </div>
+          {showNavArrows && (
+            <div className="hidden sm:flex items-center gap-2">
+              <button
+                  onClick={onGoBack}
+                  disabled={!canGoBack}
+                  className="p-2 rounded-full text-brand-gray hover:text-white hover:bg-brand-card/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  aria-label={t('header.goBack')}
+              >
+                  <BackArrowIcon />
+              </button>
+              <button
+                  onClick={onGoForward}
+                  disabled={!canGoForward}
+                  className="p-2 rounded-full text-brand-gray hover:text-white hover:bg-brand-card/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  aria-label={t('header.goForward')}
+              >
+                  <ForwardArrowIcon />
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-2">
-          <button onClick={() => onNavigate('home')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.home')}</button>
-          <button onClick={() => user ? onNavigate('listings') : onNavigate('register')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.listings')}</button>
-          
-          {!user && (
-            <>
-              <button onClick={() => onNavigate('about')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.about')}</button>
-              <button onClick={() => onNavigate('contact')} className="hidden sm:block text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.contact')}</button>
-            </>
-          )}
-          
           {user ? (
-            <div className="flex items-center space-x-3" ref={menuRef}>
-               <div className="text-right">
-                <div className="font-semibold text-sm text-gray-100">{user.name}</div>
-                <div className="text-xs capitalize -mt-0.5 text-gray-400">{getUserRoleText(user.role)}</div>
+            <>
+              <div className="hidden sm:flex items-center">
+                <button onClick={() => onNavigate('home')} className="text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.home')}</button>
+                <button onClick={() => onNavigate('listings')} className="text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.listings')}</button>
+                <button onClick={() => onNavigate('about')} className="text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.about')}</button>
+                <button onClick={() => onNavigate('contact')} className="text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.contact')}</button>
               </div>
-               <div className="relative">
-                <button 
-                  onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                  className="p-1 rounded-full hover:bg-brand-card/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-dark focus:ring-brand-red"
-                  aria-label="Menu utilisateur"
-                  aria-expanded={isMenuOpen}
-                >
-                  {/* FIX: Changed user.profilePictureUrl to user.profile_picture_url to match User type */}
-                  <img src={user.profile_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=ef4444&color=fff`} alt="User avatar" className="h-10 w-10 rounded-full object-cover" />
-                </button>
-                {isMenuOpen && (
-                   <div className="absolute right-0 mt-2 w-56 bg-brand-card rounded-md shadow-lg py-1 z-20 ring-1 ring-black/50">
-                    {user.role === 'admin' && (
-                      <button onClick={() => { onNavigate('adminDashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.adminDashboard')}</button>
-                    )}
-                    {(user.role === 'agent' || user.role === 'admin') && (
-                      <button onClick={() => { onNavigate('dashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.dashboard')}</button>
-                    )}
-                    <button onClick={() => { onNavigate('profileSettings'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.profileSettings')}</button>
-                    
-                    <div className="border-t border-brand-dark/50 my-1"></div>
-                    
-                    <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.logout')}</button>
-                     <button onClick={() => { toggleLanguage(); setIsMenuOpen(false); }} className="sm:hidden flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">
-                        {locale === 'fr' ? <GbFlag /> : <FrFlag />}
-                        <span>{locale === 'fr' ? 'Switch to English' : 'Passer au Français'}</span>
-                     </button>
-                  </div>
-                )}
+
+              <div className="flex items-center space-x-3" ref={menuRef}>
+                <div className="text-right">
+                  <div className="font-semibold text-sm text-gray-100">{user.name}</div>
+                  <div className="text-xs capitalize -mt-0.5 text-gray-400">{getUserRoleText(user.role)}</div>
+                </div>
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                    className="p-1 rounded-full hover:bg-brand-card/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-dark focus:ring-brand-red"
+                    aria-label="Menu utilisateur"
+                    aria-expanded={isMenuOpen}
+                  >
+                    <img src={user.profile_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=ef4444&color=fff`} alt="User avatar" className="h-10 w-10 rounded-full object-cover" />
+                  </button>
+                  {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-brand-card rounded-md shadow-lg py-1 z-20 ring-1 ring-black/50">
+                      {user.role === 'admin' && (
+                        <button onClick={() => { onNavigate('adminDashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.adminDashboard')}</button>
+                      )}
+                      {(user.role === 'agent' || user.role === 'admin') && (
+                        <button onClick={() => { onNavigate('dashboard'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.dashboard')}</button>
+                      )}
+                      <button onClick={() => { onNavigate('profileSettings'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.profileSettings')}</button>
+                      
+                      <div className="border-t border-brand-dark/50 my-1"></div>
+                      
+                      <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">{t('header.logout')}</button>
+                      <button onClick={() => { toggleLanguage(); setIsMenuOpen(false); }} className="sm:hidden flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-dark hover:text-white transition-colors">
+                          {locale === 'fr' ? <GbFlag /> : <FrFlag />}
+                          <span>{locale === 'fr' ? 'Switch to English' : 'Passer au Français'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           ) : (
             <div className="space-x-2 flex items-center">
                 <button onClick={() => onNavigate('login')} className="text-brand-gray hover:text-white rounded-lg px-3 py-2 transition-colors duration-300">{t('header.login')}</button>

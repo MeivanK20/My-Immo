@@ -615,6 +615,7 @@ const App: React.FC = () => {
     <div className="flex flex-col min-h-screen font-sans bg-brand-dark text-gray-200">
         <Header 
           user={currentUser} 
+          currentPage={currentPage}
           onNavigate={handleNavigate} 
           onLogout={handleLogout}
           onGoBack={handleGoBack}

@@ -37,6 +37,8 @@ export interface Property {
   neighborhood: string;
   agent_id: string; // Changed from agentUid
   phone?: string;
+  // FIX: Add created_at to align with database schema and fix sorting errors.
+  created_at: string;
 }
 
 export interface Rating {

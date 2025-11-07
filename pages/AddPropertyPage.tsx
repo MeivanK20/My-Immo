@@ -112,12 +112,16 @@ const AddPropertyPage: React.FC<AddPropertyPageProps> = ({ user, onAddProperty, 
       alert(t('addPropertyPage.alertMinOneMedia'));
       return;
     }
+    // FIX: Explicitly cast `type` to 'rent' | 'sale' to match the expected Omit<Property, ...> type.
     const newPropertyData = {
       ...propertyData,
       price: parseInt(propertyData.price, 10),
       bedrooms: parseInt(propertyData.bedrooms, 10),
       bathrooms: parseInt(propertyData.bathrooms, 10),
       area: parseInt(propertyData.area, 10),
+      type: propertyData.type as 'rent' | 'sale',
+      // FIX: Add `created_at` to satisfy the Omit<Property, ...> type requirement.
+      created_at: new Date().toISOString(),
     };
     onAddProperty(newPropertyData, mediaFiles);
     onNavigate('dashboard');
