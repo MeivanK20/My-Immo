@@ -100,6 +100,7 @@ const App: React.FC = () => {
   const [dataError, setDataError] = useState<string | null>(null);
   const [searchFilters, setSearchFilters] = useState({});
   const { t } = useLanguage();
+  const isAppView = /wv\)|WebView/i.test(navigator.userAgent);
   
   const handleNavigate = useCallback((page: Page, data?: any, options?: { replace?: boolean }) => {
     if (window.location.hash.includes('access_token')) {
@@ -114,8 +115,9 @@ const App: React.FC = () => {
         const validIndex = Math.max(0, Math.min(index, stack.length - 1));
 
         if (options?.replace) {
+            const newStack = [newHistoryEntry];
             return {
-                stack: [newHistoryEntry],
+                stack: newStack,
                 index: 0
             };
         } else {
@@ -157,21 +159,15 @@ const App: React.FC = () => {
         setLocations(structuredLocations);
     } catch (error: any) {
         console.error("Failed to fetch locations:", error);
-        // This error will be caught by the main data fetcher's try-catch block
         throw error;
     }
   }, []);
 
-  // --- SEQUENTIAL LOADING EFFECTS ---
-
-  // EFFECT 1: Primary Auth Listener. Runs once on mount.
-  // Determines if there is an authenticated user session.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         const currentAuthUser = session?.user || null;
         setAuthUser(currentAuthUser);
 
-        // If user is logged out, we can finish loading immediately.
         if (!currentAuthUser) {
             setCurrentUser(null);
             setIsLoading(false);
@@ -184,8 +180,6 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, [handleNavigate]);
 
-  // EFFECT 2: Profile Fetcher. Runs only when `authUser` changes.
-  // Fetches (or creates/repairs) the user's profile from the database.
   useEffect(() => {
     if (!authUser) {
       setCurrentUser(null);
@@ -205,9 +199,7 @@ const App: React.FC = () => {
       } catch (error: any) {
         console.error("Caught error while fetching profile:", error);
         setDataError(error.message || 'Failed to fetch user profile.');
-        // If profile fetch fails, treat user as logged out to prevent broken states
         setCurrentUser(null);
-        // Also sign out to clear potentially invalid session
         authService.signOut();
       }
     };
@@ -215,24 +207,14 @@ const App: React.FC = () => {
     fetchAndSetProfile();
   }, [authUser]);
 
-  // EFFECT 3: App Data Fetcher. Runs only when `currentUser` changes.
-  // This is the final step in the loading sequence for a logged-in user.
   useEffect(() => {
     const clearData = () => {
-        setProperties([]);
-        setAllUsers([]);
-        setMessages([]);
-        setRatings([]);
-        setLocations({});
-        setDbRegions([]);
-        setDbCities([]);
-        setAdvertisements([]);
-        setJobs([]);
+        setProperties([]); setAllUsers([]); setMessages([]); setRatings([]);
+        setLocations({}); setDbRegions([]); setDbCities([]); setAdvertisements([]); setJobs([]);
     };
 
     if (!currentUser) {
         clearData();
-        // Loading is complete for a logged-out user if there was no authUser to begin with.
         if (!authUser) {
              setIsLoading(false);
         }
@@ -244,7 +226,7 @@ const App: React.FC = () => {
         try {
             await fetchLocations();
             const [propertiesRes, profilesRes, ratingsRes, adsRes, jobsRes] = await Promise.all([
-                supabase.from('properties').select('*'),
+                supabase.from('properties').select('*').order('created_at', { ascending: false }),
                 supabase.from('profiles').select('*'),
                 supabase.from('ratings').select('*'),
                 supabase.from('advertisements').select('*').eq('is_active', true),
@@ -265,10 +247,7 @@ const App: React.FC = () => {
             
             if (currentUser.role === 'agent' || currentUser.role === 'admin') {
                 const { data: messagesData, error: messagesError } = await supabase
-                    .from('messages')
-                    .select('*')
-                    .eq('agent_id', currentUser.id);
-                
+                    .from('messages').select('*').eq('agent_id', currentUser.id);
                 if (messagesError) throw messagesError;
                 setMessages(messagesData as Message[] || []);
             } else {
@@ -283,358 +262,161 @@ const App: React.FC = () => {
     };
 
     loadAppData();
-  }, [currentUser, fetchLocations, authUser]); // Added authUser to dependencies
+  }, [currentUser, fetchLocations, authUser]);
 
-  // EFFECT 4: Redirect Logic. Runs only when loading is complete.
   useEffect(() => {
-    if (isLoading) {
-        return;
-    }
+    if (isLoading) return;
 
     const authPages: Page[] = ['login', 'register', 'forgotPassword', 'resetPassword', 'registrationSuccess'];
-    
-    // Pages requiring ANY authenticated user
     const userRequiredPages: Page[] = ['profileSettings', 'pricing']; 
-    
-    // Pages requiring agent/admin role
     const agentRequiredPages: Page[] = ['dashboard', 'addProperty', 'editProperty', 'messages'];
-    
-    // Pages requiring admin role
     const adminRequiredPages: Page[] = ['adminDashboard'];
-
     const protectedPages = [...userRequiredPages, ...agentRequiredPages, ...adminRequiredPages];
 
-    const isOnAuthPage = authPages.includes(currentPage);
-    const isOnProtectedPage = protectedPages.includes(currentPage);
-
-    if (currentUser && isOnAuthPage) {
-        const destination = currentUser.role === 'admin' ? 'adminDashboard' : currentUser.role === 'agent' ? 'dashboard' : 'listings';
-        handleNavigate(destination, undefined, { replace: true });
+    if (currentUser && authPages.includes(currentPage)) {
+        handleNavigate('home', null, { replace: true });
+    } else if (!currentUser && protectedPages.includes(currentPage)) {
+        handleNavigate('login', null, { replace: true });
+    } else if (currentUser?.role === 'visitor' && (agentRequiredPages.includes(currentPage) || adminRequiredPages.includes(currentPage))) {
+        handleNavigate('home', null, { replace: true });
+    } else if (currentUser?.role === 'agent' && adminRequiredPages.includes(currentPage)) {
+        handleNavigate('dashboard', null, { replace: true });
     }
+  }, [isLoading, currentUser, currentPage, handleNavigate]);
 
-    if (!currentUser && isOnProtectedPage) {
-        handleNavigate('login', undefined, { replace: true });
-    }
+  const goBack = useCallback(() => { historyIndex > 0 && setHistoryState(p => ({ ...p, index: p.index - 1 })); }, [historyIndex, setHistoryState]);
+  const goForward = useCallback(() => { historyIndex < history.length - 1 && setHistoryState(p => ({ ...p, index: p.index + 1 })); }, [historyIndex, history.length, setHistoryState]);
+  const canGoBack = historyIndex > 0;
+  const canGoForward = historyIndex < history.length - 1;
+  const retryDataFetch = useCallback(() => { setIsLoading(true); setDataError(null); }, []);
 
-    // Role-specific protection for logged-in users
-    if (currentUser) {
-        const isAgentOrAdmin = currentUser.role === 'agent' || currentUser.role === 'admin';
-        const isAdmin = currentUser.role === 'admin';
-        
-        if (agentRequiredPages.includes(currentPage) && !isAgentOrAdmin) {
-            handleNavigate('home', undefined, { replace: true });
-        }
-        
-        if (adminRequiredPages.includes(currentPage) && !isAdmin) {
-            handleNavigate('home', undefined, { replace: true });
-        }
-    }
-
-  }, [currentUser, currentPage, isLoading, handleNavigate]);
-
-  // --- Handlers ---
-  
-  const handleLogout = () => {
-    authService.signOut();
-    handleNavigate('home', undefined, { replace: true });
+  // Handlers
+  const handleLogin = async (email, password) => await authService.signInWithEmail(email, password);
+  const handleGoogleLogin = async () => await authService.signInWithGoogle();
+  const handleRegister = async (name, email, password, phone, role) => {
+    await authService.signUpWithEmail(name, email, password, phone, role);
+    handleNavigate('registrationSuccess', { email });
   };
-
-  const handleLogin = async (email: string, password: string): Promise<void> => {
-    await authService.signInWithEmail(email, password);
+  const handleLogout = useCallback(async () => {
+    await authService.signOut();
+    localStorage.removeItem('myImmoHistoryState');
+    window.location.href = '/';
+  }, []);
+  const handleForgotPassword = async (email) => await authService.sendPasswordResetEmail(email);
+  const handleResetPassword = async (password) => await supabase.auth.updateUser({ password });
+  const handleUpdateProfile = async (updatedUser, pic) => {
+    const p = await authService.updateProfile(updatedUser, pic);
+    setCurrentUser(p); setAllUsers(prev => prev.map(u => u.id === p.id ? p : u));
   };
-  
-  const handleGoogleLogin = () => authService.signInWithGoogle();
-  
-  const handleRegister = (name: string, email: string, password: string, phone: string, role: 'visitor' | 'agent'): Promise<void> => {
-    return authService.signUpWithEmail(name, email, password, phone, role).then(() => {
-        handleNavigate('registrationSuccess', { email });
-    });
-  };
+  const handleUpdatePassword = async (current, newPass) => await authService.updatePassword(currentUser!.email, current, newPass);
+  const handleDeleteAccount = async (password) => await authService.deleteAccount(currentUser!.email, password);
+  const handleSearch = (filters) => { setSearchFilters(filters); };
 
-  const reloadData = async () => {
-    if (authUser) {
-        // Re-trigger the data loading effects by re-setting authUser
-        setAuthUser(u => u ? {...u} : null);
-    }
-  }
-
-  const handleAddProperty = async (propertyData: Omit<Property, 'id' | 'media' | 'agent_id'>, mediaFiles: File[]) => {
+  const handleAddProperty = async (propertyData, mediaFiles) => {
     if (!currentUser) return;
-    try {
-        const mediaUrls: Media[] = [];
-        for (const file of mediaFiles) {
-            const filePath = `public/${currentUser.id}/${Date.now()}-${file.name}`;
-            const { error: uploadError } = await supabase.storage.from('property-media').upload(filePath, file);
-
-            if (uploadError) throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
-            
-            const { data } = supabase.storage.from('property-media').getPublicUrl(filePath);
-            mediaUrls.push({ url: data.publicUrl, type: file.type.startsWith('image/') ? 'image' : 'video' });
-        }
-
-        const newProperty = { ...propertyData, media: mediaUrls, agent_id: currentUser.id };
-        const { error: insertError } = await supabase.from('properties').insert([newProperty]);
-        
-        if (insertError) throw new Error(`Failed to save property: ${insertError.message}`);
-        
-        await reloadData();
-        handleNavigate('dashboard');
-
-    } catch (error: any) {
-        console.error("Error in handleAddProperty:", error);
-        setDataError(error.message || String(error));
-    }
+    const media = await Promise.all(mediaFiles.map(async file => {
+      const path = `${currentUser.id}/${Date.now()}-${file.name}`;
+      await supabase.storage.from('properties-media').upload(path, file);
+      const { data: { publicUrl } } = supabase.storage.from('properties-media').getPublicUrl(path);
+      return { type: file.type.startsWith('image/') ? 'image' : 'video', url: publicUrl };
+    }));
+    const { data } = await supabase.from('properties').insert([{ ...propertyData, agent_id: currentUser.id, media }]).select().single();
+    if (data) setProperties(p => [data, ...p]);
   };
   
-  const handleEditProperty = async (updatedProperty: Property, newMediaFiles: File[]) => {
+  const handleEditProperty = async (updatedProperty, newMediaFiles) => {
     if (!currentUser) return;
-    const newMedia: Media[] = [];
-    for (const file of newMediaFiles) {
-        const filePath = `public/${updatedProperty.agent_id}/${Date.now()}-${file.name}`;
-        const { error: uploadError } = await supabase.storage.from('property-media').upload(filePath, file);
-        if (uploadError) continue;
-        const { data } = supabase.storage.from('property-media').getPublicUrl(filePath);
-        newMedia.push({ url: data.publicUrl, type: file.type.startsWith('image/') ? 'image' : 'video' });
-    }
-    
+    const newMedia = await Promise.all(newMediaFiles.map(async file => {
+      const path = `${currentUser.id}/${Date.now()}-${file.name}`;
+      await supabase.storage.from('properties-media').upload(path, file);
+      const { data: { publicUrl } } = supabase.storage.from('properties-media').getPublicUrl(path);
+      return { type: file.type.startsWith('image/') ? 'image' : 'video', url: publicUrl };
+    }));
     const finalMedia = [...updatedProperty.media, ...newMedia];
-    const finalProperty = { ...updatedProperty, media: finalMedia };
-
-    const { error } = await supabase.from('properties').update(finalProperty).eq('id', finalProperty.id);
-    if (error) console.error('Error updating property', error);
-    else await reloadData();
+    const { data } = await supabase.from('properties').update({ ...updatedProperty, media: finalMedia }).eq('id', updatedProperty.id).select().single();
+    if (data) setProperties(p => p.map(prop => prop.id === data.id ? data : prop));
   };
   
-  const handleDeleteProperty = async (id: string) => {
-    const { error } = await supabase.from('properties').delete().eq('id', id);
-    if (error) console.error('Error deleting property', error);
-    else await reloadData();
+  const handleDeleteProperty = async (id) => {
+    await supabase.from('properties').delete().eq('id', id);
+    setProperties(p => p.filter(prop => prop.id !== id));
   };
   
-  const handleSendMessage = async (messageData: Omit<Message, 'id' | 'created_at'>) => {
-    const { error } = await supabase.from('messages').insert([messageData]);
-    if (error) console.error('Error sending message', error);
-    else await reloadData();
+  const handleSendMessage = async (msg) => { await supabase.from('messages').insert([msg]); };
+  
+  const handleAddRating = async (propId, agentId, rating) => {
+    if (!currentUser) return;
+    const { data } = await supabase.from('ratings').upsert({ property_id: propId, agent_id: agentId, visitor_id: currentUser.id, rating }, { onConflict: 'property_id,visitor_id' }).select().single();
+    if(data) setRatings(r => [...r.filter(rate => rate.id !== data.id), data]);
   };
   
-  const handleUpdateProfile = async (updatedUser: User, newProfilePicture: File | null) => {
-      try {
-        const data = await authService.updateProfile(updatedUser, newProfilePicture);
-        setCurrentUser(data);
-        await reloadData();
-      } catch (error) {
-        console.error('Error updating profile:', error);
-      }
+  const handleAddCity = async (region, city) => {
+    const reg = dbRegions.find(r => r.name === region);
+    if(reg) { await supabase.from('cities').insert({ name: city, region_id: reg.id }); fetchLocations(); }
   };
-
-  const handleUpdatePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
-    if (!currentUser) throw new Error("User not authenticated");
-    await authService.updatePassword(currentUser.email, currentPassword, newPassword);
+  const handleAddNeighborhood = async (region, city, hood) => {
+    const c = dbCities.find(ci => ci.name === city);
+    if(c) { await supabase.from('neighborhoods').insert({ name: hood, city_id: c.id }); fetchLocations(); }
   };
-
-  // FIX: Added a dedicated handler for the password reset flow.
-  // This function has the correct signature expected by ResetPasswordPage.
-  const handleResetPassword = async (newPassword: string): Promise<void> => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      throw error;
-    }
+  const handleDeleteUser = async (id) => {
+    if(currentUser?.id === id) { alert("Cannot delete self."); return; }
+    await supabase.rpc('delete_user_and_data', { user_id_to_delete: id });
+    setAllUsers(u => u.filter(user => user.id !== id));
   };
-  
-  const handleDeleteAccount = async (password: string): Promise<void> => {
-    if (!currentUser) throw new Error("User not authenticated");
-    await authService.deleteAccount(currentUser.email, password);
-    // After successful deletion, the onAuthStateChange listener will handle logout.
+  const handleSelectFreePlan = async () => {
+    if(currentUser?.role === 'visitor') await handleUpdateProfile({ ...currentUser, role: 'agent', subscription_plan: 'free' }, null);
   };
-  
-  const handleBecomeAgentFree = async () => {
-    if (currentUser && currentUser.role === 'visitor') {
-        await authService.updateProfile({ ...currentUser, role: 'agent', subscription_plan: 'free' });
-        const updatedProfile = await authService.getProfile(currentUser.id);
-        setCurrentUser(updatedProfile);
-        handleNavigate('dashboard', undefined, { replace: true });
-    }
-  };
-  
-  const handleDeleteUser = (uid: string) => alert(t('adminDashboardPage.deleteUserNotImplemented'));
-
-  const handleAddCity = async (region: string, cityName: string) => {
-    const regionObj = dbRegions.find(r => r.name === region);
-    if (!regionObj) return;
-
-    const { error } = await supabase.from('cities').insert({ name: cityName, region_id: regionObj.id });
-    if (error) {
-        console.error("Error adding city:", error);
-        setDataError(error.message);
-    } else {
-        await fetchLocations();
-    }
-  };
-
-  const handleAddNeighborhood = async (region: string, city: string, neighborhoodName: string) => {
-    const cityObj = dbCities.find(c => c.name === city && dbRegions.find(r => r.id === c.region_id)?.name === region);
-    if (!cityObj) return;
-
-    const { error } = await supabase.from('neighborhoods').insert({ name: neighborhoodName, city_id: cityObj.id });
-    if (error) {
-        console.error("Error adding neighborhood:", error);
-        setDataError(error.message);
-    } else {
-        await fetchLocations();
-    }
-  };
-
-  const handleAddRating = async (propertyId: string, agentId: string, rating: number) => {
-    if (!currentUser || currentUser.role !== 'visitor') return;
-
-    try {
-      // First, check if a rating already exists for this user and property
-      const { data: existingRating, error: selectError } = await supabase
-        .from('ratings')
-        .select('id')
-        .eq('property_id', propertyId)
-        .eq('visitor_id', currentUser.id)
-        .single();
-
-      // Handle select errors, but ignore the "PGRST116" error which means no row was found.
-      if (selectError && selectError.code !== 'PGRST116') {
-        throw selectError;
-      }
-
-      if (existingRating) {
-        // If it exists, update it
-        const { error: updateError } = await supabase
-          .from('ratings')
-          .update({ rating: rating, agent_id: agentId })
-          .eq('id', existingRating.id);
-        if (updateError) throw updateError;
-      } else {
-        // If it doesn't exist, insert a new one
-        const { error: insertError } = await supabase.from('ratings').insert({
-          property_id: propertyId,
-          agent_id: agentId,
-          visitor_id: currentUser.id,
-          rating: rating,
-        });
-        if (insertError) throw insertError;
-      }
-      
-      await reloadData();
-
-    } catch (error: any) {
-      console.error("Error adding/updating rating:", error);
-      setDataError(error.message || String(error));
-    }
-  };
-
-  const handleGoBack = () => {
-    setHistoryState(prevState => ({
-      ...prevState,
-      index: prevState.index > 0 ? prevState.index - 1 : 0
-    }));
-  };
-  const handleGoForward = () => {
-    setHistoryState(prevState => ({
-      ...prevState,
-      index: prevState.index < prevState.stack.length - 1 ? prevState.index + 1 : prevState.index
-    }));
-  };
-  const canGoBack = historyState.index > 0;
-  const canGoForward = historyState.index < historyState.stack.length - 1;
-  const handleSearch = (filters: any) => setSearchFilters(filters);
 
   const renderPage = () => {
-    // This function is now only called when isLoading is false
     switch (currentPage) {
+      case 'home': return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} allUsers={allUsers} locations={locations} />;
       case 'listings': return <ListingsPage properties={properties} onNavigate={handleNavigate} initialFilters={searchFilters} user={currentUser} allUsers={allUsers} locations={locations} advertisements={advertisements} />;
-      case 'propertyDetail': {
-        const propertyId = pageData?.id;
-        const freshProperty = properties.find(p => p.id === propertyId);
-        if (!freshProperty) {
-            handleNavigate('home', undefined, { replace: true });
-            return null;
-        }
-        return <PropertyDetailsPage property={freshProperty} agent={allUsers.find(u => u.id === freshProperty.agent_id)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
-      }
-      case 'dashboard':
-        if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { return null; }
-        const agentProperties = properties.filter(p => p.agent_id === currentUser.id);
-        const agentMessages = messages.filter(m => m.agent_id === currentUser.id);
-        return <DashboardPage currentUser={currentUser} properties={agentProperties} messages={agentMessages} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} />;
-       case 'addProperty':
-         if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { return null; }
-        return <AddPropertyPage user={currentUser} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={locations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
-       case 'editProperty': {
-         const propertyId = pageData?.id;
-         const freshPropertyToEdit = properties.find(p => p.id === propertyId);
-         if (!freshPropertyToEdit) {
-           handleNavigate('home', undefined, { replace: true });
-           return null;
-         }
-         if (!currentUser || (currentUser.role !== 'admin' && currentUser.id !== freshPropertyToEdit.agent_id)) { 
-           return null; 
-         }
-         return <EditPropertyPage propertyToEdit={freshPropertyToEdit} onEditProperty={handleEditProperty} onNavigate={handleNavigate} locations={locations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
-       }
-       case 'messages':
-          if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) { return null; }
-          return <MessagesPage messages={messages} />;
-       case 'profileSettings':
-          if (!currentUser) { return null; }
-          return <ProfileSettingsPage currentUser={currentUser} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} onUpdatePassword={handleUpdatePassword} onDeleteAccount={handleDeleteAccount} />;
-       case 'login': return <LoginPage onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
-       case 'register': return <RegisterPage onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
-       case 'registrationSuccess': return <RegistrationSuccessPage email={pageData?.email || ''} onNavigate={handleNavigate} />;
-       case 'adminDashboard':
-           if (!currentUser || currentUser.role !== 'admin') { return null; }
-           return <AdminDashboardPage 
-                    onNavigate={handleNavigate} 
-                    allUsers={allUsers} 
-                    allProperties={properties} 
-                    onDeleteUser={handleDeleteUser}
-                    onDeleteProperty={handleDeleteProperty}
-                  />;
-       case 'careers': return <CareersPage jobs={jobs} />;
-       case 'contact': return <ContactPage />;
-       case 'about': return <AboutPage />;
-       case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;
-       case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={handleNavigate} />;
-       case 'pricing':
-        if (!currentUser) { return null; }
-        return <PricingPage currentUser={currentUser} onSelectFreePlan={handleBecomeAgentFree} />;
-      case 'forgotPassword':
-        return <ForgotPasswordPage onNavigate={handleNavigate} onForgotPassword={authService.sendPasswordResetEmail} />;
-      case 'resetPassword':
-        return <ResetPasswordPage onNavigate={handleNavigate} onResetPassword={handleResetPassword} />;
-      case 'home': default:
-        return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} allUsers={allUsers} locations={locations} />;
+      case 'propertyDetail': return <PropertyDetailsPage property={pageData} agent={allUsers.find(u => u.id === pageData.agent_id)} onSendMessage={handleSendMessage} currentUser={currentUser} onAddRating={handleAddRating} ratings={ratings} />;
+      case 'dashboard': return <DashboardPage currentUser={currentUser!} properties={properties.filter(p => p.agent_id === currentUser?.id)} messages={messages} onNavigate={handleNavigate} onDeleteProperty={handleDeleteProperty} />;
+      case 'addProperty': return <AddPropertyPage user={currentUser!} onAddProperty={handleAddProperty} onNavigate={handleNavigate} locations={locations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
+      case 'editProperty': return <EditPropertyPage propertyToEdit={pageData} onEditProperty={handleEditProperty} onNavigate={handleNavigate} locations={locations} onAddCity={handleAddCity} onAddNeighborhood={handleAddNeighborhood} />;
+      case 'contact': return <ContactPage />;
+      case 'about': return <AboutPage />;
+      case 'termsOfUse': return <TermsOfUsePage onNavigate={handleNavigate} />;
+      case 'privacyPolicy': return <PrivacyPolicyPage onNavigate={handleNavigate} />;
+      case 'messages': return <MessagesPage messages={messages} />;
+      case 'login': return <LoginPage onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
+      case 'register': return <RegisterPage onRegister={handleRegister} onGoogleLogin={handleGoogleLogin} onNavigate={handleNavigate} />;
+      case 'profileSettings': return <ProfileSettingsPage currentUser={currentUser!} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavigate} onUpdatePassword={handleUpdatePassword} onDeleteAccount={handleDeleteAccount} />;
+      case 'registrationSuccess': return <RegistrationSuccessPage email={pageData.email} onNavigate={handleNavigate} />;
+      case 'adminDashboard': return <AdminDashboardPage onNavigate={handleNavigate} allUsers={allUsers} allProperties={properties} onDeleteUser={handleDeleteUser} onDeleteProperty={handleDeleteProperty} />;
+      case 'careers': return <CareersPage jobs={jobs} />;
+      case 'pricing': return <PricingPage currentUser={currentUser!} onSelectFreePlan={handleSelectFreePlan} />;
+      case 'forgotPassword': return <ForgotPasswordPage onNavigate={handleNavigate} onForgotPassword={handleForgotPassword} />;
+      case 'resetPassword': return <ResetPasswordPage onNavigate={handleNavigate} onResetPassword={handleResetPassword} />;
+      default: return <HomePage properties={properties} onNavigate={handleNavigate} onSearch={handleSearch} user={currentUser} allUsers={allUsers} locations={locations} />;
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-brand-dark">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-h-screen font-sans bg-brand-dark text-gray-200">
-        <Header 
-          user={currentUser} 
-          currentPage={currentPage}
-          onNavigate={handleNavigate} 
-          onLogout={handleLogout}
-          onGoBack={handleGoBack}
-          onGoForward={handleGoForward}
-          canGoBack={canGoBack}
-          canGoForward={canGoForward}
-        />
-        <main className="flex-grow">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-[calc(100vh-200px)]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand-red"></div></div>
-          ) : dataError ? (
-            <DataErrorBanner error={dataError} onRetry={() => reloadData()} />
-          ) : (
-            <div className="animate-fade-in-up" key={currentPage + validHistoryIndex}>
-              {renderPage()}
-            </div>
-          )}
-        </main>
-        <Footer onNavigate={handleNavigate} />
+    <div className="flex flex-col min-h-screen">
+      <Header
+        user={currentUser}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+        onGoBack={goBack}
+        onGoForward={goForward}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        currentPage={currentPage}
+      />
+      <main className="flex-grow">
+        {dataError ? <DataErrorBanner error={dataError} onRetry={retryDataFetch} /> : renderPage()}
+      </main>
+      <Footer onNavigate={handleNavigate} variant={isAppView ? 'simplified' : 'normal'} />
     </div>
   );
 };

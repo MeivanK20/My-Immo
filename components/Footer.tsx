@@ -5,10 +5,23 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface FooterProps {
   onNavigate: NavigationFunction;
+  variant?: 'normal' | 'simplified';
 }
 
-const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+const Footer: React.FC<FooterProps> = ({ onNavigate, variant = 'normal' }) => {
   const { t } = useLanguage();
+
+  if (variant === 'simplified') {
+    return (
+      <footer className="bg-brand-dark text-gray-400 mt-16 border-t border-brand-card/50">
+        <nav className="container mx-auto px-6 py-4 flex justify-center items-center gap-6 text-sm">
+          <button onClick={() => onNavigate('about')} className="hover:text-brand-red transition">{t('header.about')}</button>
+          <button onClick={() => onNavigate('contact')} className="hover:text-brand-red transition">{t('header.contact')}</button>
+        </nav>
+      </footer>
+    );
+  }
+
   return (
     <footer className="bg-brand-dark text-gray-400 mt-16 border-t border-brand-card/50">
       <div className="container mx-auto px-6 py-6 flex flex-col sm:flex-row justify-between items-center gap-6">
