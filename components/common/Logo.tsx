@@ -26,10 +26,7 @@ const Logo: React.FC<LogoProps> = ({ variant = 'dark', size = 'normal' }) => {
           {/* Center 'V' shape representing a roof */}
           <path d="M50 10 L 35 20 L 50 30 L 65 20 L 50 10 Z" fill="#ef4444" />
         </svg>
-        <div className="text-left leading-none">
-          <span className={`text-lg font-sans ${titleColor}`}>My Immo</span>
-          <p className={`text-[10px] tracking-widest ${subtitleColor}`}>{t('logo.subtext')}</p>
-        </div>
+        <span className={`text-xl font-sans ${titleColor}`}>My Immo</span>
       </div>
     );
   }
