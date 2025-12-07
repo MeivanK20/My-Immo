@@ -191,6 +191,28 @@ export const supabaseAuthService = {
     });
   },
 
+  // Send password reset email (if supported by installed supabase client)
+  async sendPasswordReset(email: string): Promise<void> {
+    try {
+      const fn = (supabase.auth as any).resetPasswordForEmail || (supabase.auth as any).sendPasswordResetEmail;
+      if (typeof fn === 'function') {
+        await fn(email);
+        return;
+      }
+
+      // Fallback: attempt signInWithOtp as a way to send magic link/passwordless
+      if (typeof (supabase.auth as any).signInWithOtp === 'function') {
+        await (supabase.auth as any).signInWithOtp({ email });
+        return;
+      }
+
+      throw new Error('Password reset not supported by this Supabase client version');
+    } catch (e) {
+      console.error('Send password reset error:', e);
+      throw e;
+    }
+  },
+
   // Sign in with Google
   async signInWithGoogle(): Promise<void> {
     try {

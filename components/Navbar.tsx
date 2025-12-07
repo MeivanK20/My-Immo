@@ -2,14 +2,15 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogIn, Menu, X, Globe, Settings, LogOut } from 'lucide-react';
 import { RoutePath } from '../types';
-import authService from '../services/authService';
+import { useAuth } from '../services/authContext';
+import { supabaseAuthService } from '../services/supabaseAuthService';
 import { useLanguage } from '../services/languageContext';
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = React.useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
-  const [currentUser, setCurrentUser] = React.useState<any>(null);
+  const { user: currentUser, setUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { language, setLanguage, t } = useLanguage();
@@ -22,15 +23,8 @@ export const Navbar: React.FC = () => {
   };
 
   React.useEffect(() => {
-    const u = authService.getCurrentUser();
-    setCurrentUser(u);
-
-    const onAuthChange = (e: any) => {
-      setCurrentUser(e?.detail?.user ?? authService.getCurrentUser());
-    };
-    window.addEventListener('authChange', onAuthChange as EventListener);
-    return () => window.removeEventListener('authChange', onAuthChange as EventListener);
-  }, []);
+    // no-op: `currentUser` comes from AuthProvider
+  }, [currentUser]);
 
   const initials = (name?: string) => {
     if (!name) return 'U';
@@ -43,10 +37,16 @@ export const Navbar: React.FC = () => {
   };
 
   const handleUserMenuLogout = () => {
-    authService.clearCurrentUser();
-    setCurrentUser(null);
-    setIsUserMenuOpen(false);
-    navigate(RoutePath.HOME);
+    (async () => {
+      try {
+        await supabaseAuthService.signout();
+      } catch (e) {
+        console.warn('Signout error:', e);
+      }
+      setUser(null);
+      setIsUserMenuOpen(false);
+      navigate(RoutePath.HOME);
+    })();
   };
 
   const renderUserMenu = () => {

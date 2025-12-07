@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User as UserIcon, Mail, Calendar, Shield, Trash2, Save, X, Phone, Lock, Briefcase, Upload, Camera } from 'lucide-react';
 import { RoutePath } from '../types';
-import authService from '../services/authService';
+import { useAuth } from '../services/authContext';
+import { supabaseAuthService } from '../services/supabaseAuthService';
 import { useLanguage } from '../services/languageContext';
 
 export const Profile: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const currentUser = authService.getCurrentUser();
+  const { user: currentUser, setUser } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -80,26 +81,20 @@ export const Profile: React.FC = () => {
   const handleSavePhoto = () => {
     if (tempPhoto) {
       setProfilePhoto(tempPhoto);
-      
-      // Update user with photo
-      const updatedUser = {
-        ...currentUser,
-        profilePhoto: tempPhoto,
-      };
-      
-      authService.setCurrentUser(updatedUser);
-      
-      // Update stored users
-      const users = JSON.parse(localStorage.getItem('myimmo_users') || '[]');
-      const updatedUsers = users.map((user: any) =>
-        user.id === currentUser.id ? { ...user, profilePhoto: tempPhoto } : user
-      );
-      localStorage.setItem('myimmo_users', JSON.stringify(updatedUsers));
-      
-      setTempPhoto(undefined);
-      setIsPhotoChanged(false);
-      setSuccessMessage('Photo de profil mise à jour avec succès!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      // Update user profile in Supabase
+      (async () => {
+        try {
+          const updated = await supabaseAuthService.updateUserProfile(currentUser.id, { profilePhoto: tempPhoto });
+          setUser(updated);
+          setTempPhoto(undefined);
+          setIsPhotoChanged(false);
+          setSuccessMessage('Photo de profil mise à jour avec succès!');
+          setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (e) {
+          console.error('Failed to update profile photo:', e);
+          setErrors(prev => ({ ...prev, photo: 'Impossible de mettre à jour la photo de profil' }));
+        }
+      })();
     }
   };
 
@@ -111,22 +106,17 @@ export const Profile: React.FC = () => {
 
   const handleRemovePhoto = () => {
     setProfilePhoto(undefined);
-    
-    const updatedUser = {
-      ...currentUser,
-      profilePhoto: undefined,
-    };
-    
-    authService.setCurrentUser(updatedUser);
-    
-    const users = JSON.parse(localStorage.getItem('myimmo_users') || '[]');
-    const updatedUsers = users.map((user: any) =>
-      user.id === currentUser.id ? { ...user, profilePhoto: undefined } : user
-    );
-    localStorage.setItem('myimmo_users', JSON.stringify(updatedUsers));
-    
-    setSuccessMessage('Photo de profil supprimée');
-    setTimeout(() => setSuccessMessage(''), 3000);
+    (async () => {
+      try {
+        const updated = await supabaseAuthService.updateUserProfile(currentUser.id, { profilePhoto: null });
+        setUser(updated);
+        setSuccessMessage('Photo de profil supprimée');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (e) {
+        console.error('Failed to remove profile photo:', e);
+        setErrors(prev => ({ ...prev, photo: 'Impossible de supprimer la photo de profil' }));
+      }
+    })();
   };
 
   const validateForm = () => {
@@ -153,26 +143,22 @@ export const Profile: React.FC = () => {
       return;
     }
 
-    // Update user in authService
-    const updatedUser = {
-      ...currentUser,
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-    };
-
-    authService.setCurrentUser(updatedUser);
-    
-    // Update stored users
-    const users = JSON.parse(localStorage.getItem('myimmo_users') || '[]');
-    const updatedUsers = users.map((user: any) =>
-      user.id === currentUser.id ? { ...user, ...updatedUser } : user
-    );
-    localStorage.setItem('myimmo_users', JSON.stringify(updatedUsers));
-
-    setIsEditing(false);
-    setSuccessMessage('Profil mis à jour avec succès!');
-    setTimeout(() => setSuccessMessage(''), 3000);
+    (async () => {
+      try {
+        const updated = await supabaseAuthService.updateUserProfile(currentUser.id, {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+        });
+        setUser(updated);
+        setIsEditing(false);
+        setSuccessMessage('Profil mis à jour avec succès!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (e) {
+        console.error('Failed to update profile:', e);
+        setErrors(prev => ({ ...prev, submit: 'Impossible de mettre à jour le profil' }));
+      }
+    })();
   };
 
   const handleCancel = () => {
@@ -190,16 +176,21 @@ export const Profile: React.FC = () => {
   };
 
   const confirmDeleteAccount = () => {
-    // Delete user from localStorage
-    const users = JSON.parse(localStorage.getItem('myimmo_users') || '[]');
-    const filteredUsers = users.filter((user: any) => user.id !== currentUser.id);
-    localStorage.setItem('myimmo_users', JSON.stringify(filteredUsers));
-
-    // Clear current user
-    authService.clearCurrentUser();
-    
-    // Redirect to home
-    navigate(RoutePath.HOME);
+    (async () => {
+      try {
+        await supabaseAuthService.deleteAccount(currentUser.id);
+      } catch (e) {
+        console.warn('Failed to delete account in DB:', e);
+      }
+      try {
+        await supabaseAuthService.signout();
+      } catch (e) {
+        console.warn('Signout failed after delete:', e);
+      }
+      // clear context
+      setUser(null);
+      navigate(RoutePath.HOME);
+    })();
   };
 
   const handleChangePassword = () => {
@@ -222,46 +213,40 @@ export const Profile: React.FC = () => {
       return;
     }
 
-    // Verify current password
-    const verified = authService.verifyCredentials(currentUser.email, passwordData.currentPassword);
-    if (!verified) {
-      setErrors({ currentPassword: 'Mot de passe actuel incorrect' });
-      return;
-    }
-
-    // Update password in localStorage
-    const users = JSON.parse(localStorage.getItem('myimmo_users') || '[]');
-    const updatedUsers = users.map((user: any) =>
-      user.id === currentUser.id 
-        ? { ...user, password: passwordData.newPassword }
-        : user
-    );
-    localStorage.setItem('myimmo_users', JSON.stringify(updatedUsers));
-
-    setShowPasswordModal(false);
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    setSuccessMessage('Mot de passe mis à jour avec succès!');
-    setTimeout(() => setSuccessMessage(''), 3000);
+    // Supabase enforces secure password updates; recommend password-reset flow
+    (async () => {
+      try {
+        // Attempt to trigger a password reset email
+        const resetFn = (supabaseAuthService as any).sendPasswordReset;
+        if (typeof resetFn === 'function') {
+          await resetFn(currentUser.email);
+          setSuccessMessage('Un email de réinitialisation a été envoyé.');
+        } else {
+          setSuccessMessage('Utilisez la fonctionnalité de réinitialisation de mot de passe.');
+        }
+        setShowPasswordModal(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setTimeout(() => setSuccessMessage(''), 4000);
+      } catch (e) {
+        console.error('Failed to trigger password reset:', e);
+        setErrors(prev => ({ ...prev, password: 'Impossible de changer le mot de passe' }));
+      }
+    })();
   };
 
   const handleBecomeAgent = () => {
-    const updatedUser = {
-      ...currentUser,
-      role: 'agent' as const,
-    };
-
-    authService.setCurrentUser(updatedUser);
-
-    // Update stored users
-    const users = JSON.parse(localStorage.getItem('myimmo_users') || '[]');
-    const updatedUsers = users.map((user: any) =>
-      user.id === currentUser.id ? { ...user, role: 'agent' } : user
-    );
-    localStorage.setItem('myimmo_users', JSON.stringify(updatedUsers));
-
-    setShowBecomeAgentModal(false);
-    setSuccessMessage('Vous êtes maintenant Agent Immobilier!');
-    setTimeout(() => setSuccessMessage(''), 3000);
+    (async () => {
+      try {
+        const updated = await supabaseAuthService.updateUserProfile(currentUser.id, { role: 'agent' });
+        setUser(updated);
+        setShowBecomeAgentModal(false);
+        setSuccessMessage('Vous êtes maintenant Agent Immobilier!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (e) {
+        console.error('Failed to become agent:', e);
+        setErrors(prev => ({ ...prev, submit: 'Impossible de devenir agent pour le moment' }));
+      }
+    })();
   };
 
   const getRoleLabel = () => {

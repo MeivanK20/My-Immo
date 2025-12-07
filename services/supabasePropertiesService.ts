@@ -1,5 +1,6 @@
 import { supabase } from './supabaseService';
 import { Property } from '../types';
+import { supabaseLocalitiesService } from './supabaseLocalitiesService';
 
 export const supabasePropertiesService = {
   // Get all properties
@@ -139,54 +140,16 @@ export const supabasePropertiesService = {
 
   // Get unique regions
   async getRegions(): Promise<string[]> {
-    try {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('region');
-
-      if (error) throw error;
-
-      const uniqueRegions = [...new Set(data?.map(item => item.region).filter(Boolean))] as string[];
-      return uniqueRegions;
-    } catch (error) {
-      console.error('Get regions error:', error);
-      return [];
-    }
+    return supabaseLocalitiesService.getRegions();
   },
 
   // Get cities by region
   async getCitiesByRegion(region: string): Promise<string[]> {
-    try {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('city')
-        .eq('region', region);
-
-      if (error) throw error;
-
-      const uniqueCities = [...new Set(data?.map(item => item.city).filter(Boolean))] as string[];
-      return uniqueCities;
-    } catch (error) {
-      console.error('Get cities error:', error);
-      return [];
-    }
+    return supabaseLocalitiesService.getCitiesByRegion(region);
   },
 
   // Get neighborhoods by city
   async getNeighborhoodsByCity(city: string): Promise<string[]> {
-    try {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('neighborhood')
-        .eq('city', city);
-
-      if (error) throw error;
-
-      const uniqueNeighborhoods = [...new Set(data?.map(item => item.neighborhood).filter(Boolean))] as string[];
-      return uniqueNeighborhoods;
-    } catch (error) {
-      console.error('Get neighborhoods error:', error);
-      return [];
-    }
+    return supabaseLocalitiesService.getNeighborhoodsByCity(city);
   },
 };

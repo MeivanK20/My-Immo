@@ -39,6 +39,7 @@ export enum RoutePath {
   HOME = '/',
   LOGIN = '/login',
   SIGNUP = '/signup',
+  PASSWORD_RESET = '/password-reset',
   LISTINGS = '/listings',
   DASHBOARD = '/dashboard',
   ADD_PROPERTY = '/add-property',

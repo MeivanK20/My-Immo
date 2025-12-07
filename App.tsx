@@ -1,9 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import { PasswordReset } from './pages/PasswordReset';
 import { AuthCallback } from './pages/AuthCallback';
 import { Listings } from './pages/Listings';
 import { AddProperty } from './pages/AddProperty';
@@ -17,7 +19,6 @@ import { TermsOfUse } from './pages/TermsOfUse';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { AIChat } from './components/AIChat';
 import { RoutePath } from './types';
-import authService from './services/authService';
 import { LanguageProvider, useLanguage } from './services/languageContext';
 import { AuthProvider } from './services/authContext';
 
@@ -58,12 +59,7 @@ const ScrollToTop = () => {
 
 const App: React.FC = () => {
   React.useEffect(() => {
-    // Ensure test users are seeded for development/testing
-    try {
-      authService.seedTestUsers();
-    } catch (e) {
-      // ignore
-    }
+    // No local seed; authentication is handled by Supabase in production/dev.
   }, []);
   return (
     <LanguageProvider>
@@ -77,12 +73,13 @@ const App: React.FC = () => {
               <Route path={RoutePath.HOME} element={<Home />} />
               <Route path={RoutePath.LOGIN} element={<Login />} />
               <Route path={RoutePath.SIGNUP} element={<Signup />} />
+              <Route path={RoutePath.PASSWORD_RESET} element={<PasswordReset />} />
               <Route path={RoutePath.AUTH_CALLBACK} element={<AuthCallback />} />
               <Route path={RoutePath.LISTINGS} element={<Listings />} />
-              <Route path={RoutePath.ADD_PROPERTY} element={<AddProperty />} />
-              <Route path={RoutePath.DASHBOARD} element={<Dashboard />} />
-              <Route path={RoutePath.ADMIN_DASHBOARD} element={<AdminDashboard />} />
-              <Route path={RoutePath.PROFILE} element={<Profile />} />
+              <Route path={RoutePath.ADD_PROPERTY} element={<ProtectedRoute element={<AddProperty />} />} />
+              <Route path={RoutePath.DASHBOARD} element={<ProtectedRoute element={<Dashboard />} />} />
+              <Route path={RoutePath.ADMIN_DASHBOARD} element={<ProtectedRoute element={<AdminDashboard />} requiredRole="admin" />} />
+              <Route path={RoutePath.PROFILE} element={<ProtectedRoute element={<Profile />} />} />
               <Route path={RoutePath.ABOUT} element={<About />} />
               <Route path={RoutePath.CONTACT} element={<Contact />} />
               <Route path={RoutePath.CAREERS} element={<Careers />} />
