@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
+import { DatabaseCheck } from './components/DatabaseCheck';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
@@ -64,6 +65,7 @@ const App: React.FC = () => {
   return (
     <LanguageProvider>
       <AuthProvider>
+        <DatabaseCheck />
         <Router>
           <div className="flex flex-col min-h-screen">
           <ScrollToTop />
