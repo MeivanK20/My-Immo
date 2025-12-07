@@ -236,9 +236,44 @@ export const supabaseAuthService = {
   // Handle OAuth callback and create/update user profile
   async handleOAuthCallback(): Promise<User | null> {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error || !session?.user) return null;
+      // After OAuth redirect, the session may be encoded in the URL.
+      // Use getSessionFromUrl() first to parse and set the session, then fallback to getSession().
+      let session: any = null;
+
+      try {
+        // Some versions of supabase-js expose getSessionFromUrl(); use it if available.
+        const getSessionFromUrl = (supabase.auth as any).getSessionFromUrl;
+        console.debug('[supabaseAuthService] OAuth callback - location:', window.location.href);
+        if (typeof getSessionFromUrl === 'function') {
+          try {
+            const { data: sessionData, error: urlErr } = await getSessionFromUrl();
+            console.debug('[supabaseAuthService] getSessionFromUrl result:', { sessionData, urlErr });
+            if (!urlErr && sessionData?.session) {
+              session = sessionData.session;
+            }
+          } catch (innerErr) {
+            console.warn('[supabaseAuthService] getSessionFromUrl failed:', innerErr);
+          }
+        } else {
+          console.debug('[supabaseAuthService] getSessionFromUrl not available on this client');
+        }
+      } catch (e) {
+        console.warn('[supabaseAuthService] error while trying getSessionFromUrl fallback', e);
+      }
+
+      if (!session) {
+        try {
+          const { data: sessResp, error: getErr } = await supabase.auth.getSession();
+          console.debug('[supabaseAuthService] getSession result:', { sessResp, getErr });
+          if (!getErr && sessResp?.session) {
+            session = sessResp.session;
+          }
+        } catch (e) {
+          console.warn('[supabaseAuthService] getSession failed:', e);
+        }
+      }
+
+      if (!session?.user) return null;
 
       const { data: userData, error: checkError } = await supabase
         .from('users')
