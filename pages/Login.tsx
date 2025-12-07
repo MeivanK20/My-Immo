@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Chrome } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { RoutePath } from '../types';
-import authService from '../services/authService';
+import { supabaseAuthService } from '../services/supabaseAuthService';
 import { useLanguage } from '../services/languageContext';
 
 export const Login: React.FC = () => {
@@ -33,6 +33,18 @@ export const Login: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsSubmitting(true);
+      await supabaseAuthService.signInWithGoogle();
+    } catch (error: any) {
+      setErrors({ submit: 'Erreur lors de la connexion avec Google' });
+      console.error('Google sign in error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -43,20 +55,10 @@ export const Login: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      console.log('Connexion:', { email, password, rememberMe });
+      const user = await supabaseAuthService.signin(email, password);
 
-      // Simule une requête API
-      await new Promise(resolve => setTimeout(resolve, 400));
-
-      // Verify credentials against stored users
-      const user = authService.verifyCredentials(email, password);
-      if (!user) {
-        setErrors({ submit: 'Identifiants invalides' });
-        return;
-      }
-
-      // set current session
-      authService.setCurrentUser(user);
+      // Dispatch auth change event
+      window.dispatchEvent(new CustomEvent('authChange', { detail: { user } }));
 
       if (user.role === 'admin') {
         navigate(RoutePath.ADMIN_DASHBOARD);
@@ -65,8 +67,9 @@ export const Login: React.FC = () => {
       } else {
         navigate(RoutePath.LISTINGS);
       }
-    } catch (error) {
+    } catch (error: any) {
       setErrors({ submit: t('login.invalid_credentials') });
+      console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -180,6 +183,29 @@ export const Login: React.FC = () => {
           </div>
 
           {errors.submit && <p className="text-center text-sm text-red-600">{errors.submit}</p>}
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">{t('login.or_divider')}</span>
+            </div>
+          </div>
+
+          {/* Google Sign In Button */}
+          <div>
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isSubmitting}
+              className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Chrome className="h-5 w-5 mr-2 text-red-500" />
+              {t('login.google_signin')}
+            </button>
+          </div>
         </form>
 
         <div className="text-center mt-6">

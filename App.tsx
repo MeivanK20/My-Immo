@@ -4,7 +4,9 @@ import { Navbar } from './components/Navbar';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import { AuthCallback } from './pages/AuthCallback';
 import { Listings } from './pages/Listings';
+import { AddProperty } from './pages/AddProperty';
 import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Profile } from './pages/Profile';
@@ -73,7 +75,9 @@ const App: React.FC = () => {
               <Route path={RoutePath.HOME} element={<Home />} />
               <Route path={RoutePath.LOGIN} element={<Login />} />
               <Route path={RoutePath.SIGNUP} element={<Signup />} />
+              <Route path={RoutePath.AUTH_CALLBACK} element={<AuthCallback />} />
               <Route path={RoutePath.LISTINGS} element={<Listings />} />
+              <Route path={RoutePath.ADD_PROPERTY} element={<AddProperty />} />
               <Route path={RoutePath.DASHBOARD} element={<Dashboard />} />
               <Route path={RoutePath.ADMIN_DASHBOARD} element={<AdminDashboard />} />
               <Route path={RoutePath.PROFILE} element={<Profile />} />

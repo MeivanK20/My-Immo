@@ -65,20 +65,16 @@ export const About: React.FC = () => {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">{t('about.team_title')}</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { name: t('about.team_member_1_name'), role: t('about.team_member_1_role') },
-              { name: t('about.team_member_2_name'), role: t('about.team_member_2_role') },
-              { name: t('about.team_member_3_name'), role: t('about.team_member_3_role') },
-            ].map((member, idx) => (
-              <div key={idx} className="text-center">
-                <div className="w-24 h-24 bg-gradient-to-br from-primary-600 to-primary-800 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold">
-                  {member.name.charAt(0)}
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900">{member.name}</h3>
-                <p className="text-primary-600 font-medium">{member.role}</p>
-              </div>
-            ))}
+          <div className="flex justify-center">
+            <div className="text-center max-w-sm">
+              <img
+                src="https://imgur.com/ZYaBWSa.jpg"
+                alt="MEIK20"
+                className="w-32 h-32 rounded-full object-cover mx-auto mb-4 border-4 border-primary-600"
+              />
+              <h3 className="text-xl font-semibold text-gray-900">MEIK20</h3>
+              <p className="text-primary-600 font-medium">{t('about.team_member_ceo_role')}</p>
+            </div>
           </div>
         </div>
       </section>

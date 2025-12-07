@@ -15,11 +15,17 @@ export interface Property {
   title: string;
   price: number;
   address: string;
+  region: string;
+  city: string;
+  neighborhood: string;
   beds: number;
   baths: number;
   sqft: number;
   imageUrl: string;
   tag: string;
+  description?: string;
+  featured?: boolean;
+  agentId?: string;
 }
 
 export interface ChatMessage {
@@ -35,6 +41,7 @@ export enum RoutePath {
   SIGNUP = '/signup',
   LISTINGS = '/listings',
   DASHBOARD = '/dashboard',
+  ADD_PROPERTY = '/add-property',
   ADMIN_DASHBOARD = '/admin',
   PROFILE = '/profile',
   ABOUT = '/about',
@@ -42,4 +49,5 @@ export enum RoutePath {
   CAREERS = '/careers',
   TERMS = '/terms',
   PRIVACY = '/privacy',
+  AUTH_CALLBACK = '/auth/callback',
 }

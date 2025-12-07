@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, User, Briefcase, Building2, Check } from 'lucide-react';
+import { Mail, Lock, ArrowRight, User, Briefcase, Building2, Check, Chrome } from 'lucide-react';
 import { UserRole, RoutePath } from '../types';
 import { useNavigate } from 'react-router-dom';
-import authService from '../services/authService';
+import { supabaseAuthService } from '../services/supabaseAuthService';
 import { useLanguage } from '../services/languageContext';
 
 export const Signup: React.FC = () => {
@@ -99,17 +99,20 @@ export const Signup: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // Register user in localStorage
-      const newUser = authService.registerUser({
-        fullName: formData.fullName,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
-      });
+      const newUser = await supabaseAuthService.signup(
+        formData.email,
+        formData.password,
+        formData.fullName,
+        formData.role,
+        formData.role === 'agent' ? formData.agencyName : undefined,
+        formData.role === 'agent' ? formData.agencyLicense : undefined
+      );
 
       setSuccessMessage('Inscription réussie! Redirection en cours...');
-      // set session and redirect according to role
-      authService.setCurrentUser({ id: newUser.id, email: newUser.email, fullName: newUser.fullName, role: newUser.role, createdAt: new Date(newUser.createdAt) });
+      
+      // Dispatch auth change event
+      window.dispatchEvent(new CustomEvent('authChange', { detail: { user: newUser } }));
+
       setTimeout(() => {
         if (newUser.role === 'admin') {
           navigate(RoutePath.ADMIN_DASHBOARD);
@@ -119,8 +122,21 @@ export const Signup: React.FC = () => {
           navigate(RoutePath.LISTINGS);
         }
       }, 800);
-    } catch (error) {
-      setErrors({ submit: (error as Error).message || 'Une erreur est survenue lors de l\'inscription' });
+    } catch (error: any) {
+      setErrors({ submit: error.message || 'Une erreur est survenue lors de l\'inscription' });
+      console.error('Signup error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setIsSubmitting(true);
+      await supabaseAuthService.signUpWithGoogle();
+    } catch (error: any) {
+      setErrors({ submit: 'Erreur lors de l\'inscription avec Google' });
+      console.error('Google sign up error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -390,6 +406,29 @@ export const Signup: React.FC = () => {
           </div>
 
           {errors.submit && <p className="text-center text-sm text-red-600">{errors.submit}</p>}
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">{t('signup.or_divider')}</span>
+            </div>
+          </div>
+
+          {/* Google Sign Up Button */}
+          <div>
+            <button
+              type="button"
+              onClick={handleGoogleSignUp}
+              disabled={isSubmitting}
+              className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Chrome className="h-5 w-5 mr-2 text-red-500" />
+              {t('signup.google_signup')}
+            </button>
+          </div>
         </form>
 
         <div className="text-center mt-6">

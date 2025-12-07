@@ -94,7 +94,12 @@ export const Dashboard: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.my_listings')}</h2>
-              <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              <button 
+                onClick={() => {
+                  console.log('Navigating to ADD_PROPERTY:', RoutePath.ADD_PROPERTY);
+                  navigate(RoutePath.ADD_PROPERTY);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                 <Plus size={18} />
                 Nouvelle Annonce
               </button>
@@ -104,7 +109,9 @@ export const Dashboard: React.FC = () => {
               <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
                 <Home size={48} className="mx-auto text-gray-400 mb-4" />
                 <p className="text-gray-600">Vous n'avez pas encore d'annonces</p>
-                <button className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <button 
+                  onClick={() => navigate(RoutePath.ADD_PROPERTY)}
+                  className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                   Créer une annonce
                 </button>
               </div>
