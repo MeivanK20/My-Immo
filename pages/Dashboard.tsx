@@ -4,6 +4,7 @@ import { PROPERTIES } from '../constants';
 import { RoutePath } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../services/languageContext';
+import { useAuth } from '../services/authContext';
 
 interface Message {
   id: string;
@@ -17,6 +18,7 @@ interface Message {
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'listings' | 'messages'>('listings');
   const [userListings] = useState(PROPERTIES.slice(0, 3)); // Simule les annonces de l'agent
   const [messages] = useState<Message[]>([

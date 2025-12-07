@@ -57,11 +57,7 @@ export const Login: React.FC = () => {
     try {
       const user = await supabaseAuthService.signin(email, password);
 
-      // Store user in localStorage
-      localStorage.setItem('currentUser', JSON.stringify(user));
-
-      // Dispatch auth change event
-      window.dispatchEvent(new CustomEvent('authChange', { detail: { user } }));
+      // Supabase session is the source of truth; AuthProvider will pick up changes
 
       if (user.role === 'admin') {
         navigate(RoutePath.ADMIN_DASHBOARD);

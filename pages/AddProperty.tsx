@@ -4,15 +4,16 @@ import { Upload, MapPin, Home, AlertCircle, CheckCircle } from 'lucide-react';
 import { RoutePath, Property } from '../types';
 import { supabasePropertiesService } from '../services/supabasePropertiesService';
 import { useLanguage } from '../services/languageContext';
+import { useAuth } from '../services/authContext';
 
 export const AddProperty: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(true);
 
   const [regions, setRegions] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
@@ -34,32 +35,25 @@ export const AddProperty: React.FC = () => {
     featured: false,
   });
 
-  // Load current user and regions
+  // Check user authentication and permissions, load regions
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load regions
+        // Redirect if not authenticated
+        if (!authLoading && !user) {
+          navigate(RoutePath.LOGIN);
+          return;
+        }
+        
+        // Redirect visitors to listings
+        if (!authLoading && user?.role === 'visitor') {
+          navigate(RoutePath.LISTINGS);
+          return;
+        }
+        
+        // Load regions for form
         const regionList = await supabasePropertiesService.getRegions();
         setRegions(regionList);
-        
-        // Get user from localStorage (set by authChange event in Login/Signup)
-        const userStr = localStorage.getItem('currentUser');
-        
-        if (!userStr) {
-          navigate(RoutePath.LOGIN);
-          setIsLoading(false);
-          return;
-        }
-        
-        const user = JSON.parse(userStr);
-        
-        if (user.role === 'visitor') {
-          navigate(RoutePath.LISTINGS);
-          setIsLoading(false);
-          return;
-        }
-        
-        setCurrentUser(user);
         setIsLoading(false);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -68,7 +62,7 @@ export const AddProperty: React.FC = () => {
     };
 
     loadData();
-  }, [navigate]);
+  }, [user, authLoading, navigate]);
 
   // Load cities when region changes
   useEffect(() => {
@@ -208,7 +202,7 @@ export const AddProperty: React.FC = () => {
         tag: propertyType,
         imageUrl: formData.imageUrl,
         featured: formData.featured,
-        agentId: currentUser.id,
+        agentId: user!.id,
       };
 
       await supabasePropertiesService.createProperty(newProperty as Property);
@@ -238,7 +232,7 @@ export const AddProperty: React.FC = () => {
     );
   }
 
-  if (!currentUser || (currentUser.role !== 'agent' && currentUser.role !== 'admin')) {
+  if (!user || (user.role !== 'agent' && user.role !== 'admin')) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50">
         <div className="text-center">

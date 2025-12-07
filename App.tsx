@@ -19,6 +19,7 @@ import { AIChat } from './components/AIChat';
 import { RoutePath } from './types';
 import authService from './services/authService';
 import { LanguageProvider, useLanguage } from './services/languageContext';
+import { AuthProvider } from './services/authContext';
 
 const Footer: React.FC = () => {
   const { t } = useLanguage();
@@ -66,8 +67,9 @@ const App: React.FC = () => {
   }, []);
   return (
     <LanguageProvider>
-      <Router>
-        <div className="flex flex-col min-h-screen">
+      <AuthProvider>
+        <Router>
+          <div className="flex flex-col min-h-screen">
           <ScrollToTop />
           <Navbar />
           <main className="flex-grow">
@@ -92,6 +94,7 @@ const App: React.FC = () => {
           <AIChat />
         </div>
       </Router>
+    </AuthProvider>
     </LanguageProvider>
   );
 };

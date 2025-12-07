@@ -15,12 +15,7 @@ export const AuthCallback: React.FC = () => {
         const user = await supabaseAuthService.handleOAuthCallback();
 
         if (user) {
-          // Store user in localStorage
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          
-          // Dispatch auth change event
-          window.dispatchEvent(new CustomEvent('authChange', { detail: { user } }));
-
+          // Supabase session is the source of truth; AuthProvider will pick up changes
           // Redirect based on user role
           if (user.role === 'admin') {
             navigate(RoutePath.ADMIN_DASHBOARD);

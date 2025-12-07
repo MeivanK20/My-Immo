@@ -110,11 +110,7 @@ export const Signup: React.FC = () => {
 
       setSuccessMessage('Inscription réussie! Redirection en cours...');
       
-      // Store user in localStorage
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
-      
-      // Dispatch auth change event
-      window.dispatchEvent(new CustomEvent('authChange', { detail: { user: newUser } }));
+      // Supabase session is the source of truth; AuthProvider will pick up changes
 
       setTimeout(() => {
         if (newUser.role === 'admin') {
