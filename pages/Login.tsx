@@ -57,6 +57,9 @@ export const Login: React.FC = () => {
     try {
       const user = await supabaseAuthService.signin(email, password);
 
+      // Store user in localStorage
+      localStorage.setItem('currentUser', JSON.stringify(user));
+
       // Dispatch auth change event
       window.dispatchEvent(new CustomEvent('authChange', { detail: { user } }));
 

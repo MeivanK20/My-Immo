@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, MapPin, Home, AlertCircle, CheckCircle } from 'lucide-react';
 import { RoutePath, Property } from '../types';
-import { supabaseAuthService } from '../services/supabaseAuthService';
 import { supabasePropertiesService } from '../services/supabasePropertiesService';
 import { useLanguage } from '../services/languageContext';
 
@@ -39,29 +38,31 @@ export const AddProperty: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('AddProperty: Loading user data');
-        const user = await supabaseAuthService.getCurrentUser();
-        console.log('AddProperty: Current user:', user);
-        if (!user) {
-          console.log('AddProperty: No user, redirecting to login');
-          navigate(RoutePath.LOGIN);
-          return;
-        }
-        if (user.role === 'visitor') {
-          console.log('AddProperty: User is visitor, redirecting to listings');
-          navigate(RoutePath.LISTINGS);
-          return;
-        }
-        setCurrentUser(user);
-
         // Load regions
-        console.log('AddProperty: Loading regions');
         const regionList = await supabasePropertiesService.getRegions();
-        console.log('AddProperty: Regions loaded:', regionList);
         setRegions(regionList);
+        
+        // Get user from localStorage (set by authChange event in Login/Signup)
+        const userStr = localStorage.getItem('currentUser');
+        
+        if (!userStr) {
+          navigate(RoutePath.LOGIN);
+          setIsLoading(false);
+          return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        if (user.role === 'visitor') {
+          navigate(RoutePath.LISTINGS);
+          setIsLoading(false);
+          return;
+        }
+        
+        setCurrentUser(user);
+        setIsLoading(false);
       } catch (error) {
         console.error('Error loading data:', error);
-      } finally {
         setIsLoading(false);
       }
     };

@@ -95,10 +95,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.my_listings')}</h2>
               <button 
-                onClick={() => {
-                  console.log('Navigating to ADD_PROPERTY:', RoutePath.ADD_PROPERTY);
-                  navigate(RoutePath.ADD_PROPERTY);
-                }}
+                onClick={() => navigate(RoutePath.ADD_PROPERTY)}
                 className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                 <Plus size={18} />
                 Nouvelle Annonce
