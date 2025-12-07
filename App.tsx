@@ -8,6 +8,11 @@ import { Listings } from './pages/Listings';
 import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Profile } from './pages/Profile';
+import { About } from './pages/About';
+import { Contact } from './pages/Contact';
+import { Careers } from './pages/Careers';
+import { TermsOfUse } from './pages/TermsOfUse';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { AIChat } from './components/AIChat';
 import { RoutePath } from './types';
 import authService from './services/authService';
@@ -28,11 +33,11 @@ const Footer: React.FC = () => {
             <h3 className="text-xl font-bold">My Immo</h3>
           </div>
           <ul className="flex flex-wrap justify-center gap-6 text-gray-400 text-sm">
-            <li><a href="#" className="hover:text-white">{t('footer.about')}</a></li>
-            <li><a href="#" className="hover:text-white">{t('footer.contact')}</a></li>
-            <li><a href="#" className="hover:text-white">{t('footer.careers')}</a></li>
-            <li><a href="#" className="hover:text-white">{t('footer.terms')}</a></li>
-            <li><a href="#" className="hover:text-white">{t('footer.privacy')}</a></li>
+            <li><a href={RoutePath.ABOUT} className="hover:text-white">{t('footer.about')}</a></li>
+            <li><a href={RoutePath.CONTACT} className="hover:text-white">{t('footer.contact')}</a></li>
+            <li><a href={RoutePath.CAREERS} className="hover:text-white">{t('footer.careers')}</a></li>
+            <li><a href={RoutePath.TERMS} className="hover:text-white">{t('footer.terms')}</a></li>
+            <li><a href={RoutePath.PRIVACY} className="hover:text-white">{t('footer.privacy')}</a></li>
           </ul>
         </div>
       </div>
@@ -72,6 +77,11 @@ const App: React.FC = () => {
               <Route path={RoutePath.DASHBOARD} element={<Dashboard />} />
               <Route path={RoutePath.ADMIN_DASHBOARD} element={<AdminDashboard />} />
               <Route path={RoutePath.PROFILE} element={<Profile />} />
+              <Route path={RoutePath.ABOUT} element={<About />} />
+              <Route path={RoutePath.CONTACT} element={<Contact />} />
+              <Route path={RoutePath.CAREERS} element={<Careers />} />
+              <Route path={RoutePath.TERMS} element={<TermsOfUse />} />
+              <Route path={RoutePath.PRIVACY} element={<PrivacyPolicy />} />
             </Routes>
           </main>
           <Footer />

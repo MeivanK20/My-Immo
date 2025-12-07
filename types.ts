@@ -37,4 +37,9 @@ export enum RoutePath {
   DASHBOARD = '/dashboard',
   ADMIN_DASHBOARD = '/admin',
   PROFILE = '/profile',
+  ABOUT = '/about',
+  CONTACT = '/contact',
+  CAREERS = '/careers',
+  TERMS = '/terms',
+  PRIVACY = '/privacy',
 }

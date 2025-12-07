@@ -111,28 +111,41 @@ export const Navbar: React.FC = () => {
 
           <div className="hidden md:flex items-center space-x-4">
             {currentUser ? (
-              <>
+              <React.Fragment>
                 <Link
                   to={RoutePath.HOME}
                   className={`text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${isActive(RoutePath.HOME) ? 'text-primary-600' : ''}`}
                 >
-                  Accueil
+                  {t('navbar.home')}
                 </Link>
+
                 <Link
                   to={RoutePath.LISTINGS}
                   className={`text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${isActive(RoutePath.LISTINGS) ? 'text-primary-600' : ''}`}
                 >
-                  Annonces
+                  {t('navbar.listings')}
                 </Link>
-                <a href="#about" className="text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">À propos</a>
-                <a href="#contact" className="text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
 
-                {/* User info */}
+                <Link
+                  to={RoutePath.ABOUT}
+                  className={`text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${isActive(RoutePath.ABOUT) ? 'text-primary-600' : ''}`}
+                >
+                  {t('navbar.about')}
+                </Link>
+
+                <Link
+                  to={RoutePath.CONTACT}
+                  className={`text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${isActive(RoutePath.CONTACT) ? 'text-primary-600' : ''}`}
+                >
+                  {t('navbar.contact')}
+                </Link>
+
                 <div className="flex items-center gap-3 ml-4">
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900">{currentUser.fullName}</div>
-                    <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? 'Visiteur' : currentUser.role === 'agent' ? 'Agent' : 'Admin'}</div>
+                    <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? t('navbar.visitor') : currentUser.role === 'agent' ? t('navbar.agent') : t('navbar.admin_role')}</div>
                   </div>
+
                   <div className="relative">
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -142,32 +155,34 @@ export const Navbar: React.FC = () => {
                     </button>
                     {isUserMenuOpen && renderUserMenu()}
                   </div>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsLanguageOpen(!isLanguageOpen)}
+                      className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                      title={`Langue actuelle: ${language === 'fr' ? 'Français' : 'English'}`}
+                    >
+                      <span className="text-2xl">{language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
+                    </button>
+
+                    {isLanguageOpen && (
+                      <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                        <button onClick={() => handleLanguageChange('fr')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'fr' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+                          <span className="text-2xl">🇫🇷</span>
+                          <span>{t('navbar.language')}: Français</span>
+                        </button>
+
+                        <button onClick={() => handleLanguageChange('en')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'en' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+                          <span className="text-2xl">🇬🇧</span>
+                          <span>{t('navbar.language')}: English</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {/* Language Selector */}
-                <div className="relative">
-                  <button
-                    onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                    title={`Langue actuelle: ${language === 'fr' ? 'Français' : 'English'}`}
-                  >
-                    <span className="text-2xl">{language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
-                  </button>
-                  {isLanguageOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                      <button onClick={() => handleLanguageChange('fr')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'fr' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                        <span className="text-2xl">🇫🇷</span>
-                        <span>Français</span>
-                      </button>
-                      <button onClick={() => handleLanguageChange('en')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'en' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                        <span className="text-2xl">🇬🇧</span>
-                        <span>English</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
+              </React.Fragment>
             ) : (
-              <>
+              <React.Fragment>
                 <Link
                   to={RoutePath.LOGIN}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -177,16 +192,16 @@ export const Navbar: React.FC = () => {
                   }`}
                 >
                   <LogIn size={18} />
-                  CONNEXION
+                  {t('navbar.login')}
                 </Link>
+
                 <Link
                   to={RoutePath.SIGNUP}
                   className="bg-primary-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
                 >
-                  INSCRIPTION
+                  {t('navbar.signup')}
                 </Link>
 
-                {/* Language Selector */}
                 <div className="relative">
                   <button
                     onClick={() => setIsLanguageOpen(!isLanguageOpen)}
@@ -195,12 +210,14 @@ export const Navbar: React.FC = () => {
                   >
                     <span className="text-2xl">{language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
                   </button>
+
                   {isLanguageOpen && (
                     <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                       <button onClick={() => handleLanguageChange('fr')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'fr' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
                         <span className="text-2xl">🇫🇷</span>
                         <span>Français</span>
                       </button>
+
                       <button onClick={() => handleLanguageChange('en')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'en' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
                         <span className="text-2xl">🇬🇧</span>
                         <span>English</span>
@@ -208,7 +225,7 @@ export const Navbar: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </>
+              </React.Fragment>
             )}
           </div>
 
@@ -238,7 +255,7 @@ export const Navbar: React.FC = () => {
                       : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
                   }`}
                 >
-                  Accueil
+                  {t('navbar.home')}
                 </Link>
                 <Link
                   to={RoutePath.LISTINGS}
@@ -249,14 +266,32 @@ export const Navbar: React.FC = () => {
                       : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
                   }`}
                 >
-                  Annonces
+                  {t('navbar.listings')}
                 </Link>
-                <a href="#about" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50">
-                  À propos
-                </a>
-                <a href="#contact" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50">
-                  Contact
-                </a>
+
+                <Link
+                  to={RoutePath.ABOUT}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-2 block px-3 py-2 rounded-md text-base font-medium ${
+                    isActive(RoutePath.ABOUT)
+                      ? 'text-primary-600 bg-primary-50'
+                      : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {t('navbar.about')}
+                </Link>
+
+                <Link
+                  to={RoutePath.CONTACT}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-2 block px-3 py-2 rounded-md text-base font-medium ${
+                    isActive(RoutePath.CONTACT)
+                      ? 'text-primary-600 bg-primary-50'
+                      : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {t('navbar.contact')}
+                </Link>
 
                 {/* Mobile User Menu */}
                 <div className="border-t border-gray-200 mt-3 pt-3">
@@ -266,7 +301,7 @@ export const Navbar: React.FC = () => {
                     </div>
                     <div className="text-right flex-1">
                       <div className="text-sm font-medium text-gray-900">{currentUser.fullName}</div>
-                      <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? 'Visiteur' : currentUser.role === 'agent' ? 'Agent' : 'Admin'}</div>
+                      <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? t('navbar.visitor') : currentUser.role === 'agent' ? t('navbar.agent') : t('navbar.admin_role')}</div>
                     </div>
                   </div>
                   
@@ -278,7 +313,7 @@ export const Navbar: React.FC = () => {
                       }}
                       className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
-                      Panel Admin
+                      {t('navbar.admin')}
                     </button>
                   )}
                   
@@ -290,7 +325,7 @@ export const Navbar: React.FC = () => {
                       }}
                       className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
-                      Tableau de bord
+                      {t('navbar.dashboard')}
                     </button>
                   )}
                   
@@ -302,7 +337,7 @@ export const Navbar: React.FC = () => {
                     className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                   >
                     <Settings size={16} />
-                    Paramètres du profil
+                    {t('navbar.profile')}
                   </button>
                   
                   <button
@@ -313,7 +348,7 @@ export const Navbar: React.FC = () => {
                     className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-gray-200"
                   >
                     <LogOut size={16} />
-                    Déconnexion
+                    {t('navbar.logout')}
                   </button>
                 </div>
 
@@ -321,7 +356,7 @@ export const Navbar: React.FC = () => {
                 <div className="border-t border-gray-200 mt-3 pt-3">
                   <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
                     <Globe size={18} />
-                    <span className="text-sm font-medium">Langue</span>
+                    <span className="text-sm font-medium">{t('navbar.language')}</span>
                   </div>
                   <button
                     onClick={() => handleLanguageChange('fr')}
@@ -332,7 +367,7 @@ export const Navbar: React.FC = () => {
                     }`}
                   >
                     <span>🇫🇷</span>
-                    Français
+                    {t('navbar.language')}: Français
                   </button>
                   <button
                     onClick={() => handleLanguageChange('en')}
@@ -343,7 +378,7 @@ export const Navbar: React.FC = () => {
                     }`}
                   >
                     <span>🇬🇧</span>
-                    English
+                    {t('navbar.language')}: English
                   </button>
                 </div>
               </>
