@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../services/supabaseService';
+import supabase from '../services/supabaseClient';
 
 export const DatabaseCheck: React.FC = () => {
   const [hasError, setHasError] = useState(false);

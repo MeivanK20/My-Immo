@@ -1,4 +1,4 @@
-import { supabase } from './supabaseService';
+import supabase from './supabaseClient';
 
 export const supabaseLocalitiesService = {
   // Try to read from dedicated tables first; fall back to properties table if tables don't exist
@@ -18,7 +18,7 @@ export const supabaseLocalitiesService = {
       const { data, error } = await supabase.from('properties').select('region');
       if (error) throw error;
       const uniqueRegions = [...new Set((data || []).map((d: any) => d.region).filter(Boolean))];
-      return uniqueRegions;
+      return uniqueRegions as string[];
     } catch (e) {
       console.error('Get regions fallback error:', e);
       return [];
@@ -40,7 +40,7 @@ export const supabaseLocalitiesService = {
       const { data, error } = await supabase.from('properties').select('city').eq('region', region);
       if (error) throw error;
       const uniqueCities = [...new Set((data || []).map((d: any) => d.city).filter(Boolean))];
-      return uniqueCities;
+      return uniqueCities as string[];
     } catch (e) {
       console.error('Get cities fallback error:', e);
       return [];
@@ -62,7 +62,7 @@ export const supabaseLocalitiesService = {
       const { data, error } = await supabase.from('properties').select('neighborhood').eq('city', city);
       if (error) throw error;
       const uniqueNeighborhoods = [...new Set((data || []).map((d: any) => d.neighborhood).filter(Boolean))];
-      return uniqueNeighborhoods;
+      return uniqueNeighborhoods as string[];
     } catch (e) {
       console.error('Get neighborhoods fallback error:', e);
       return [];

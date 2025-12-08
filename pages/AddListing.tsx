@@ -58,7 +58,8 @@ export const AddListing: React.FC = () => {
     const files = e.target.files;
     if (!files) return;
     const arr: string[] = [];
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach(rawFile => {
+      const file = rawFile as File;
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
@@ -67,7 +68,7 @@ export const AddListing: React.FC = () => {
           if (arr.length === files.length) setImages(prev => [...prev, ...arr]);
         }
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(file as Blob);
     });
   };
 
