@@ -43,14 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function login(email: string, password: string) {
-    try {
-      const signed = await authService.signIn(email, password);
-      setUser(signed);
-      return signed;
-    } catch (err) {
-      console.error('Login error', err);
-      return null;
-    }
+    const signed = await authService.signIn(email, password);
+    setUser(signed);
+    return signed;
   }
 
   async function logout() {
@@ -63,27 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signInWithProvider(provider: string, redirectTo?: string) {
-    try {
-      const res = await authService.signInWithProvider(provider, redirectTo);
-      return res;
-    } catch (err) {
-      console.error('signInWithProvider error', err);
-      return null;
-    }
+    const res = await authService.signInWithProvider(provider, redirectTo);
+    return res;
   }
 
   async function register(data: { fullName: string; email: string; password: string; role?: any; phone?: string }) {
-    try {
-      const result = await authService.signUp(data as any);
-      // result is { user, requiresEmailConfirmation }
-      if (result && (result as any).user) {
-        setUser((result as any).user);
-      }
-      return result as any;
-    } catch (err) {
-      console.error('Register error', err);
-      return null;
+    const result = await authService.signUp(data as any);
+    if (result && (result as any).user) {
+      setUser((result as any).user);
     }
+    return result as any;
   }
 
   return (

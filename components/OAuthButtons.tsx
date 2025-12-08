@@ -18,8 +18,10 @@ export default function OAuthButtons({ className }: OAuthButtonsProps) {
 
   const handleProvider = async (provider: string) => {
     try {
+      // Compute redirect URL: prefer explicit env, otherwise use current origin + /auth/callback
+      const redirectTo = (import.meta.env.VITE_SUPABASE_REDIRECT_URL as string | undefined) || (typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined);
       // Initiates OAuth flow (redirect handled by Supabase)
-      await signInWithProvider(provider, import.meta.env.VITE_SUPABASE_REDIRECT_URL as string | undefined);
+      await signInWithProvider(provider, redirectTo);
     } catch (err) {
       console.error('OAuth sign-in error', err);
     }
