@@ -30,18 +30,16 @@ export const translations = {
       edit: 'Modifier',
       save: 'Enregistrer',
     },
-    addProperty: {
-      title: 'Ajouter une Nouvelle Annonce',
-      submit_btn: 'Publier l\'Annonce',
+    footer: {
+      about: 'À propos',
+      contact: 'Contact',
     },
-    footer: { about: 'À propos', contact: 'Contact' },
   },
   en: {
     navbar: { home: 'Home', listings: 'Listings', about: 'About', contact: 'Contact', login: 'LOGIN', signup: 'SIGNUP', dashboard: 'Dashboard', profile: 'Profile Settings', logout: 'Logout' },
     login: { title: 'Login', email: 'Email', password: 'Password', login_btn: 'Login', google_signin: 'Sign in with Google' },
     signup: { title: 'Sign Up', full_name: 'Full Name', email: 'Email', password: 'Password', signup_btn: 'Sign Up' },
     profile: { title: 'Profile', edit: 'Edit', save: 'Save' },
-    addProperty: { title: 'Add New Listing', submit_btn: 'Publish Listing' },
     footer: { about: 'About', contact: 'Contact' },
   },
 };

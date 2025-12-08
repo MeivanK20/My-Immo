@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { User as UserIcon, Mail, Calendar, Shield, Trash2, Save, X, Phone, Lock, Briefcase, Upload, Camera } from 'lucide-react';
 import { RoutePath } from '../types';
 import { useAuth } from '../services/authContext';
-import { supabaseAuthService } from '../services/supabaseAuthService';
-import { useLanguage } from '../services/languageContext';
+import authService from '../services/authService';
 
 export const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
-  const { user: currentUser, setUser } = useAuth();
+  const { user: currentUser } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -78,23 +76,20 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const handleSavePhoto = () => {
+  const handleSavePhoto = async () => {
     if (tempPhoto) {
       setProfilePhoto(tempPhoto);
-      // Update user profile in Supabase
-      (async () => {
-        try {
-          const updated = await supabaseAuthService.updateUserProfile(currentUser.id, { profilePhoto: tempPhoto });
-          setUser(updated);
-          setTempPhoto(undefined);
-          setIsPhotoChanged(false);
-          setSuccessMessage('Photo de profil mise à jour avec succès!');
-          setTimeout(() => setSuccessMessage(''), 3000);
-        } catch (e) {
-          console.error('Failed to update profile photo:', e);
-          setErrors(prev => ({ ...prev, photo: 'Impossible de mettre à jour la photo de profil' }));
-        }
-      })();
+      
+      // Update profile via Supabase
+      try {
+        await authService.updateUserProfile(currentUser.id, { profilePhoto: tempPhoto });
+        setProfilePhoto(tempPhoto);
+        setSuccessMessage('Photo de profil mise à jour avec succès!');
+        // refresh the page or user state
+        setTimeout(() => window.location.reload(), 900);
+      } catch (err) {
+        setErrors(prev => ({ ...prev, photo: 'Impossible de mettre à jour la photo' }));
+      }
     }
   };
 
@@ -104,19 +99,15 @@ export const Profile: React.FC = () => {
     setErrors(prev => ({ ...prev, photo: '' }));
   };
 
-  const handleRemovePhoto = () => {
-    setProfilePhoto(undefined);
-    (async () => {
-      try {
-        const updated = await supabaseAuthService.updateUserProfile(currentUser.id, { profilePhoto: null });
-        setUser(updated);
-        setSuccessMessage('Photo de profil supprimée');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } catch (e) {
-        console.error('Failed to remove profile photo:', e);
-        setErrors(prev => ({ ...prev, photo: 'Impossible de supprimer la photo de profil' }));
-      }
-    })();
+  const handleRemovePhoto = async () => {
+    try {
+      await authService.updateUserProfile(currentUser.id, { profilePhoto: null });
+      setProfilePhoto(undefined);
+      setSuccessMessage('Photo de profil supprimée');
+      setTimeout(() => window.location.reload(), 900);
+    } catch (err) {
+      setErrors(prev => ({ ...prev, photo: 'Impossible de supprimer la photo' }));
+    }
   };
 
   const validateForm = () => {
@@ -135,7 +126,7 @@ export const Profile: React.FC = () => {
     return newErrors;
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     const newErrors = validateForm();
     
     if (Object.keys(newErrors).length > 0) {
@@ -143,22 +134,18 @@ export const Profile: React.FC = () => {
       return;
     }
 
-    (async () => {
-      try {
-        const updated = await supabaseAuthService.updateUserProfile(currentUser.id, {
-          fullName: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-        });
-        setUser(updated);
-        setIsEditing(false);
-        setSuccessMessage('Profil mis à jour avec succès!');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } catch (e) {
-        console.error('Failed to update profile:', e);
-        setErrors(prev => ({ ...prev, submit: 'Impossible de mettre à jour le profil' }));
-      }
-    })();
+    try {
+      await authService.updateUserProfile(currentUser.id, {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+      });
+      setIsEditing(false);
+      setSuccessMessage('Profil mis à jour avec succès!');
+      setTimeout(() => window.location.reload(), 900);
+    } catch (err) {
+      setErrors({ submit: 'Impossible de mettre à jour le profil' });
+    }
   };
 
   const handleCancel = () => {
@@ -178,22 +165,17 @@ export const Profile: React.FC = () => {
   const confirmDeleteAccount = () => {
     (async () => {
       try {
-        await supabaseAuthService.deleteAccount(currentUser.id);
-      } catch (e) {
-        console.warn('Failed to delete account in DB:', e);
+        await authService.deleteAccount(currentUser.id);
+        await authService.signOut();
+      } catch (err) {
+        console.error('Delete account failed', err);
+      } finally {
+        navigate(RoutePath.HOME);
       }
-      try {
-        await supabaseAuthService.signout();
-      } catch (e) {
-        console.warn('Signout failed after delete:', e);
-      }
-      // clear context
-      setUser(null);
-      navigate(RoutePath.HOME);
     })();
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     const newErrors: { [key: string]: string } = {};
 
     if (!passwordData.currentPassword) {
@@ -213,40 +195,26 @@ export const Profile: React.FC = () => {
       return;
     }
 
-    // Supabase enforces secure password updates; recommend password-reset flow
-    (async () => {
-      try {
-        // Attempt to trigger a password reset email
-        const resetFn = (supabaseAuthService as any).sendPasswordReset;
-        if (typeof resetFn === 'function') {
-          await resetFn(currentUser.email);
-          setSuccessMessage('Un email de réinitialisation a été envoyé.');
-        } else {
-          setSuccessMessage('Utilisez la fonctionnalité de réinitialisation de mot de passe.');
-        }
-        setShowPasswordModal(false);
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setTimeout(() => setSuccessMessage(''), 4000);
-      } catch (e) {
-        console.error('Failed to trigger password reset:', e);
-        setErrors(prev => ({ ...prev, password: 'Impossible de changer le mot de passe' }));
-      }
-    })();
+    try {
+      await authService.changePassword(passwordData.newPassword);
+      setShowPasswordModal(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setSuccessMessage('Mot de passe mis à jour avec succès!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setErrors({ currentPassword: 'Impossible de changer le mot de passe' });
+    }
   };
 
-  const handleBecomeAgent = () => {
-    (async () => {
-      try {
-        const updated = await supabaseAuthService.updateUserProfile(currentUser.id, { role: 'agent' });
-        setUser(updated);
-        setShowBecomeAgentModal(false);
-        setSuccessMessage('Vous êtes maintenant Agent Immobilier!');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } catch (e) {
-        console.error('Failed to become agent:', e);
-        setErrors(prev => ({ ...prev, submit: 'Impossible de devenir agent pour le moment' }));
-      }
-    })();
+  const handleBecomeAgent = async () => {
+    try {
+      await authService.updateUserProfile(currentUser.id, { role: 'agent' });
+      setShowBecomeAgentModal(false);
+      setSuccessMessage('Vous êtes maintenant Agent Immobilier!');
+      setTimeout(() => window.location.reload(), 900);
+    } catch (err) {
+      setErrors({ submit: 'Impossible de devenir agent pour le moment' });
+    }
   };
 
   const getRoleLabel = () => {
@@ -262,7 +230,7 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'long',

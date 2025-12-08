@@ -15,17 +15,11 @@ export interface Property {
   title: string;
   price: number;
   address: string;
-  region: string;
-  city: string;
-  neighborhood: string;
   beds: number;
   baths: number;
   sqft: number;
   imageUrl: string;
   tag: string;
-  description?: string;
-  featured?: boolean;
-  agentId?: string;
 }
 
 export interface ChatMessage {
@@ -39,16 +33,15 @@ export enum RoutePath {
   HOME = '/',
   LOGIN = '/login',
   SIGNUP = '/signup',
-  PASSWORD_RESET = '/password-reset',
+  FORGOT_PASSWORD = '/forgot-password',
   LISTINGS = '/listings',
+  ADD_LISTING = '/add-listing',
   DASHBOARD = '/dashboard',
-  ADD_PROPERTY = '/add-property',
   ADMIN_DASHBOARD = '/admin',
   PROFILE = '/profile',
-  ABOUT = '/about',
-  CONTACT = '/contact',
-  CAREERS = '/careers',
-  TERMS = '/terms',
-  PRIVACY = '/privacy',
+  ABOUT = 'about',
+  CAREERS = 'careers',
+  TERMS_OF_USE = 'terms',
+  PRIVACY_POLICY = 'privacy',
   AUTH_CALLBACK = '/auth/callback',
 }

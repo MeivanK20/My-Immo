@@ -1,30 +1,21 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn, Menu, X, Globe, Settings, LogOut } from 'lucide-react';
+import { LogIn, Menu, X, Settings, LogOut } from 'lucide-react';
 import { RoutePath } from '../types';
 import { useAuth } from '../services/authContext';
-import { supabaseAuthService } from '../services/supabaseAuthService';
-import { useLanguage } from '../services/languageContext';
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [isLanguageOpen, setIsLanguageOpen] = React.useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
-  const { user: currentUser, setUser } = useAuth();
+  const { user: currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { language, setLanguage, t } = useLanguage();
 
   const isActive = (path: string) => location.pathname === path;
 
-  const handleLanguageChange = (lang: 'fr' | 'en') => {
-    setLanguage(lang);
-    setIsLanguageOpen(false);
-  };
+  // Language selector removed - site is French only
 
-  React.useEffect(() => {
-    // no-op: `currentUser` comes from AuthProvider
-  }, [currentUser]);
+  // currentUser is provided by AuthContext
 
   const initials = (name?: string) => {
     if (!name) return 'U';
@@ -37,16 +28,9 @@ export const Navbar: React.FC = () => {
   };
 
   const handleUserMenuLogout = () => {
-    (async () => {
-      try {
-        await supabaseAuthService.signout();
-      } catch (e) {
-        console.warn('Signout error:', e);
-      }
-      setUser(null);
-      setIsUserMenuOpen(false);
-      navigate(RoutePath.HOME);
-    })();
+    logout();
+    setIsUserMenuOpen(false);
+    navigate(RoutePath.HOME);
   };
 
   const renderUserMenu = () => {
@@ -111,41 +95,28 @@ export const Navbar: React.FC = () => {
 
           <div className="hidden md:flex items-center space-x-4">
             {currentUser ? (
-              <React.Fragment>
+              <>
                 <Link
                   to={RoutePath.HOME}
                   className={`text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${isActive(RoutePath.HOME) ? 'text-primary-600' : ''}`}
                 >
-                  {t('navbar.home')}
+                  Accueil
                 </Link>
-
                 <Link
                   to={RoutePath.LISTINGS}
                   className={`text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${isActive(RoutePath.LISTINGS) ? 'text-primary-600' : ''}`}
                 >
-                  {t('navbar.listings')}
+                  Annonces
                 </Link>
+                <a href="#about" className="text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">À propos</a>
+                <a href="#contact" className="text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
 
-                <Link
-                  to={RoutePath.ABOUT}
-                  className={`text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${isActive(RoutePath.ABOUT) ? 'text-primary-600' : ''}`}
-                >
-                  {t('navbar.about')}
-                </Link>
-
-                <Link
-                  to={RoutePath.CONTACT}
-                  className={`text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${isActive(RoutePath.CONTACT) ? 'text-primary-600' : ''}`}
-                >
-                  {t('navbar.contact')}
-                </Link>
-
+                {/* User info */}
                 <div className="flex items-center gap-3 ml-4">
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900">{currentUser.fullName}</div>
-                    <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? t('navbar.visitor') : currentUser.role === 'agent' ? t('navbar.agent') : t('navbar.admin_role')}</div>
+                    <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? 'Visiteur' : currentUser.role === 'agent' ? 'Agent' : 'Admin'}</div>
                   </div>
-
                   <div className="relative">
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -155,34 +126,11 @@ export const Navbar: React.FC = () => {
                     </button>
                     {isUserMenuOpen && renderUserMenu()}
                   </div>
-
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                      className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                      title={`Langue actuelle: ${language === 'fr' ? 'Français' : 'English'}`}
-                    >
-                      <span className="text-2xl">{language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
-                    </button>
-
-                    {isLanguageOpen && (
-                      <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                        <button onClick={() => handleLanguageChange('fr')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'fr' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          <span className="text-2xl">🇫🇷</span>
-                          <span>{t('navbar.language')}: Français</span>
-                        </button>
-
-                        <button onClick={() => handleLanguageChange('en')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'en' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          <span className="text-2xl">🇬🇧</span>
-                          <span>{t('navbar.language')}: English</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
-              </React.Fragment>
+                {/* Language selector removed - site French only */}
+              </>
             ) : (
-              <React.Fragment>
+              <>
                 <Link
                   to={RoutePath.LOGIN}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -192,40 +140,17 @@ export const Navbar: React.FC = () => {
                   }`}
                 >
                   <LogIn size={18} />
-                  {t('navbar.login')}
+                  CONNEXION
                 </Link>
-
                 <Link
                   to={RoutePath.SIGNUP}
                   className="bg-primary-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
                 >
-                  {t('navbar.signup')}
+                  INSCRIPTION
                 </Link>
 
-                <div className="relative">
-                  <button
-                    onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                    title={`Langue actuelle: ${language === 'fr' ? 'Français' : 'English'}`}
-                  >
-                    <span className="text-2xl">{language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
-                  </button>
-
-                  {isLanguageOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                      <button onClick={() => handleLanguageChange('fr')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'fr' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                        <span className="text-2xl">🇫🇷</span>
-                        <span>Français</span>
-                      </button>
-
-                      <button onClick={() => handleLanguageChange('en')} className={`w-full text-left px-4 py-3 text-sm font-medium flex items-center gap-2 ${language === 'en' ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                        <span className="text-2xl">🇬🇧</span>
-                        <span>English</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </React.Fragment>
+                {/* Language selector removed - site French only */}
+              </>
             )}
           </div>
 
@@ -255,7 +180,7 @@ export const Navbar: React.FC = () => {
                       : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
                   }`}
                 >
-                  {t('navbar.home')}
+                  Accueil
                 </Link>
                 <Link
                   to={RoutePath.LISTINGS}
@@ -266,32 +191,14 @@ export const Navbar: React.FC = () => {
                       : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
                   }`}
                 >
-                  {t('navbar.listings')}
+                  Annonces
                 </Link>
-
-                <Link
-                  to={RoutePath.ABOUT}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-2 block px-3 py-2 rounded-md text-base font-medium ${
-                    isActive(RoutePath.ABOUT)
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {t('navbar.about')}
-                </Link>
-
-                <Link
-                  to={RoutePath.CONTACT}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-2 block px-3 py-2 rounded-md text-base font-medium ${
-                    isActive(RoutePath.CONTACT)
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {t('navbar.contact')}
-                </Link>
+                <a href="#about" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50">
+                  À propos
+                </a>
+                <a href="#contact" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50">
+                  Contact
+                </a>
 
                 {/* Mobile User Menu */}
                 <div className="border-t border-gray-200 mt-3 pt-3">
@@ -301,7 +208,7 @@ export const Navbar: React.FC = () => {
                     </div>
                     <div className="text-right flex-1">
                       <div className="text-sm font-medium text-gray-900">{currentUser.fullName}</div>
-                      <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? t('navbar.visitor') : currentUser.role === 'agent' ? t('navbar.agent') : t('navbar.admin_role')}</div>
+                      <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? 'Visiteur' : currentUser.role === 'agent' ? 'Agent' : 'Admin'}</div>
                     </div>
                   </div>
                   
@@ -313,7 +220,7 @@ export const Navbar: React.FC = () => {
                       }}
                       className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
-                      {t('navbar.admin')}
+                      Panel Admin
                     </button>
                   )}
                   
@@ -325,7 +232,7 @@ export const Navbar: React.FC = () => {
                       }}
                       className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
-                      {t('navbar.dashboard')}
+                      Tableau de bord
                     </button>
                   )}
                   
@@ -337,7 +244,7 @@ export const Navbar: React.FC = () => {
                     className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                   >
                     <Settings size={16} />
-                    {t('navbar.profile')}
+                    Paramètres du profil
                   </button>
                   
                   <button
@@ -348,39 +255,11 @@ export const Navbar: React.FC = () => {
                     className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-gray-200"
                   >
                     <LogOut size={16} />
-                    {t('navbar.logout')}
+                    Déconnexion
                   </button>
                 </div>
 
-                {/* Mobile Language Selector */}
-                <div className="border-t border-gray-200 mt-3 pt-3">
-                  <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
-                    <Globe size={18} />
-                    <span className="text-sm font-medium">{t('navbar.language')}</span>
-                  </div>
-                  <button
-                    onClick={() => handleLanguageChange('fr')}
-                    className={`w-full text-left px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
-                      language === 'fr'
-                        ? 'bg-primary-50 text-primary-600'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>🇫🇷</span>
-                    {t('navbar.language')}: Français
-                  </button>
-                  <button
-                    onClick={() => handleLanguageChange('en')}
-                    className={`w-full text-left px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
-                      language === 'en'
-                        ? 'bg-primary-50 text-primary-600'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>🇬🇧</span>
-                    {t('navbar.language')}: English
-                  </button>
-                </div>
+                {/* Mobile language selector removed */}
               </>
             ) : (
               <>
@@ -404,35 +283,7 @@ export const Navbar: React.FC = () => {
                   INSCRIPTION
                 </Link>
 
-                {/* Mobile Language Selector */}
-                <div className="border-t border-gray-200 mt-3 pt-3">
-                  <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
-                    <Globe size={18} />
-                    <span className="text-sm font-medium">Langue</span>
-                  </div>
-                  <button
-                    onClick={() => handleLanguageChange('fr')}
-                    className={`w-full text-left px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
-                      language === 'fr'
-                        ? 'bg-primary-50 text-primary-600'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>🇫🇷</span>
-                    Français
-                  </button>
-                  <button
-                    onClick={() => handleLanguageChange('en')}
-                    className={`w-full text-left px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
-                      language === 'en'
-                        ? 'bg-primary-50 text-primary-600'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>🇬🇧</span>
-                    English
-                  </button>
-                </div>
+                {/* Mobile language selector removed */}
               </>
             )}
           </div>

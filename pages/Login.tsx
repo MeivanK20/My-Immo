@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, Chrome } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { RoutePath } from '../types';
-import { supabaseAuthService } from '../services/supabaseAuthService';
-import { useLanguage } from '../services/languageContext';
+import { useAuth } from '../services/authContext';
+import OAuthButtons from '../components/OAuthButtons';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -20,30 +19,20 @@ export const Login: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!email.trim()) {
-      newErrors.email = t('login.email_required');
+      newErrors.email = 'L\'adresse email est requise';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = t('login.email_invalid');
+      newErrors.email = 'Veuillez entrer une adresse email valide';
     }
 
     if (!password) {
-      newErrors.password = t('login.password_required');
+      newErrors.password = 'Le mot de passe est requis';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsSubmitting(true);
-      await supabaseAuthService.signInWithGoogle();
-    } catch (error: any) {
-      setErrors({ submit: 'Erreur lors de la connexion avec Google' });
-      console.error('Google sign in error:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,9 +44,12 @@ export const Login: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const user = await supabaseAuthService.signin(email, password);
-
-      // Supabase session is the source of truth; AuthProvider will pick up changes
+      console.log('Connexion:', { email, rememberMe });
+      const user = await login(email, password);
+      if (!user) {
+        setErrors({ submit: 'Identifiants invalides' });
+        return;
+      }
 
       if (user.role === 'admin') {
         navigate(RoutePath.ADMIN_DASHBOARD);
@@ -66,9 +58,8 @@ export const Login: React.FC = () => {
       } else {
         navigate(RoutePath.LISTINGS);
       }
-    } catch (error: any) {
-      setErrors({ submit: t('login.invalid_credentials') });
-      console.error('Login error:', error);
+    } catch (error) {
+      setErrors({ submit: 'Une erreur est survenue lors de la connexion' });
     } finally {
       setIsSubmitting(false);
     }
@@ -88,9 +79,9 @@ export const Login: React.FC = () => {
 
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
         <div className="text-center">
-          <h2 className="text-2xl font-extrabold text-gray-900">{t('login.title')}</h2>
+          <h2 className="text-2xl font-extrabold text-gray-900">Connexion</h2>
           <p className="mt-2 text-sm text-gray-600">
-            {t('login.login_btn')}
+            Connectez-vous pour accéder à votre espace
           </p>
         </div>
 
@@ -99,7 +90,7 @@ export const Login: React.FC = () => {
           <div className="space-y-4">
             <div className="relative">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('login.email')}
+                Email
               </label>
               <div className="absolute left-3 top-9 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-gray-400" />
@@ -123,7 +114,7 @@ export const Login: React.FC = () => {
             {/* Password Field */}
             <div className="relative">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('login.password')}
+                Mot de passe
               </label>
               <div className="absolute left-3 top-9 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-gray-400" />
@@ -145,6 +136,8 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
+          <OAuthButtons className="mt-4" />
+
           {/* Remember Me & Forgot Password */}
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -157,13 +150,13 @@ export const Login: React.FC = () => {
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                {t('login.remember')}
+                Se souvenir de moi
               </label>
             </div>
             <div className="text-sm">
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+              <Link to={RoutePath.FORGOT_PASSWORD} className="font-medium text-primary-600 hover:text-primary-500">
                 Mot de passe oublié ?
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -177,41 +170,18 @@ export const Login: React.FC = () => {
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                 <ArrowRight className="h-5 w-5 text-primary-500 group-hover:text-primary-400 transition-colors" />
               </span>
-              {isSubmitting ? `${t('login.login_btn')}...` : t('login.login_btn')}
+              {isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
             </button>
           </div>
 
           {errors.submit && <p className="text-center text-sm text-red-600">{errors.submit}</p>}
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">{t('login.or_divider')}</span>
-            </div>
-          </div>
-
-          {/* Google Sign In Button */}
-          <div>
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={isSubmitting}
-              className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Chrome className="h-5 w-5 mr-2 text-red-500" />
-              {t('login.google_signin')}
-            </button>
-          </div>
         </form>
 
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600">
-            {t('login.signup_link').split('?')[0]}
+            Pas encore de compte ?{' '}
             <a href="/signup" className="font-medium text-primary-600 hover:text-primary-500">
-              {t('login.signup_link').split('?')[1] || 'Sign up'}
+              Créer un compte
             </a>
           </p>
         </div>

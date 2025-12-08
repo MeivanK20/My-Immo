@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, User, Briefcase, Building2, Check, Chrome } from 'lucide-react';
+import { Mail, Lock, ArrowRight, User, Briefcase, Building2, Check, Phone } from 'lucide-react';
 import { UserRole, RoutePath } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { supabaseAuthService } from '../services/supabaseAuthService';
-import { useLanguage } from '../services/languageContext';
+import { useAuth } from '../services/authContext';
+import OAuthButtons from '../components/OAuthButtons';
 
 export const Signup: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
     role: 'visitor' as UserRole,
@@ -62,6 +63,12 @@ export const Signup: React.FC = () => {
       newErrors.email = 'Veuillez entrer une adresse email valide';
     }
 
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Le numéro de téléphone est requis';
+    } else if (!/^[0-9\s\-\+\(\)]{8,20}$/.test(formData.phone)) {
+      newErrors.phone = 'Veuillez entrer un numéro de téléphone valide';
+    }
+
     if (!formData.password) {
       newErrors.password = 'Le mot de passe est requis';
     } else if (formData.password.length < 8) {
@@ -99,43 +106,39 @@ export const Signup: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const newUser = await supabaseAuthService.signup(
-        formData.email,
-        formData.password,
-        formData.fullName,
-        formData.role,
-        formData.role === 'agent' ? formData.agencyName : undefined,
-        formData.role === 'agent' ? formData.agencyLicense : undefined
-      );
+      const result = await register({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role: formData.role,
+      });
+
+      if (!result) {
+        setErrors({ submit: 'Impossible de créer le compte' });
+        return;
+      }
+
+      // If Supabase requires email confirmation, inform the user and do not redirect.
+      if (result.requiresEmailConfirmation) {
+        setSuccessMessage('Inscription réussie. Veuillez vérifier votre e‑mail pour confirmer votre compte.');
+        return;
+      }
+
+      const newUser = (result as any).user as any;
 
       setSuccessMessage('Inscription réussie! Redirection en cours...');
-      
-      // Supabase session is the source of truth; AuthProvider will pick up changes
-
       setTimeout(() => {
-        if (newUser.role === 'admin') {
+        if (newUser?.role === 'admin') {
           navigate(RoutePath.ADMIN_DASHBOARD);
-        } else if (newUser.role === 'agent') {
+        } else if (newUser?.role === 'agent') {
           navigate(RoutePath.DASHBOARD);
         } else {
           navigate(RoutePath.LISTINGS);
         }
       }, 800);
-    } catch (error: any) {
-      setErrors({ submit: error.message || 'Une erreur est survenue lors de l\'inscription' });
-      console.error('Signup error:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleGoogleSignUp = async () => {
-    try {
-      setIsSubmitting(true);
-      await supabaseAuthService.signUpWithGoogle();
-    } catch (error: any) {
-      setErrors({ submit: 'Erreur lors de l\'inscription avec Google' });
-      console.error('Google sign up error:', error);
+    } catch (error) {
+      setErrors({ submit: (error as Error).message || 'Une erreur est survenue lors de l\'inscription' });
     } finally {
       setIsSubmitting(false);
     }
@@ -156,7 +159,7 @@ export const Signup: React.FC = () => {
       <div className="max-w-2xl w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
         <div className="text-center">
           <h2 className="text-2xl font-extrabold text-gray-900">
-            {t('signup.title')}
+            Créer un compte
           </h2>
         </div>
 
@@ -173,7 +176,7 @@ export const Signup: React.FC = () => {
           <div className="space-y-4">
             <div className="relative">
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('signup.full_name')}
+                Nom complet
               </label>
               <div className="absolute left-3 top-10 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-gray-400" />
@@ -195,7 +198,7 @@ export const Signup: React.FC = () => {
 
             <div className="relative">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('signup.email')}
+                Adresse email
               </label>
               <div className="absolute left-3 top-10 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-gray-400" />
@@ -216,8 +219,30 @@ export const Signup: React.FC = () => {
             </div>
 
             <div className="relative">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                Numéro de téléphone
+              </label>
+              <div className="absolute left-3 top-10 flex items-center pointer-events-none">
+                <Phone className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                className={`appearance-none relative block w-full px-3 py-3 pl-10 border rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent sm:text-sm transition-all ${
+                  errors.phone ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="+237 699 00 00 00"
+                value={formData.phone}
+                onChange={handleInputChange}
+              />
+              {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+            </div>
+
+            <div className="relative">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('signup.password')}
+                Mot de passe
               </label>
               <div className="absolute left-3 top-10 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-gray-400" />
@@ -239,7 +264,7 @@ export const Signup: React.FC = () => {
 
             <div className="relative">
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('signup.confirm_password')}
+                Confirmer le mot de passe
               </label>
               <div className="absolute left-3 top-10 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-gray-400" />
@@ -262,7 +287,7 @@ export const Signup: React.FC = () => {
 
           {/* Role Selection - Below fields */}
           <div className="space-y-3">
-            <label className="text-sm font-semibold text-gray-900">{t('signup.role')}</label>
+            <label className="text-sm font-semibold text-gray-900">Type de compte</label>
             <div className="flex flex-col gap-3">
               {/* Visitor Role */}
               <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
@@ -328,7 +353,7 @@ export const Signup: React.FC = () => {
               
               <div className="relative">
                 <label htmlFor="agencyName" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('signup.company_name')}
+                  Nom de l'agence
                 </label>
                 <input
                   id="agencyName"
@@ -347,7 +372,7 @@ export const Signup: React.FC = () => {
 
               <div className="relative">
                 <label htmlFor="agencyLicense" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('signup.license_number')}
+                  Numéro de licence / RCCM
                 </label>
                 <input
                   id="agencyLicense"
@@ -400,43 +425,22 @@ export const Signup: React.FC = () => {
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                 <ArrowRight className="h-5 w-5 text-primary-500 group-hover:text-primary-400 transition-colors" />
               </span>
-              {isSubmitting ? 'Inscription en cours...' : t('signup.signup_btn')}
+              {isSubmitting ? 'Inscription en cours...' : 'Créer mon compte'}
             </button>
           </div>
 
           {errors.submit && <p className="text-center text-sm text-red-600">{errors.submit}</p>}
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">{t('signup.or_divider')}</span>
-            </div>
-          </div>
-
-          {/* Google Sign Up Button */}
-          <div>
-            <button
-              type="button"
-              onClick={handleGoogleSignUp}
-              disabled={isSubmitting}
-              className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Chrome className="h-5 w-5 mr-2 text-red-500" />
-              {t('signup.google_signup')}
-            </button>
-          </div>
         </form>
+        <OAuthButtons className="mt-4" />
 
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600">
+            Vous avez déjà un compte ?{' '}
             <Link 
               to={RoutePath.LOGIN}
               className="font-medium text-primary-600 hover:text-primary-500"
             >
-              {t('signup.login_link')}
+              Se connecter
             </Link>
           </p>
         </div>

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Users, Home, MessageSquare, BarChart3, Search, Edit2, Trash2, Eye, Ban, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { RoutePath, User } from '../types';
-import { useLanguage } from '../services/languageContext';
 
 interface DashboardStats {
   totalUsers: number;
@@ -15,7 +14,6 @@ interface DashboardStats {
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'properties' | 'messages'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [showUserModal, setShowUserModal] = useState(false);

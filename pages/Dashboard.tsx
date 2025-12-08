@@ -3,8 +3,6 @@ import { Plus, Edit2, Trash2, MessageSquare, Eye, Home } from 'lucide-react';
 import { PROPERTIES } from '../constants';
 import { RoutePath } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../services/languageContext';
-import { useAuth } from '../services/authContext';
 
 interface Message {
   id: string;
@@ -17,8 +15,6 @@ interface Message {
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
-  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'listings' | 'messages'>('listings');
   const [userListings] = useState(PROPERTIES.slice(0, 3)); // Simule les annonces de l'agent
   const [messages] = useState<Message[]>([
@@ -49,7 +45,7 @@ export const Dashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
               <p className="text-gray-600 mt-1">Bienvenue, Agent Immobilier</p>
             </div>
           </div>
@@ -70,7 +66,7 @@ export const Dashboard: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <Home size={18} />
-                {t('dashboard.my_listings')} ({userListings.length})
+                Mes Annonces ({userListings.length})
               </div>
             </button>
             <button
@@ -83,7 +79,7 @@ export const Dashboard: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <MessageSquare size={18} />
-                {t('dashboard.messages')} {unreadCount > 0 && <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">{unreadCount}</span>}
+                Messages {unreadCount > 0 && <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">{unreadCount}</span>}
               </div>
             </button>
           </div>
@@ -95,10 +91,8 @@ export const Dashboard: React.FC = () => {
         {activeTab === 'listings' && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{t('dashboard.my_listings')}</h2>
-              <button 
-                onClick={() => navigate(RoutePath.ADD_PROPERTY)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              <h2 className="text-2xl font-bold text-gray-900">Mes Annonces</h2>
+              <button onClick={() => navigate(RoutePath.ADD_LISTING)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                 <Plus size={18} />
                 Nouvelle Annonce
               </button>
@@ -108,9 +102,7 @@ export const Dashboard: React.FC = () => {
               <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
                 <Home size={48} className="mx-auto text-gray-400 mb-4" />
                 <p className="text-gray-600">Vous n'avez pas encore d'annonces</p>
-                <button 
-                  onClick={() => navigate(RoutePath.ADD_PROPERTY)}
-                  className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <button onClick={() => navigate(RoutePath.ADD_LISTING)} className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                   Créer une annonce
                 </button>
               </div>
@@ -153,7 +145,7 @@ export const Dashboard: React.FC = () => {
 
         {activeTab === 'messages' && (
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('dashboard.messages')}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Messages</h2>
 
             {messages.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg border border-gray-200">

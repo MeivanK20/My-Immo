@@ -1,67 +1,72 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoutePath } from '../types';
-import { supabaseAuthService } from '../services/supabaseAuthService';
+
+function parseHash(hash: string) {
+  // hash may look like: #access_token=...&expires_in=...
+  if (!hash) return {} as Record<string, string>;
+  return Object.fromEntries(hash.replace(/^#/, '').split('&').map((p) => {
+    const [k, v] = p.split('=');
+    return [decodeURIComponent(k), decodeURIComponent(v || '')];
+  }));
+}
 
 export const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        // Get the current user from the Supabase session
-        const user = await supabaseAuthService.handleOAuthCallback();
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const errorCode = params.get('error_code');
+    const errorDescription = params.get('error_description');
 
-        if (user) {
-          // Supabase session is the source of truth; AuthProvider will pick up changes
-          // Redirect based on user role
-          if (user.role === 'admin') {
-            navigate(RoutePath.ADMIN_DASHBOARD);
-          } else if (user.role === 'agent') {
-            navigate(RoutePath.DASHBOARD);
-          } else {
-            navigate(RoutePath.LISTINGS);
-          }
-        } else {
-          setError('Authentification échouée. Veuillez réessayer.');
-          setTimeout(() => navigate(RoutePath.LOGIN), 3000);
-        }
-      } catch (error: any) {
-        console.error('Auth callback error:', error);
-        setError('Une erreur est survenue lors de l\'authentification.');
-        setTimeout(() => navigate(RoutePath.LOGIN), 3000);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const hashParams = parseHash(window.location.hash);
 
-    handleAuthCallback();
+    // If there's an OAuth error returned by Supabase, display it briefly then navigate home
+    if (error || errorCode) {
+      // Keep the error visible for a moment so the user can read it
+      console.error('OAuth callback error', { error, errorCode, errorDescription });
+      return;
+    }
+
+    // If the hash contains access_token or other session info, just redirect home and let
+    // the auth subscription pick up the session.
+    if (hashParams['access_token'] || hashParams['session'] || params.get('access_token')) {
+      // small delay to ensure Supabase client stores the session
+      setTimeout(() => navigate(RoutePath.HOME), 600);
+      return;
+    }
+
+    // Default: navigate home after short delay
+    setTimeout(() => navigate(RoutePath.HOME), 600);
   }, [navigate]);
 
-  if (error) {
-    return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full text-center space-y-4">
-          <div className="text-red-600 text-lg font-semibold">{error}</div>
-          <p className="text-gray-600">Redirection en cours...</p>
-        </div>
-      </div>
-    );
-  }
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get('error');
+  const errorCode = params.get('error_code');
+  const errorDescription = params.get('error_description');
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full text-center space-y-4">
-        <div className="inline-block">
-          <svg className="animate-spin h-12 w-12 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </div>
-        <p className="text-gray-600">Traitement de votre authentification...</p>
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
+      <div className="max-w-xl w-full p-8 bg-white rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4">Authentification</h2>
+        {error || errorCode ? (
+          <div>
+            <p className="text-red-600 font-medium">Une erreur est survenue pendant l'authentification.</p>
+            <p className="mt-2 text-sm text-gray-700">Code: {errorCode || error}</p>
+            {errorDescription && <p className="mt-1 text-sm text-gray-600">Détails: {decodeURIComponent(errorDescription)}</p>}
+            <div className="mt-4">
+              <button onClick={() => window.location.href = '/'} className="px-4 py-2 rounded bg-primary-600 text-white">Retour</button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p className="text-gray-700">Finalisation de l'authentification... Vous allez être redirigé(e).</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+export default AuthCallback;

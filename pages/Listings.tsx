@@ -1,17 +1,40 @@
-import React, { useState } from 'react';
-import { Search, MapPin, Bed, Bath, Maximize2, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, MapPin, Filter } from 'lucide-react';
 import { PropertyCard } from '../components/PropertyCard';
-import { PROPERTIES } from '../constants';
+import { propertyService, Property } from '../services/propertyService';
 
 export const Listings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredProperties, setFilteredProperties] = useState(PROPERTIES);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Charger les propriétés au montage du composant
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        setLoading(true);
+        const data = await propertyService.getAllProperties();
+        setProperties(data);
+        setFilteredProperties(data);
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors du chargement des propriétés');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProperties();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const filtered = PROPERTIES.filter(property =>
+    const filtered = properties.filter(property =>
       property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.address.toLowerCase().includes(searchTerm.toLowerCase())
+      property.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.neighborhood.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.region.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredProperties(filtered);
   };
