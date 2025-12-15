@@ -7,7 +7,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<User | null>;
   logout: () => Promise<void>;
-  register: (data: { fullName: string; email: string; password: string; role?: string; phone?: string }) => Promise<{ user: User | null; requiresEmailConfirmation?: boolean } | null>;
+  register: (data: { fullName: string; email: string; password: string; role?: string; phone?: string; username?: string }) => Promise<{ user: User | null; requiresEmailConfirmation?: boolean } | null>;
   signInWithProvider: (provider: string, redirectTo?: string) => Promise<any | null>;
 }
 
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res;
   }
 
-  async function register(data: { fullName: string; email: string; password: string; role?: any; phone?: string }) {
+  async function register(data: { fullName: string; email: string; password: string; role?: any; phone?: string; username?: string }) {
     const result = await authService.signUp(data as any);
     if (result && (result as any).user) {
       setUser((result as any).user);

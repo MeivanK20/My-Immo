@@ -12,6 +12,9 @@ export const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   
 
@@ -59,9 +62,32 @@ export const Login: React.FC = () => {
         navigate(RoutePath.LISTINGS);
       }
     } catch (error) {
-      setErrors({ submit: 'Une erreur est survenue lors de la connexion' });
+      const msg = (error as Error).message || 'Une erreur est survenue lors de la connexion';
+      setErrors({ submit: msg });
+      // If the error indicates the email is not confirmed, surface a resend action
+      if (msg.toLowerCase().includes('confirmer') || msg.toLowerCase().includes('confirm')) {
+        setUnconfirmedEmail(email);
+      }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!unconfirmedEmail) return;
+    setResendLoading(true);
+    setResendMessage(null);
+    try {
+      const res = await (await import('../services/authService')).default.resendConfirmationEmail(unconfirmedEmail);
+      if (res && res.success) {
+        setResendMessage('Email de confirmation / lien magique envoyé. Vérifiez votre boîte de réception.');
+      } else {
+        setResendMessage(res.message || 'Impossible de renvoyer l\'email de confirmation.');
+      }
+    } catch (err) {
+      setResendMessage((err as Error).message || 'Erreur lors de l\'envoi');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -175,6 +201,19 @@ export const Login: React.FC = () => {
           </div>
 
           {errors.submit && <p className="text-center text-sm text-red-600">{errors.submit}</p>}
+          {unconfirmedEmail && (
+            <div className="mt-3 text-center">
+              <button
+                type="button"
+                onClick={handleResendConfirmation}
+                disabled={resendLoading}
+                className="text-sm text-primary-600 hover:text-primary-500 underline"
+              >
+                {resendLoading ? 'Envoi en cours...' : 'Renvoyer le mail de confirmation / envoyer un lien magique'}
+              </button>
+              {resendMessage && <p className="text-sm text-gray-700 mt-2">{resendMessage}</p>}
+            </div>
+          )}
         </form>
 
         <div className="text-center mt-6">

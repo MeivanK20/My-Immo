@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import supabase from '../services/supabaseClient';
+import { isSupabaseEnabled } from '../services/supabaseClient';
 
 export const DatabaseCheck: React.FC = () => {
   const [hasError, setHasError] = useState(false);
@@ -7,28 +7,13 @@ export const DatabaseCheck: React.FC = () => {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const checkDatabase = async () => {
-      try {
-        // Try a simple query to verify database is accessible
-        const { error } = await supabase.from('properties').select('id').limit(1);
-        
-        if (error && error.code === 'PGRST116') {
-          // Table does not exist
-          setHasError(true);
-          setErrorMessage('The "properties" table does not exist in your Supabase database.');
-        } else if (error) {
-          setHasError(true);
-          setErrorMessage(`Database error: ${error.message}`);
-        }
-      } catch (err: any) {
-        setHasError(true);
-        setErrorMessage(err?.message || 'Unknown database error');
-      } finally {
-        setIsChecking(false);
-      }
-    };
-
-    checkDatabase();
+    // If Supabase integration has been removed, show a informational banner
+    if (!isSupabaseEnabled) {
+      setHasError(true);
+      setErrorMessage('Supabase integration is disabled for this local build. The app uses local fallbacks (localStorage) instead.');
+      setIsChecking(false);
+      return;
+    }
   }, []);
 
   if (isChecking || !hasError) {

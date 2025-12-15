@@ -1,39 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+// Small helper that **enables Supabase only when env vars are present**.
+// This keeps the project flexible: local fallbacks continue to work unless
+// you set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in your env.
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-export const isSupabaseEnabled = Boolean(supabaseUrl && supabaseAnonKey);
+const url = (import.meta.env.VITE_SUPABASE_URL as string) || undefined;
+const key = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || undefined;
 
-// Export a `supabase` client or `null` when not configured to keep safe fallback behavior
-export const supabase = isSupabaseEnabled
-  ? createClient(supabaseUrl as string, supabaseAnonKey as string)
-  : (null as any);
+export const isSupabaseEnabled = Boolean(url && key);
+
+export const supabase: SupabaseClient | null = isSupabaseEnabled
+	? createClient(url!, key!)
+	: null;
 
 export default supabase;
 
-// Debug helper: in development, provide clear console warnings when Supabase isn't configured
-try {
-  const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  if (isDev) {
-    if (!isSupabaseEnabled) {
-      // Avoid printing keys; just indicate presence/absence
-      // eslint-disable-next-line no-console
-      console.warn(
-        '[supabaseClient] Supabase not configured. VITE_SUPABASE_URL present?',
-        Boolean(supabaseUrl),
-        'VITE_SUPABASE_ANON_KEY present?',
-        Boolean(supabaseAnonKey)
-      );
-    } else {
-      // eslint-disable-next-line no-console
-      console.debug('[supabaseClient] Supabase configured (URL and anon key present).');
-    }
-    if (!import.meta.env.VITE_SUPABASE_REDIRECT_URL) {
-      // eslint-disable-next-line no-console
-      console.info('[supabaseClient] VITE_SUPABASE_REDIRECT_URL is not set. OAuth redirect may be undefined.');
-    }
-  }
-} catch (e) {
-  // ignore any runtime errors in this debug block
-}
+// To enable Supabase:
+// 1) Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your `.env` or `.env.local`.
+// 2) Restart the dev server. The client will be created automatically when both
+//    variables are present.

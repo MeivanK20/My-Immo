@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { isSupabaseEnabled, supabase } from '../services/supabaseClient';
 import { Mail, Lock, ArrowRight, User, Briefcase, Building2, Check, Phone } from 'lucide-react';
 import { UserRole, RoutePath } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +11,7 @@ export const Signup: React.FC = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
+    username: '',
     fullName: '',
     email: '',
     phone: '',
@@ -55,6 +57,12 @@ export const Signup: React.FC = () => {
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Le nom complet est requis';
+    }
+
+    if (!formData.username.trim()) {
+      newErrors.username = 'Le nom d\'utilisateur est requis';
+    } else if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(formData.username)) {
+      newErrors.username = 'Nom d\'utilisateur invalide (3-30 chars, letters/numbers/._-)';
     }
 
     if (!formData.email.trim()) {
@@ -103,11 +111,30 @@ export const Signup: React.FC = () => {
       return;
     }
 
+    // If Supabase is enabled, check username uniqueness
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const uname = formData.username.trim();
+        if (uname) {
+          const { data: existing, error } = await supabase.from('profiles').select('id').ilike('username', uname);
+          if (error) {
+            console.warn('Username uniqueness check failed:', error);
+          } else if (existing && existing.length > 0) {
+            setErrors({ username: 'Ce nom d\'utilisateur est déjà pris' });
+            return setIsSubmitting(false);
+          }
+        }
+      } catch (err) {
+        console.warn('Username check error', err);
+      }
+    }
+
     setIsSubmitting(true);
     
     try {
       const result = await register({
         fullName: formData.fullName,
+        username: formData.username.trim(),
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
@@ -194,6 +221,28 @@ export const Signup: React.FC = () => {
                 onChange={handleInputChange}
               />
               {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+            </div>
+
+            <div className="relative">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Nom d'utilisateur
+              </label>
+              <div className="absolute left-3 top-10 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                className={`appearance-none relative block w-full px-3 py-3 pl-10 border rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent sm:text-sm transition-all ${
+                  errors.username ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="monpseudo"
+                value={formData.username}
+                onChange={handleInputChange}
+              />
+              {errors.username && <p className="mt-1 text-sm text-red-600">{errors.username}</p>}
             </div>
 
             <div className="relative">

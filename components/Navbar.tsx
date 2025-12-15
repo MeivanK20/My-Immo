@@ -19,6 +19,7 @@ export const Navbar: React.FC = () => {
 
   const initials = (name?: string) => {
     if (!name) return 'U';
+    // prefer username if provided; it may not include spaces
     return name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase();
   };
 
@@ -113,16 +114,16 @@ export const Navbar: React.FC = () => {
 
                 {/* User info */}
                 <div className="flex items-center gap-3 ml-4">
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">{currentUser.fullName}</div>
-                    <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? 'Visiteur' : currentUser.role === 'agent' ? 'Agent' : 'Admin'}</div>
-                  </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-gray-900">{currentUser.username || currentUser.fullName}</div>
+                      <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? 'Visiteur' : currentUser.role === 'agent' ? 'Agent' : 'Admin'}</div>
+                    </div>
                   <div className="relative">
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                       className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-semibold hover:bg-primary-700 transition-colors"
                     >
-                      {initials(currentUser.fullName)}
+                      {initials(currentUser.username || currentUser.fullName)}
                     </button>
                     {isUserMenuOpen && renderUserMenu()}
                   </div>
@@ -207,7 +208,7 @@ export const Navbar: React.FC = () => {
                       {initials(currentUser.fullName)}
                     </div>
                     <div className="text-right flex-1">
-                      <div className="text-sm font-medium text-gray-900">{currentUser.fullName}</div>
+                      <div className="text-sm font-medium text-gray-900">{currentUser.username || currentUser.fullName}</div>
                       <div className="text-xs text-gray-500">{currentUser.role === 'visitor' ? 'Visiteur' : currentUser.role === 'agent' ? 'Agent' : 'Admin'}</div>
                     </div>
                   </div>

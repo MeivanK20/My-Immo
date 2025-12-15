@@ -1,279 +1,120 @@
-import supabase, { isSupabaseEnabled } from './supabaseClient';
+// Supabase removed: use localStorage-backed simple locality service
+export interface Region { id: string; name: string; slug?: string; description?: string; lat?: number | null; lng?: number | null; created_at?: string; updated_at?: string }
+export interface City { id: string; region_id: string; name: string; slug?: string; description?: string; lat?: number | null; lng?: number | null; created_at?: string; updated_at?: string }
+export interface Neighborhood { id: string; city_id: string; name: string; slug?: string; description?: string; lat?: number | null; lng?: number | null; created_at?: string; updated_at?: string }
 
-export interface Region {
-  id: string;
-  name: string;
-  created_at?: string;
+function read<T>(key: string): T[] {
+  try { const s = localStorage.getItem(key); return s ? JSON.parse(s) as T[] : []; } catch (e) { return []; }
 }
+function write<T>(key: string, arr: T[]) { try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {} }
+function makeId() { return Math.random().toString(36).slice(2, 9); }
 
-export interface City {
-  id: string;
-  region_id: string;
-  name: string;
-  created_at?: string;
-}
-
-export interface Neighborhood {
-  id: string;
-  city_id: string;
-  name: string;
-  created_at?: string;
-}
+import { isSupabaseEnabled, supabase } from './supabaseClient';
 
 export const localityService = {
-  // Récupérer toutes les régions
   async getRegions(): Promise<Region[]> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.from('regions').select('*').order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Region[];
     }
-
-    const { data, error } = await supabase
-      .from('regions')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
+    return read<Region>('myimmo_regions');
   },
 
-  // Récupérer une région par ID
-  async getRegionById(id: string): Promise<Region | null> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
-    }
+  async getRegionById(id: string): Promise<Region | null> { return (await this.getRegions()).find(r => r.id === id) || null; },
 
-    const { data, error } = await supabase
-      .from('regions')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    return data || null;
-  },
-
-  // Récupérer les villes d'une région
   async getCitiesByRegion(regionId: string): Promise<City[]> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.from('cities').select('*').eq('region_id', regionId);
+      if (error) throw error;
+      return (data ?? []) as City[];
     }
-
-    const { data, error } = await supabase
-      .from('cities')
-      .select('*')
-      .eq('region_id', regionId)
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
+    return read<City>('myimmo_cities').filter(c => c.region_id === regionId);
   },
 
-  // Récupérer une ville par ID
-  async getCityById(id: string): Promise<City | null> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
-    }
+  async getCityById(id: string): Promise<City | null> { return (read<City>('myimmo_cities') as City[]).find(c => c.id === id) || null; },
 
-    const { data, error } = await supabase
-      .from('cities')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    return data || null;
-  },
-
-  // Récupérer les quartiers d'une ville
   async getNeighborhoodsByCity(cityId: string): Promise<Neighborhood[]> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.from('neighborhoods').select('*').eq('city_id', cityId);
+      if (error) throw error;
+      return (data ?? []) as Neighborhood[];
     }
-
-    const { data, error } = await supabase
-      .from('neighborhoods')
-      .select('*')
-      .eq('city_id', cityId)
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
+    return read<Neighborhood>('myimmo_neighborhoods').filter(n => n.city_id === cityId);
   },
 
-  // Récupérer un quartier par ID
-  async getNeighborhoodById(id: string): Promise<Neighborhood | null> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
-    }
+  async getNeighborhoodById(id: string): Promise<Neighborhood | null> { return (read<Neighborhood>('myimmo_neighborhoods') as Neighborhood[]).find(n => n.id === id) || null; },
 
-    const { data, error } = await supabase
-      .from('neighborhoods')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    return data || null;
-  },
-
-  // Récupérer tous les quartiers (sans filtre)
   async getAllNeighborhoods(): Promise<Neighborhood[]> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.from('neighborhoods').select('*');
+      if (error) throw error;
+      return (data ?? []) as Neighborhood[];
     }
-
-    const { data, error } = await supabase
-      .from('neighborhoods')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
+    return read<Neighborhood>('myimmo_neighborhoods');
   },
 
-  // Récupérer toutes les villes
   async getAllCities(): Promise<City[]> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.from('cities').select('*');
+      if (error) throw error;
+      return (data ?? []) as City[];
     }
-
-    const { data, error } = await supabase
-      .from('cities')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
+    return read<City>('myimmo_cities');
   },
 
-  // Créer une nouvelle région
-  async createRegion(name: string): Promise<Region> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
+  async createRegion(name: string, opts?: { slug?: string; description?: string; lat?: number; lng?: number }): Promise<Region> {
+    const payload: any = { name };
+    if (opts?.slug) payload.slug = opts.slug;
+    if (opts?.description) payload.description = opts.description;
+    if (opts?.lat !== undefined) payload.lat = opts.lat;
+    if (opts?.lng !== undefined) payload.lng = opts.lng;
+
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.from('regions').insert([payload]).select().maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as Region;
     }
-
-    const { data, error } = await supabase
-      .from('regions')
-      .insert([{ name }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const regions = read<Region>('myimmo_regions'); const r = { id: makeId(), name, slug: payload.slug, description: payload.description, lat: payload.lat, lng: payload.lng, created_at: new Date().toISOString() }; regions.push(r); write('myimmo_regions', regions); return r;
   },
 
-  // Récupérer une région par nom
-  async getRegionByName(name: string): Promise<Region | null> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
+  async getRegionByName(name: string): Promise<Region | null> { return (read<Region>('myimmo_regions') as Region[]).find(r => r.name.toLowerCase() === name.toLowerCase()) || null; },
+
+  async getOrCreateRegion(name: string): Promise<Region> { const existing = await this.getRegionByName(name); if (existing) return existing; return this.createRegion(name); },
+
+  async createCity(regionId: string, name: string, opts?: { slug?: string; description?: string; lat?: number; lng?: number }): Promise<City> {
+    const payload: any = { region_id: regionId, name };
+    if (opts?.slug) payload.slug = opts.slug;
+    if (opts?.description) payload.description = opts.description;
+    if (opts?.lat !== undefined) payload.lat = opts.lat;
+    if (opts?.lng !== undefined) payload.lng = opts.lng;
+
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.from('cities').insert([payload]).select().maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as City;
     }
+    const cities = read<City>('myimmo_cities'); const c = { id: makeId(), region_id: regionId, name, slug: payload.slug, description: payload.description, lat: payload.lat, lng: payload.lng, created_at: new Date().toISOString() }; cities.push(c); write('myimmo_cities', cities); return c; },
 
-    const { data, error } = await supabase
-      .from('regions')
-      .select('*')
-      .ilike('name', name)
-      .limit(1)
-      .single();
+  async getCityByNameAndRegion(name: string, regionId: string): Promise<City | null> { return (read<City>('myimmo_cities') as City[]).find(c => c.region_id === regionId && c.name.toLowerCase() === name.toLowerCase()) || null; },
 
-    if (error) {
-      if ((error as any).code === 'PGRST116') return null;
-      throw error;
+  async getOrCreateCity(regionId: string, name: string): Promise<City> { const existing = await this.getCityByNameAndRegion(name, regionId); if (existing) return existing; return this.createCity(regionId, name); },
+
+  async createNeighborhood(cityId: string, name: string, opts?: { slug?: string; description?: string; lat?: number; lng?: number }): Promise<Neighborhood> {
+    const payload: any = { city_id: cityId, name };
+    if (opts?.slug) payload.slug = opts.slug;
+    if (opts?.description) payload.description = opts.description;
+    if (opts?.lat !== undefined) payload.lat = opts.lat;
+    if (opts?.lng !== undefined) payload.lng = opts.lng;
+
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.from('neighborhoods').insert([payload]).select().maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as Neighborhood;
     }
-    return data || null;
-  },
+    const nbs = read<Neighborhood>('myimmo_neighborhoods'); const n = { id: makeId(), city_id: cityId, name, slug: payload.slug, description: payload.description, lat: payload.lat, lng: payload.lng, created_at: new Date().toISOString() }; nbs.push(n); write('myimmo_neighborhoods', nbs); return n; },
 
-  // Get or create region by name
-  async getOrCreateRegion(name: string): Promise<Region> {
-    const existing = await this.getRegionByName(name);
-    if (existing) return existing;
-    return this.createRegion(name);
-  },
+  async getNeighborhoodByNameAndCity(name: string, cityId: string): Promise<Neighborhood | null> { return (read<Neighborhood>('myimmo_neighborhoods') as Neighborhood[]).find(n => n.city_id === cityId && n.name.toLowerCase() === name.toLowerCase()) || null; },
 
-  // Créer une nouvelle ville
-  async createCity(regionId: string, name: string): Promise<City> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
-    }
-
-    const { data, error } = await supabase
-      .from('cities')
-      .insert([{ region_id: regionId, name }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  // Récupérer une ville par nom + region
-  async getCityByNameAndRegion(name: string, regionId: string): Promise<City | null> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
-    }
-
-    const { data, error } = await supabase
-      .from('cities')
-      .select('*')
-      .eq('region_id', regionId)
-      .ilike('name', name)
-      .limit(1)
-      .single();
-
-    if (error) {
-      if ((error as any).code === 'PGRST116') return null;
-      throw error;
-    }
-    return data || null;
-  },
-
-  // Get or create city by region id
-  async getOrCreateCity(regionId: string, name: string): Promise<City> {
-    const existing = await this.getCityByNameAndRegion(name, regionId);
-    if (existing) return existing;
-    return this.createCity(regionId, name);
-  },
-
-  // Créer un nouveau quartier
-  async createNeighborhood(cityId: string, name: string): Promise<Neighborhood> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
-    }
-
-    const { data, error } = await supabase
-      .from('neighborhoods')
-      .insert([{ city_id: cityId, name }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  // Récupérer un quartier par nom + city
-  async getNeighborhoodByNameAndCity(name: string, cityId: string): Promise<Neighborhood | null> {
-    if (!isSupabaseEnabled || !supabase) {
-      throw new Error('Supabase not configured');
-    }
-
-    const { data, error } = await supabase
-      .from('neighborhoods')
-      .select('*')
-      .eq('city_id', cityId)
-      .ilike('name', name)
-      .limit(1)
-      .single();
-
-    if (error) {
-      if ((error as any).code === 'PGRST116') return null;
-      throw error;
-    }
-    return data || null;
-  },
-
-  // Get or create neighborhood by city id
-  async getOrCreateNeighborhood(cityId: string, name: string): Promise<Neighborhood> {
-    const existing = await this.getNeighborhoodByNameAndCity(name, cityId);
-    if (existing) return existing;
-    return this.createNeighborhood(cityId, name);
-  },
+  async getOrCreateNeighborhood(cityId: string, name: string): Promise<Neighborhood> { const existing = await this.getNeighborhoodByNameAndCity(name, cityId); if (existing) return existing; return this.createNeighborhood(cityId, name); },
 };
